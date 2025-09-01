@@ -11,7 +11,6 @@ De applicatie wordt gebouwd met een moderne N-tier architectuur, bestaande uit e
 *   **Framework:** ASP.NET Core Web API
 *   **Data Access:** Entity Framework Core met LINQ
 *   **Testen:** Specflow (voor BDD - Behavior-Driven Development)
-*   **Realtime Communicatie:** SignalR (voor toekomstige uitbreiding)
 
 ### Frontend
 *   **Bibliotheek:** React
@@ -70,7 +69,7 @@ Zorg ervoor dat de volgende software op je systeem is geïnstalleerd:
     # Start de applicatie
     dotnet run
     ```
-    De API is nu bereikbaar op `https://localhost:xxxx` (de poort wordt in de terminal getoond). Je kunt de endpoints testen via de Swagger UI op `https://localhost:xxxx/swagger`.
+    De API is nu bereikbaar op `https://localhost:5048` (of de poort wordt in de terminal getoond). Je kunt de endpoints testen via de Swagger UI op `https://localhost:5048/swagger`.
 
 4.  **Start de Frontend Applicatie:**
     *Open een nieuwe terminal in de hoofdmap van het project.*
