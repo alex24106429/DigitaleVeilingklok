@@ -1,0 +1,8 @@
+# Visual Studio / .NET
+**/[Bb]in/
+**/[Oo]bj/
+.vs/
+
+# Node.js
+node_modules/
+npm-debug.log
