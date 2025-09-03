@@ -1,23 +1,31 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import Button from '@mui/material/Button';
+import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
+import { Typography } from '@mui/material';
 
 function App() {
 	return (
 		<div className="App">
 			<header className="App-header">
-				<img src={logo} className="App-logo" alt="logo" />
-				<p>
-					Edit <code>src/App.tsx</code> and save to reload.
-				</p>
-				<a
-					className="App-link"
-					href="https://reactjs.org"
-					target="_blank"
-					rel="noopener noreferrer"
+				{/* Gebruik een Typography component voor tekst */}
+				<Typography variant="h3" component="h1" gutterBottom>
+					Welkom bij de Digitale Veilingklok
+				</Typography>
+
+				{/* Gebruik de Button component */}
+				<Button variant="contained" color="primary">
+					Dit is een Material UI knop
+				</Button>
+
+				<br />
+
+				<Button
+					variant="outlined"
+					color="secondary"
+					startIcon={<AccessAlarmIcon />}
 				>
-					Learn React
-				</a>
+					Knop met Icoon
+				</Button>
+
 			</header>
 		</div>
 	);
