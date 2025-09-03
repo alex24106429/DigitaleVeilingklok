@@ -1,32 +1,32 @@
-import Button from '@mui/material/Button';
-import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
-import { Typography } from '@mui/material';
+import { Route, Routes, Link } from 'react-router-dom';
+import { HomePage } from './pages/HomePage';
+import { LoginPage } from './pages/LoginPage';
+import { AppBar, Toolbar, Typography, Button, Container } from '@mui/material';
 
 function App() {
 	return (
-		<div className="App">
-			<header className="App-header">
-				{/* Gebruik een Typography component voor tekst */}
-				<Typography variant="h3" component="h1" gutterBottom>
-					Welkom bij de Digitale Veilingklok
-				</Typography>
+		<div>
+			{/* Navigatiebalk met links */}
+			<AppBar position="static">
+				<Toolbar>
+					<Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+						Digitale Veilingklok
+					</Typography>
+					<Button color="inherit" component={Link} to="/">Home</Button>
+					<Button color="inherit" component={Link} to="/login">Login</Button>
+				</Toolbar>
+			</AppBar>
 
-				{/* Gebruik de Button component */}
-				<Button variant="contained" color="primary">
-					Dit is een Material UI knop
-				</Button>
+			{/* Hier worden de pagina's gerenderd */}
+			<Container sx={{ mt: 4 }}>
+				<Routes>
+					{/* Als de URL '/' is, toon de HomePage component */}
+					<Route path="/" element={<HomePage />} />
 
-				<br />
-
-				<Button
-					variant="outlined"
-					color="secondary"
-					startIcon={<AccessAlarmIcon />}
-				>
-					Knop met Icoon
-				</Button>
-
-			</header>
+					{/* Als de URL '/login' is, toon de LoginPage component */}
+					<Route path="/login" element={<LoginPage />} />
+				</Routes>
+			</Container>
 		</div>
 	);
 }
