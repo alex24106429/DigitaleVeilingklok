@@ -1,7 +1,7 @@
 import { Route, Routes, Link } from 'react-router-dom';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
-import { AppBar, Toolbar, Typography, Button, Container } from '@mui/material';
+import { AppBar, Toolbar, Typography, Button } from '@mui/material';
 
 function App() {
 	return (
@@ -18,15 +18,13 @@ function App() {
 			</AppBar>
 
 			{/* Hier worden de pagina's gerenderd */}
-			<Container sx={{ mt: 4 }}>
-				<Routes>
-					{/* Als de URL '/' is, toon de HomePage component */}
-					<Route path="/" element={<HomePage />} />
+			<Routes>
+				{/* Als de URL '/' is, toon de HomePage component */}
+				<Route path="/" element={<HomePage />} />
 
-					{/* Als de URL '/login' is, toon de LoginPage component */}
-					<Route path="/login" element={<LoginPage />} />
-				</Routes>
-			</Container>
+				{/* Als de URL '/login' is, toon de LoginPage component */}
+				<Route path="/login" element={<LoginPage />} />
+			</Routes>
 		</div>
 	);
 }
