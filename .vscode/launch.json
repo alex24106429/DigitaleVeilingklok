@@ -5,7 +5,7 @@
 			"name": "React App",
 			"type": "node-terminal",
 			"request": "launch",
-			"command": "npm start",
+			"command": "npm run dev",
 			"cwd": "${workspaceFolder}/client-app"
 		},
 		{
