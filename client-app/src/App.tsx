@@ -1,12 +1,13 @@
 import { Route, Routes, NavLink } from 'react-router-dom';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
-import { AppBar, Toolbar, Typography, Button } from '@mui/material';
+import { StoreFront } from './pages/StoreFront';
+import { AppBar, Toolbar, Button, Box } from '@mui/material';
 
 const activeButtonSx = {
 	transition: 'none',
 	'&[aria-current="page"]': {
-		backgroundColor: 'primary.main',
+		backgroundColor: 'primary.600',
 		color: 'primary.contrastText',
 	},
 	'&[aria-current="page"]:hover': {
@@ -25,12 +26,16 @@ function App() {
 				}}
 			>
 				<Toolbar>
-					<Typography variant="h5" component="div" sx={{ flexGrow: 1 }}>
-						PetalBid
-					</Typography>
+					<Box sx={{ flexGrow: 1 }} display={"flex"} alignItems={"center"}>
+						<img src="logo-petalbid.svg" height={50} alt="Logo"></img>
+					</Box>
 
 					<Button color="inherit" component={NavLink} to="/" end sx={activeButtonSx}>
 						Home
+					</Button>
+
+					<Button color="inherit" component={NavLink} to="/storefront" end sx={activeButtonSx}>
+						Store
 					</Button>
 
 					<Button color="inherit" component={NavLink} to="/login" sx={activeButtonSx}>
@@ -47,6 +52,7 @@ function App() {
 				<Route path="/" element={<HomePage />} />
 				<Route path="/login" element={<LoginPage isRegisterPage={false} />} />
 				<Route path="/register" element={<LoginPage isRegisterPage={true} />} />
+				<Route path="/storefront" element={<StoreFront />} />
 			</Routes>
 		</div>
 	);

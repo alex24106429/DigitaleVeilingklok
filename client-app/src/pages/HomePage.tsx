@@ -5,8 +5,8 @@ import { Typography } from '@mui/material';
 export function HomePage() {
 	return (
 		<div>
-			<Box bgcolor={"primary.50"} width="100vw" padding={"50px"}>
-				<Typography variant="h2" gutterBottom color={"primary.dark"}>
+			<Box bgcolor={"primary.100"} width="100vw" padding={"50px"}>
+				<Typography variant="h2" gutterBottom color={"secondary.700"}>
 					Welkom bij PetalBid
 				</Typography>
 				<Typography mb="20px">
@@ -17,7 +17,7 @@ export function HomePage() {
 					Inloggen
 				</Button>
 
-				<Button variant="outlined">
+				<Button variant="outlined" color="secondary">
 					Meer info
 				</Button>
 

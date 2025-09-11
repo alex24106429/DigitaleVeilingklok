@@ -1,17 +1,37 @@
 import { createTheme } from '@mui/material/styles';
-import { green, lightGreen } from '@mui/material/colors';
 
 const headerFont = "Lexend";
 
 const theme = createTheme({
 	palette: {
 		primary: {
-			...lightGreen,
-			main: lightGreen[800],
-			dark: lightGreen[900]
+			"50": "hsl(90 100% 95%)",
+			"100": "hsl(90 100% 90%)",
+			"200": "hsl(90 90% 80%)",
+			"300": "hsl(90 80% 70%)",
+			"400": "hsl(90 70% 60%)",
+			"500": "hsl(90 60% 50%)",
+			"600": "hsl(90 50% 40%)",
+			"700": "hsl(90 40% 30%)",
+			"800": "hsl(90 30% 20%)",
+			"900": "hsl(90 20% 10%)",
+			"main": "hsl(90 50% 40%)",
+			"contrastText": "#ffffff"
 		},
 		secondary: {
-			main: green[800]
+			"50": "hsl(270 100% 95%)",
+			"100": "hsl(270 100% 90%)",
+			"200": "hsl(270 90% 80%)",
+			"300": "hsl(270 80% 70%)",
+			"400": "hsl(270 70% 60%)",
+			"500": "hsl(270 60% 50%)",
+			"600": "hsl(270 50% 40%)",
+			"700": "hsl(270 40% 30%)",
+			"800": "hsl(270 30% 20%)",
+			"900": "hsl(270 20% 10%)",
+			"main": "hsl(270 40% 30%)",
+			"dark": "hsl(270 30% 20%)",
+			"contrastText": "white"
 		},
 		background: {
 			default: '#fafafa',
