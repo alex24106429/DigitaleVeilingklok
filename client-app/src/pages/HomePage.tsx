@@ -8,10 +8,10 @@ export function HomePage() {
 		<div>
 			<Box bgcolor={lightGreen[50]} width="100vw" padding={"50px"}>
 				<Typography variant="h2" gutterBottom color={lightGreen[900]}>
-					Welkom bij de Digitale Veilingklok
+					Welkom bij PetalBid
 				</Typography>
 				<Typography mb="20px">
-					Welkom bij de Digitale Veilingklok
+					Handel al je commerciële processen eenvoudig af op één plek. PetalBid, het wereldwijde platform voor de sierteeltsector!
 				</Typography>
 
 				<Button variant="contained" color="primary" sx={{ mr: 1 }}>

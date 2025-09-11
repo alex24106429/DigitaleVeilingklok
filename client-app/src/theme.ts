@@ -58,7 +58,7 @@ const theme = createTheme({
 				},
 				sizeLarge: {
 					padding: '14px 30px',
-					borderRadius: '50px'
+					borderRadius: '5px'
 				},
 			},
 		},

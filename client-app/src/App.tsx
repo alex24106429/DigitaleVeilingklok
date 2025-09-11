@@ -7,13 +7,17 @@ function App() {
 	return (
 		<div>
 			{/* Navigatiebalk met links */}
-			<AppBar position="static">
+			<AppBar position="static" sx={{
+				backgroundColor: (theme) => theme.palette.background.default,
+				color: (theme) => theme.palette.text.primary,
+			}}>
 				<Toolbar>
 					<Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-						Digitale Veilingklok
+						PetalBid
 					</Typography>
 					<Button color="inherit" component={Link} to="/">Home</Button>
-					<Button color="inherit" component={Link} to="/login">Login</Button>
+					<Button color="inherit" component={Link} to="/login">Inloggen</Button>
+					<Button color="inherit" component={Link} to="/register">Aanmelden</Button>
 				</Toolbar>
 			</AppBar>
 
@@ -23,7 +27,8 @@ function App() {
 				<Route path="/" element={<HomePage />} />
 
 				{/* Als de URL '/login' is, toon de LoginPage component */}
-				<Route path="/login" element={<LoginPage />} />
+				<Route path="/login" element={<LoginPage isRegisterPage={false} />} />
+				<Route path="/register" element={<LoginPage isRegisterPage={true} />} />
 			</Routes>
 		</div>
 	);
