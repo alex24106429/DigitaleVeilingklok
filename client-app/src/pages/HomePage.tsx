@@ -1,13 +1,12 @@
 import Box from '@mui/material/Box';
-import { lightGreen } from '@mui/material/colors';
 import Button from '@mui/material/Button';
 import { Typography } from '@mui/material';
 
 export function HomePage() {
 	return (
 		<div>
-			<Box bgcolor={lightGreen[50]} width="100vw" padding={"50px"}>
-				<Typography variant="h2" gutterBottom color={lightGreen[900]}>
+			<Box bgcolor={"primary.50"} width="100vw" padding={"50px"}>
+				<Typography variant="h2" gutterBottom color={"primary.dark"}>
 					Welkom bij PetalBid
 				</Typography>
 				<Typography mb="20px">

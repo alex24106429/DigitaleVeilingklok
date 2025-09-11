@@ -6,10 +6,12 @@ const headerFont = "Lexend";
 const theme = createTheme({
 	palette: {
 		primary: {
-			main: lightGreen[900],
+			...lightGreen,
+			main: lightGreen[800],
+			dark: lightGreen[900]
 		},
 		secondary: {
-			main: green[900],
+			main: green[800]
 		},
 		background: {
 			default: '#fafafa',

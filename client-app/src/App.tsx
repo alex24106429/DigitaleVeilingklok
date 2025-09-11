@@ -1,32 +1,50 @@
-import { Route, Routes, Link } from 'react-router-dom';
+import { Route, Routes, NavLink } from 'react-router-dom';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { AppBar, Toolbar, Typography, Button } from '@mui/material';
 
+const activeButtonSx = {
+	transition: 'none',
+	'&[aria-current="page"]': {
+		backgroundColor: 'primary.main',
+		color: 'primary.contrastText',
+	},
+	'&[aria-current="page"]:hover': {
+		backgroundColor: 'primary.dark',
+	},
+};
+
 function App() {
 	return (
 		<div>
-			{/* Navigatiebalk met links */}
-			<AppBar position="static" sx={{
-				backgroundColor: (theme) => theme.palette.background.default,
-				color: (theme) => theme.palette.text.primary,
-			}}>
+			<AppBar
+				position="static"
+				sx={{
+					backgroundColor: (theme) => theme.palette.background.default,
+					color: (theme) => theme.palette.text.primary,
+				}}
+			>
 				<Toolbar>
-					<Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+					<Typography variant="h5" component="div" sx={{ flexGrow: 1 }}>
 						PetalBid
 					</Typography>
-					<Button color="inherit" component={Link} to="/">Home</Button>
-					<Button color="inherit" component={Link} to="/login">Inloggen</Button>
-					<Button color="inherit" component={Link} to="/register">Aanmelden</Button>
+
+					<Button color="inherit" component={NavLink} to="/" end sx={activeButtonSx}>
+						Home
+					</Button>
+
+					<Button color="inherit" component={NavLink} to="/login" sx={activeButtonSx}>
+						Inloggen
+					</Button>
+
+					<Button color="inherit" component={NavLink} to="/register" sx={activeButtonSx}>
+						Aanmelden
+					</Button>
 				</Toolbar>
 			</AppBar>
 
-			{/* Hier worden de pagina's gerenderd */}
 			<Routes>
-				{/* Als de URL '/' is, toon de HomePage component */}
 				<Route path="/" element={<HomePage />} />
-
-				{/* Als de URL '/login' is, toon de LoginPage component */}
 				<Route path="/login" element={<LoginPage isRegisterPage={false} />} />
 				<Route path="/register" element={<LoginPage isRegisterPage={true} />} />
 			</Routes>
