@@ -31,7 +31,7 @@ const theme = createTheme({
 			"900": "hsl(270 20% 10%)",
 			"main": "hsl(270 40% 30%)",
 			"dark": "hsl(270 30% 20%)",
-			"contrastText": "white"
+			"contrastText": "#ffffff"
 		},
 		background: {
 			default: '#fafafa',

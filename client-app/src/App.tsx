@@ -3,6 +3,7 @@ import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { StoreFront } from './pages/StoreFront';
 import { AppBar, Toolbar, Button, Box } from '@mui/material';
+import AuctionClock from './pages/AuctionClock';
 
 const activeButtonSx = {
 	transition: 'none',
@@ -38,6 +39,10 @@ function App() {
 						Store
 					</Button>
 
+					<Button color="inherit" component={NavLink} to="/auctionclock" end sx={activeButtonSx}>
+						Veilingklok
+					</Button>
+
 					<Button color="inherit" component={NavLink} to="/login" sx={activeButtonSx}>
 						Inloggen
 					</Button>
@@ -53,6 +58,7 @@ function App() {
 				<Route path="/login" element={<LoginPage isRegisterPage={false} />} />
 				<Route path="/register" element={<LoginPage isRegisterPage={true} />} />
 				<Route path="/storefront" element={<StoreFront />} />
+				<Route path="/auctionclock" element={<AuctionClock />} />
 			</Routes>
 		</div>
 	);
