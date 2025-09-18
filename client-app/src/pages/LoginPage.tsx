@@ -1,4 +1,4 @@
-import { Box, Button, FormControl, FormControlLabel, FormLabel, Radio, RadioGroup, TextField, Typography } from "@mui/material";
+import { Box, Button, FormControl, FormControlLabel, FormLabel, Link, Radio, RadioGroup, TextField, Typography } from "@mui/material";
 import { useState, FormEvent } from "react";
 
 interface LoginPageProps {
@@ -11,6 +11,7 @@ export function LoginPage({ isRegisterPage }: LoginPageProps) {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
+	const [RFHnumber, setRFHnumber] = useState("");
 	const [userType, setUserType] = useState("grower");
 
 	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -92,8 +93,42 @@ export function LoginPage({ isRegisterPage }: LoginPageProps) {
 							>
 								<FormControlLabel value="grower" control={<Radio />} label="Kweker" />
 								<FormControlLabel value="buyer" control={<Radio />} label="Koper" />
+								<FormControlLabel value="auctioneer" control={<Radio />} label="Veilingmeester" />
 							</RadioGroup>
 						</FormControl>
+
+						{userType !== "auctioneer" &&
+							<TextField
+								label="RFH Nummer"
+								margin="normal"
+								fullWidth
+								required
+								value={RFHnumber}
+								onChange={(e) => setRFHnumber(e.target.value)}
+							/>
+						}
+
+						{userType === "grower" &&
+							<Link
+								href="https://portal.royalfloraholland.com/nl-nl/klant-worden/aanvoerder/"
+								target="_blank"
+								rel="noreferrer"
+							>
+								Nog geen RFH nummer? Registreer je hier als kweker
+							</Link>
+						}
+
+						{userType === "buyer" &&
+							<Link
+								href="https://portal.royalfloraholland.com/nl-NL/klant-worden/koper/"
+								target="_blank"
+								rel="noreferrer"
+							>
+								Nog geen RFH nummer? Registreer je hier als koper
+							</Link>
+						}
+						<br />
+
 					</>
 				)}
 

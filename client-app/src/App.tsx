@@ -1,7 +1,6 @@
 import { Route, Routes, NavLink } from 'react-router-dom';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
-import { StoreFront } from './pages/StoreFront';
 import { AppBar, Toolbar, Button, Box } from '@mui/material';
 import AuctionClock from './pages/AuctionClock';
 
@@ -35,10 +34,6 @@ function App() {
 						Home
 					</Button>
 
-					<Button color="inherit" component={NavLink} to="/storefront" end sx={activeButtonSx}>
-						Store
-					</Button>
-
 					<Button color="inherit" component={NavLink} to="/auctionclock" end sx={activeButtonSx}>
 						Veilingklok
 					</Button>
@@ -57,7 +52,6 @@ function App() {
 				<Route path="/" element={<HomePage />} />
 				<Route path="/login" element={<LoginPage isRegisterPage={false} />} />
 				<Route path="/register" element={<LoginPage isRegisterPage={true} />} />
-				<Route path="/storefront" element={<StoreFront />} />
 				<Route path="/auctionclock" element={<AuctionClock />} />
 			</Routes>
 		</div>
