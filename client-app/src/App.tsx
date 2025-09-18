@@ -7,7 +7,7 @@ import AuctionClock from './pages/AuctionClock';
 const activeButtonSx = {
 	transition: 'none',
 	'&[aria-current="page"]': {
-		backgroundColor: 'primary.600',
+		backgroundColor: 'primary.main',
 		color: 'primary.contrastText',
 	},
 	'&[aria-current="page"]:hover': {

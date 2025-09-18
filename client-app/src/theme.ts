@@ -15,7 +15,8 @@ const theme = createTheme({
 			"700": "hsl(90 40% 30%)",
 			"800": "hsl(90 30% 20%)",
 			"900": "hsl(90 20% 10%)",
-			"main": "hsl(90 50% 40%)",
+			"main": "hsl(90 40% 30%)",
+			"dark": "hsl(90 30% 20%)",
 			"contrastText": "#ffffff"
 		},
 		secondary: {
