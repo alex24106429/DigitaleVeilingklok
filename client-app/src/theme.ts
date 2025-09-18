@@ -35,7 +35,7 @@ const theme = createTheme({
 			"contrastText": "#ffffff"
 		},
 		background: {
-			default: '#fafafa',
+			default: '#ffffff',
 		}
 	},
 	typography: {
