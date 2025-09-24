@@ -39,10 +39,10 @@ export function LoginPage({ isRegisterPage }: LoginPageProps) {
 		<div>
 			<Box component="form" onSubmit={handleSubmit} maxWidth="sm" margin="auto" mt="30px" padding="20px">
 				{!isRegisterPage ? (
-					<Typography variant="h4" align="center">Inloggen bij PetalBid</Typography>
+					<Typography variant="h4" component="h1" align="center">Inloggen bij PetalBid</Typography>
 				) : (
 					<>
-						<Typography variant="h4" align="center">Aanmelden bij PetalBid</Typography>
+						<Typography variant="h4" component="h1" align="center">Aanmelden bij PetalBid</Typography>
 						<TextField
 							label="Naam"
 							margin="normal"
@@ -84,14 +84,14 @@ export function LoginPage({ isRegisterPage }: LoginPageProps) {
 							onChange={(e) => setConfirmPassword(e.target.value)}
 						/>
 						<FormControl required margin="normal">
-							<FormLabel id="user-type-label">Ik ben:</FormLabel>
+							<FormLabel component="legend" id="user-type-label">Ik ben:</FormLabel>
 							<RadioGroup
 								row
 								aria-labelledby="user-type-label"
 								value={userType}
 								onChange={(e) => setUserType(e.target.value)}
 							>
-								<FormControlLabel value="grower" control={<Radio />} label="Kweker" />
+								<FormControlLabel value="grower" control={<Radio />} label="Aanvoerder" />
 								<FormControlLabel value="buyer" control={<Radio />} label="Koper" />
 								<FormControlLabel value="auctioneer" control={<Radio />} label="Veilingmeester" />
 							</RadioGroup>
@@ -114,7 +114,7 @@ export function LoginPage({ isRegisterPage }: LoginPageProps) {
 								target="_blank"
 								rel="noreferrer"
 							>
-								Nog geen RFH nummer? Registreer je hier als kweker
+								Nog geen RFH nummer? Registreer je hier als aanvoerder
 							</Link>
 						}
 
@@ -147,3 +147,5 @@ export function LoginPage({ isRegisterPage }: LoginPageProps) {
 		</div>
 	);
 }
+
+export default LoginPage;

@@ -1,8 +1,10 @@
 import { Route, Routes, NavLink } from 'react-router-dom';
-import { HomePage } from './pages/HomePage';
-import { LoginPage } from './pages/LoginPage';
 import { AppBar, Toolbar, Button, Box } from '@mui/material';
+
+import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
 import AuctionClock from './pages/AuctionClock';
+import GrowerDashboard from './pages/GrowerDashboard';
 
 const activeButtonSx = {
 	transition: 'none',
@@ -27,11 +29,15 @@ function App() {
 			>
 				<Toolbar>
 					<Box sx={{ flexGrow: 1 }} display={"flex"} alignItems={"center"}>
-						<img src="logo-petalbid.svg" height={50} alt="Logo"></img>
+						<img src="logo-petalbid.svg" height={50} alt="PetalBid logo"></img>
 					</Box>
 
 					<Button color="inherit" component={NavLink} to="/" end sx={activeButtonSx}>
 						Home
+					</Button>
+
+					<Button color="inherit" component={NavLink} to="/growerdashboard" end sx={activeButtonSx}>
+						Aanvoerder dashboard
 					</Button>
 
 					<Button color="inherit" component={NavLink} to="/auctionclock" end sx={activeButtonSx}>
@@ -50,6 +56,7 @@ function App() {
 
 			<Routes>
 				<Route path="/" element={<HomePage />} />
+				<Route path="/growerdashboard" element={<GrowerDashboard />} />
 				<Route path="/login" element={<LoginPage isRegisterPage={false} />} />
 				<Route path="/register" element={<LoginPage isRegisterPage={true} />} />
 				<Route path="/auctionclock" element={<AuctionClock />} />

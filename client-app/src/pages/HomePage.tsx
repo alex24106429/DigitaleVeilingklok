@@ -6,7 +6,7 @@ export function HomePage() {
 	return (
 		<div>
 			<Box bgcolor={"primary.100"} width="100vw" padding={"50px"}>
-				<Typography variant="h2" gutterBottom color={"secondary.700"}>
+				<Typography variant="h2" component="h1" gutterBottom color={"secondary.700"}>
 					Welkom bij PetalBid
 				</Typography>
 				<Typography mb="20px">
