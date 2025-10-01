@@ -6,7 +6,11 @@
 			"type": "node-terminal",
 			"request": "launch",
 			"command": "npm run dev",
-			"cwd": "${workspaceFolder}/client-app"
+			"cwd": "${workspaceFolder}/client-app",
+			"serverReadyAction": {
+				"pattern": "\\b(https?://localhost:\\d+)",
+				"action": "openExternally"
+			}
 		},
 		{
 			"name": ".NET Core Launch (web)",
