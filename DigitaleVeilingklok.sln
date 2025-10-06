@@ -2,7 +2,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DigitaleVeilingklok.API", "DigitaleVeilingklok.API\DigitaleVeilingklok.API.csproj", "{241E1CCC-6341-6753-BA64-BB1646C7E583}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PetalBid.Api", "PetalBid.Api\PetalBid.Api.csproj", "{241E1CCC-6341-6753-BA64-BB1646C7E583}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

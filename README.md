@@ -1,4 +1,4 @@
-# Digitale Veilingklok
+# PetalBid
 
 Dit project is de ontwikkeling van een realtime, web-gebaseerde digitale veilingklok. De applicatie wordt gebouwd in opdracht van **jem-id** voor de klant **Royal FloraHolland**. Het doel is om een modern, zelfstandig en gebruiksvriendelijk veilingsysteem te realiseren dat losstaat van de bestaande systemen.
 
@@ -20,7 +20,6 @@ De applicatie wordt gebouwd met een moderne N-tier architectuur, bestaande uit e
 
 ### Database
 *   **Type:** Relationeel Database Management Systeem (RDBMS)
-*   **Systeem:** Microsoft SQL Server
 
 ---
 
@@ -34,7 +33,6 @@ Zorg ervoor dat de volgende software op je systeem is geïnstalleerd:
 *   [.NET SDK](https://dotnet.microsoft.com/download) (versie 6.0 of hoger)
 *   [Node.js](https://nodejs.org/) (inclusief npm)
 *   [VS Code](https://code.visualstudio.com/)
-*   Een draaiende MS SQL Server instance (bijv. via SQL Server Express of Docker)
 
 ### Installatie & Opstarten
 
@@ -44,24 +42,10 @@ Zorg ervoor dat de volgende software op je systeem is geïnstalleerd:
     cd DigitaleVeilingklok
     ```
 
-2.  **Configureer de databaseverbinding:**
-    *   Navigeer naar de backend-map: `cd DigitaleVeilingklok.API`
-    *   Hernoem `appsettings.json` naar `appsettings.Development.json` of maak een nieuw bestand met die naam.
-    *   Voeg je database connection string toe onder `"ConnectionStrings"`:
-    ```json
-    {
-      "ConnectionStrings": {
-        "DefaultConnection": "Server=localhost;Database=DigitaleVeilingklokDB;User Id=jouw_gebruikersnaam;Password=jouw_wachtwoord;Trusted_Connection=False;Encrypt=False;"
-      },
-      // ... andere instellingen
-    }
-    ```
-    *   Pas de connection string aan voor jouw lokale MS SQL Server-setup.
-
-3.  **Start de Backend API:**
+2.  **Start de Backend API:**
     ```bash
     # Ga naar de API-map
-    cd DigitaleVeilingklok.API
+    cd PetalBid.Api
 
     # Installeer de NuGet-packages
     dotnet restore
@@ -71,7 +55,7 @@ Zorg ervoor dat de volgende software op je systeem is geïnstalleerd:
     ```
     De API is nu bereikbaar op `https://localhost:5048` (of de poort wordt in de terminal getoond). Je kunt de endpoints testen via de Swagger UI op `https://localhost:5048/swagger`.
 
-4.  **Start de Frontend Applicatie:**
+3.  **Start de Frontend Applicatie:**
     *Open een nieuwe terminal in de hoofdmap van het project.*
     ```bash
     # Ga naar de frontend-map
@@ -81,6 +65,6 @@ Zorg ervoor dat de volgende software op je systeem is geïnstalleerd:
     npm install
 
     # Start de ontwikkelserver
-    npm start
+    npm run dev
     ```
-    De React-applicatie wordt nu geopend in je browser op `http://localhost:3000`.
+    De React-applicatie wordt nu geopend in je browser.

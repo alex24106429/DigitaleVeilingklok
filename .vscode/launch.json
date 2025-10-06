@@ -13,29 +13,16 @@
 			}
 		},
 		{
-			"name": ".NET Core Launch (web)",
-			"type": "coreclr",
+			"name": "Backend API",
+			"type": "node-terminal",
 			"request": "launch",
-			"preLaunchTask": "build",
-			"program": "${workspaceFolder}/DigitaleVeilingklok.API/bin/Debug/net9.0/DigitaleVeilingklok.API.dll",
-			"args": [],
-			"cwd": "${workspaceFolder}/DigitaleVeilingklok.API",
-			"stopAtEntry": false,
+			"command": "dotnet run",
+			"cwd": "${workspaceFolder}/PetalBid.Api",
 			"serverReadyAction": {
-				"action": "openExternally",
-				"pattern": "\\bNow listening on:\\s+(https?://\\S+)"
-			},
-			"env": {
-				"ASPNETCORE_ENVIRONMENT": "Development"
-			},
-			"sourceFileMap": {
-				"/Views": "${workspaceFolder}/Views"
+				"pattern": "Now listening on:\\s+https?://(?:localhost|\\[::\\]|0\\.0\\.0\\.0):(\\d+)",
+				"uriFormat": "http://localhost:%s/swagger/index.html",
+				"action": "openExternally"
 			}
-		},
-		{
-			"name": ".NET Core Attach",
-			"type": "coreclr",
-			"request": "attach"
 		}
 	]
 }
