@@ -1,12 +1,19 @@
-import { Box, Button, FormControl, FormControlLabel, FormLabel, Link, Radio, RadioGroup, TextField, Typography } from "@mui/material";
+import { Box, Button, FormControl, FormControlLabel, FormLabel, Link, Radio, RadioGroup, TextField, Typography, CircularProgress } from "@mui/material";
 import { useState, FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
+import { authService } from "../api/services/authService";
+import { UserRole } from "../types/user";
+import { useAuth } from "../contexts/AuthContext";
 
 interface LoginPageProps {
 	isRegisterPage: boolean;
 }
 
 export function LoginPage({ isRegisterPage }: LoginPageProps) {
+	const navigate = useNavigate();
+	const { login } = useAuth();
 	const [error, setError] = useState("");
+	const [isLoading, setIsLoading] = useState(false);
 	const [name, setName] = useState("");
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
@@ -14,12 +21,12 @@ export function LoginPage({ isRegisterPage }: LoginPageProps) {
 	const [RFHnumber, setRFHnumber] = useState("");
 	const [userType, setUserType] = useState("grower");
 
-	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		setError(""); // Reset de foutmelding bij elke nieuwe poging
 		event.preventDefault(); // Voorkomt dat de pagina herlaadt
 
-		if (isRegisterPage && password.length < 12) {
-			setError("Wachtwoord moet minimaal 12 karakters zijn!");
+		if (isRegisterPage && password.length < 6) {
+			setError("Wachtwoord moet minimaal 6 karakters zijn!");
 			return;
 		}
 
@@ -28,11 +35,44 @@ export function LoginPage({ isRegisterPage }: LoginPageProps) {
 			return;
 		}
 
-		console.log({
-			email,
-			password,
-			userType: isRegisterPage ? userType : undefined,
-		});
+		setIsLoading(true);
+
+		try {
+			if (isRegisterPage) {
+				// Map user type string to UserRole enum
+				let role = UserRole.Supplier; // Default to grower/supplier
+				if (userType === "buyer") role = UserRole.Buyer;
+				if (userType === "auctioneer") role = UserRole.Auctioneer;
+
+				const response = await authService.register({
+					fullName: name,
+					email,
+					password,
+					role
+				});
+
+				if (response.error) {
+					setError(response.error);
+				} else {
+					// Registration successful, navigate to login
+					navigate("/login");
+				}
+			} else {
+				// Login
+				const success = await login(email, password);
+
+				if (success) {
+					// Login successful - navigate to home
+					navigate("/");
+				} else {
+					setError("Ongeldige e-mail of wachtwoord");
+				}
+			}
+		} catch (err) {
+			setError("Er is een onverwachte fout opgetreden. Probeer het opnieuw.");
+		} finally {
+			setIsLoading(false);
+		}
 	};
 
 	return (
@@ -139,8 +179,16 @@ export function LoginPage({ isRegisterPage }: LoginPageProps) {
 				)}
 
 				<Box display="flex" justifyContent="center" mt={2}>
-					<Button type="submit" variant="contained" color="primary" size="large" fullWidth>
-						{isRegisterPage ? "Aanmelden" : "Inloggen"}
+					<Button
+						type="submit"
+						variant="contained"
+						color="primary"
+						size="large"
+						fullWidth
+						disabled={isLoading}
+						startIcon={isLoading ? <CircularProgress size={20} /> : null}
+					>
+						{isLoading ? "Bezig..." : (isRegisterPage ? "Aanmelden" : "Inloggen")}
 					</Button>
 				</Box>
 			</Box>
