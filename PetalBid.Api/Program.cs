@@ -21,6 +21,17 @@ public class Program
 		builder.Services.AddControllers();
 		builder.Services.AddAuthorization();
 
+		// Add CORS
+		builder.Services.AddCors(options =>
+		{
+			options.AddPolicy("AllowFrontend", policy =>
+			{
+				policy.WithOrigins("http://localhost:5173") // Vite default port
+					  .AllowAnyHeader()
+					  .AllowAnyMethod();
+			});
+		});
+
 		builder.Services.AddEndpointsApiExplorer();
 		builder.Services.AddSwaggerGen(c =>
 		{
@@ -39,6 +50,7 @@ public class Program
 			app.UseHttpsRedirection();
 		}
 
+		app.UseCors("AllowFrontend");
 		app.UseAuthorization();
 		app.MapControllers();
 
