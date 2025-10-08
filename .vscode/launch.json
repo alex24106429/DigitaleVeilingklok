@@ -23,6 +23,13 @@
 				"uriFormat": "http://localhost:%s/swagger/index.html",
 				"action": "openExternally"
 			}
+		},
+		{
+			"name": "Update Database",
+			"type": "node-terminal",
+			"request": "launch",
+			"command": "dotnet ef database update",
+			"cwd": "${workspaceFolder}/PetalBid.Api"
 		}
 	]
 }
