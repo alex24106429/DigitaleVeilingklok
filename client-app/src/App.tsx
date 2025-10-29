@@ -11,6 +11,7 @@ import VerkoopOrders from './pages/VerkoopOrders';
 import AuctionClock from './pages/AuctionClock';
 import GrowerDashboard from './pages/GrowerDashboard';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import InfoPage from './pages/InfoPage';
 
 const activeButtonSx = {
 	transition: 'none',
@@ -97,10 +98,13 @@ function App() {
 					<Route path="/login" element={<LoginPage isRegisterPage={false} />} />
 					<Route path="/register" element={<LoginPage isRegisterPage={true} />} />
 					<Route path="/auctionclock" element={<AuctionClock />} />
+					<Route path="/info" element={<InfoPage />} />
 				</Routes>
 			</div>
 		</AuthProvider>
 	);
 }
+
+
 
 export default App;
