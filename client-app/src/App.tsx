@@ -41,7 +41,7 @@ function AppBarContent() {
 				{user && (
 					<>
 						<Button color="inherit" component={NavLink} to="/growerdashboard" end sx={activeButtonSx}>
-							Aanvoerder dashboard
+							Leverancier dashboard
 						</Button>
 
 						<Button color="inherit" component={NavLink} to="/auctionclock" end sx={activeButtonSx}>

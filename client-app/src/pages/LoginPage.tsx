@@ -154,7 +154,7 @@ export function LoginPage({ isRegisterPage }: LoginPageProps) {
 								target="_blank"
 								rel="noreferrer"
 							>
-								Nog geen RFH nummer? Registreer je hier als aanvoerder
+								Nog geen RFH nummer? Registreer je hier als leverancier
 							</Link>
 						}
 
