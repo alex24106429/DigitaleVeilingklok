@@ -37,7 +37,7 @@ export function GrowerDashboard() {
 					align="center"
 					sx={{ fontWeight: '600', mb: 5 }}
 				>
-					Aanvoerder dashboard
+					Leverancier dashboard
 				</Typography>
 				<Grid container spacing={2.5}>
 					{dashboardActions.map((action, index) => (
