@@ -131,7 +131,7 @@ export function LoginPage({ isRegisterPage }: LoginPageProps) {
 								value={userType}
 								onChange={(e) => setUserType(e.target.value)}
 							>
-								<FormControlLabel value="grower" control={<Radio />} label="Aanvoerder" />
+								<FormControlLabel value="grower" control={<Radio />} label="Leverancier" />
 								<FormControlLabel value="buyer" control={<Radio />} label="Koper" />
 								<FormControlLabel value="auctioneer" control={<Radio />} label="Veilingmeester" />
 							</RadioGroup>
