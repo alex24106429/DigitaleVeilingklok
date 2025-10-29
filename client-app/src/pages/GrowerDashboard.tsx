@@ -20,11 +20,11 @@ const buttonSx = {
 };
 
 const dashboardActions = [
-	{ text: 'Bekijk verkooporders', icon: <Visibility /> },
-	{ text: 'Order aanmaken', icon: <Add /> },
-	{ text: 'Naar klokverkoop', icon: <Schedule /> },
-	{ text: 'Veilbrief aanmaken', icon: <Mail /> },
-	{ text: 'Catalogus', icon: <FormatListBulleted /> },
+	{ text: 'Bekijk verkooporders', icon: <Visibility />, url: "/verkooporders" },
+	{ text: 'Order aanmaken', icon: <Add />, url: "/createorder" },
+	{ text: 'Naar klokverkoop', icon: <Schedule />, url: "/klokverkoop" },
+	{ text: 'Veilbrief aanmaken', icon: <Mail />, url: "/veilbrief" },
+	{ text: 'Catalogus', icon: <FormatListBulleted />, url: "/catalogus" },
 ];
 
 export function GrowerDashboard() {
@@ -42,15 +42,18 @@ export function GrowerDashboard() {
 				<Grid container spacing={2.5}>
 					{dashboardActions.map((action, index) => (
 						<Grid size={{ xs: 12, sm: 6 }} key={index}>
-							<Button
-								fullWidth
-								variant="outlined"
-								startIcon={action.icon}
-								sx={buttonSx}
-							>
-								{action.text}
-							</Button>
+							<a href={dashboardActions[index].url}>
+								<Button
+									fullWidth
+									variant="outlined"
+									startIcon={action.icon}
+									sx={buttonSx}
+								>
+									{action.text}
+								</Button>
+							</a>
 						</Grid>
+
 					))}
 				</Grid>
 			</Box>
