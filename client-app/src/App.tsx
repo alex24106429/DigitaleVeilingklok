@@ -24,6 +24,8 @@ const activeButtonSx = {
 	},
 };
 
+
+
 function AppBarContent() {
 	const { user, logout } = useAuth();
 
@@ -88,21 +90,42 @@ export default function App() {
 	return (
 		<AuthProvider>
 			<div>
-				<AppBarContent />
 
-				<Routes>
-					<Route path="/" element={<HomePage />} />
-					<Route path="/growerdashboard" element={<GrowerDashboard />} />
-					<Route path="/createorder" element={<OrderScherm />} />
-					<Route path="/catalogus" element={<Catalogus />} />
-					<Route path="/klokverkoop" element={<KlokVerkoop />} />
-					<Route path="/veilbrief" element={<Veilbrief />} />
-					<Route path="/verkooporders" element={<VerkoopOrders />} />
-					<Route path="/login" element={<LoginPage isRegisterPage={false} />} />
-					<Route path="/register" element={<LoginPage isRegisterPage={true} />} />
-					<Route path="/auctionclock" element={<AuctionClock />} />
-					<Route path="/info" element={<InfoPage />} />
-				</Routes>
+				<Box minHeight="100vh" display="flex" flexDirection="column">
+					<AppBarContent />
+					<Routes>
+						<Route path="/" element={<HomePage />} />
+						<Route path="/growerdashboard" element={<GrowerDashboard />} />
+						<Route path="/createorder" element={<OrderScherm />} />
+						<Route path="/catalogus" element={<Catalogus />} />
+						<Route path="/klokverkoop" element={<KlokVerkoop />} />
+						<Route path="/veilbrief" element={<Veilbrief />} />
+						<Route path="/verkooporders" element={<VerkoopOrders />} />
+						<Route path="/login" element={<LoginPage isRegisterPage={false} />} />
+						<Route path="/register" element={<LoginPage isRegisterPage={true} />} />
+						<Route path="/auctionclock" element={<AuctionClock />} />
+						<Route path="/info" element={<InfoPage />} />
+					</Routes>
+
+					<div style={{ marginTop: 'auto' }}>
+						<Box textAlign="center" padding="20px" bgcolor="primary.100" color="Black">
+							&copy; {new Date().getFullYear()} PetalBid. Alle rechten voorbehouden.
+							<Button color="inherit" component={NavLink} to="/privacy" sx={activeButtonSx}>
+								Privacybeleid
+							</Button>
+							<Button color="inherit" component={NavLink} to="/terms" sx={activeButtonSx}>
+								Algemene voorwaarden
+							</Button>
+							<Button color="inherit" component={NavLink} to="/contact" sx={activeButtonSx}>
+								Contact
+							</Button>
+							<Button color="inherit" component={NavLink} to="/info" sx={activeButtonSx}>
+								Informatie
+							</Button>
+						</Box>
+					</div>
+				</Box>
+
 			</div>
 		</AuthProvider>
 	);
