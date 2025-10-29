@@ -1,17 +1,35 @@
 import Box from '@mui/material/Box';
 import { Typography } from '@mui/material';
-import TabelElement from '../components/TabelElement';
-import { createData } from '../components/TabelElement';
+import TabelElement, { HeadCell } from '../components/TableComponent';
+
+
 export default function OrderScherm() {
+	interface BloemData {
+		id: number;
+		name: string;
+		prijs: number;
+		fusten: number;
+		aantalf: number;
+		datum: number;
+	}
 
 
-	const rows = [
-		createData(1, 'Theehybriden', 5, 5, 5, 5)
-	]
+	const HeadCells: HeadCell<BloemData>[] = [
+		{ id: 'name', numeric: false, disablePadding: true, label: 'Soort bloem' },
+		{ id: 'prijs', numeric: true, label: 'Prijs (in Euro)' },
+		{ id: 'fusten', numeric: true, label: 'Fusten (aantal)' },
+		{ id: 'aantalf', numeric: true, label: 'Fusten geselecteerd' },
+		{ id: 'datum', numeric: true, label: 'Datum' },
+	];
+
+
+	const Rows: BloemData[] = [
+		{ id: 1, name: 'Theehybriden', prijs: 1.5, fusten: 100, aantalf: 70, datum: 30 },
+		{ id: 2, name: 'Floribunda', prijs: 1.2, fusten: 100, aantalf: 67, datum: 30 },
+	];
 	return (
 		<div>
 			<Box>
-
 				<Typography
 					variant="h3"
 					component="h1"
@@ -20,14 +38,25 @@ export default function OrderScherm() {
 				>
 					Maak een order aan
 				</Typography>
-				<TabelElement rows={rows}>
-					
+				<TabelElement
+					rows={Rows}
+					headCells={HeadCells}
+					idKey="id"
+					tableName="Order Toevoegen"
+				>
 				</TabelElement>
-
 			</Box>
-
 		</div>
 	)
 
 
+
+
 }
+
+
+
+
+
+
+
