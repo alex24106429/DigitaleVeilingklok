@@ -80,7 +80,7 @@ function AppBarContent() {
 	);
 }
 
-function App() {
+export default function App() {
 	return (
 		<AuthProvider>
 			<div>
@@ -103,4 +103,3 @@ function App() {
 	);
 }
 
-export default App;

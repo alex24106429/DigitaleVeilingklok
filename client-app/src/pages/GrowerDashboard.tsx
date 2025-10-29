@@ -27,7 +27,7 @@ const dashboardActions = [
 	{ text: 'Catalogus', icon: <FormatListBulleted />, url: "/catalogus" },
 ];
 
-export function GrowerDashboard() {
+export default function GrowerDashboard() {
 	return (
 		<div>
 			<Box maxWidth="sm" margin="auto" mt={5} p={3}>
@@ -61,4 +61,3 @@ export function GrowerDashboard() {
 	);
 }
 
-export default GrowerDashboard;

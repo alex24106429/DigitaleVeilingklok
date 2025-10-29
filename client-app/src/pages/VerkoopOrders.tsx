@@ -1,4 +1,4 @@
-export function VerkoopOrders() {
+export default function VerkoopOrders() {
 
     return (
         <div>
@@ -8,4 +8,3 @@ export function VerkoopOrders() {
 
 
 }
-export default VerkoopOrders

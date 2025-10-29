@@ -9,7 +9,7 @@ interface LoginPageProps {
 	isRegisterPage: boolean;
 }
 
-export function LoginPage({ isRegisterPage }: LoginPageProps) {
+export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 	const navigate = useNavigate();
 	const { login } = useAuth();
 	const [error, setError] = useState("");
@@ -196,4 +196,3 @@ export function LoginPage({ isRegisterPage }: LoginPageProps) {
 	);
 }
 
-export default LoginPage;

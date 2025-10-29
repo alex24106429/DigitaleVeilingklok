@@ -2,7 +2,7 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import { Typography } from '@mui/material';
 
-export function HomePage() {
+export default function HomePage() {
 	return (
 		<div>
 			<Box bgcolor={"primary.100"} width="100vw" padding={"50px"}>
@@ -25,5 +25,3 @@ export function HomePage() {
 		</div>
 	);
 }
-
-export default HomePage;

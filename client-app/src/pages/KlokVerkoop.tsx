@@ -1,4 +1,4 @@
-export function KlokVerkoop() {
+export default function KlokVerkoop() {
 
     return (
         <div>
@@ -8,4 +8,3 @@ export function KlokVerkoop() {
 
 
 }
-export default KlokVerkoop

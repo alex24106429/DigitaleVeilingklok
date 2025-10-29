@@ -1,4 +1,4 @@
-export function Catalogus() {
+export default function Catalogus() {
 
     return (
         <div>
@@ -8,4 +8,3 @@ export function Catalogus() {
 
 
 }
-export default Catalogus

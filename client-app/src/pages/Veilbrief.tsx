@@ -1,4 +1,4 @@
-export function Veilbrief() {
+export default function Veilbrief() {
 
     return (
         <div>
@@ -8,4 +8,3 @@ export function Veilbrief() {
 
 
 }
-export default Veilbrief
