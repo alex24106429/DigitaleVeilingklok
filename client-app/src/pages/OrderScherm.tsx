@@ -1,10 +1,12 @@
 import Box from '@mui/material/Box';
 import {Typography } from '@mui/material';
+import TabelElement  from '../components/TabelElement';
 export default function OrderScherm() {
 
 	return (
 		<div>
 			<Box>
+			
 				<Typography
 					variant="h3"
 					component="h1"
@@ -13,7 +15,9 @@ export default function OrderScherm() {
 				>
 					Maak een order aan
 				</Typography>
+				<TabelElement>
 
+				</TabelElement>
 			</Box>
 
 		</div>
