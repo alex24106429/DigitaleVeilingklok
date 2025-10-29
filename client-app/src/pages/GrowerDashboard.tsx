@@ -1,6 +1,7 @@
 import Box from '@mui/material/Box';
 import { Button, Typography, Grid } from '@mui/material';
 import { Add, FormatListBulleted, Mail, Schedule, Visibility } from '@mui/icons-material';
+import { NavLink } from 'react-router-dom';
 
 const primaryColor = '#5A3973';
 
@@ -42,16 +43,16 @@ export default function GrowerDashboard() {
 				<Grid container spacing={2.5}>
 					{dashboardActions.map((action, index) => (
 						<Grid size={{ xs: 12, sm: 6 }} key={index}>
-							<a href={dashboardActions[index].url}>
-								<Button
-									fullWidth
-									variant="outlined"
-									startIcon={action.icon}
-									sx={buttonSx}
-								>
-									{action.text}
-								</Button>
-							</a>
+							<Button
+								component={NavLink}
+								to={dashboardActions[index].url}
+								fullWidth
+								variant="outlined"
+								startIcon={action.icon}
+								sx={buttonSx}
+							>
+								{action.text}
+							</Button>
 						</Grid>
 
 					))}

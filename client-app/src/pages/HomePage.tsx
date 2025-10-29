@@ -2,6 +2,7 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import { Typography } from '@mui/material';
 import { useAuth } from '../contexts/AuthContext';
+import { NavLink } from 'react-router-dom';
 
 export default function HomePage() {
 	const { user } = useAuth();
@@ -15,17 +16,13 @@ export default function HomePage() {
 					Handel al je commerciële processen eenvoudig af op één plek. PetalBid, het wereldwijde platform voor de sierteeltsector!
 				</Typography>
 				{!user && (
-					<a href="/login" style={{ textDecoration: 'none' }}>
-						<Button variant="contained" color="primary" sx={{ mr: 1 }}>
-							Inloggen
-						</Button>
-					</a>
-				)}
-				<a href='/info' style={{ textDecoration: 'none' }}>
-					<Button variant="outlined" color="secondary">
-						Meer info
+					<Button component={NavLink} to="/login" variant="contained" color="primary" sx={{ mr: 1 }}>
+						Inloggen
 					</Button>
-				</a>
+				)}
+				<Button component={NavLink} to="/info" variant="outlined" color="secondary">
+					Meer info
+				</Button>
 			</Box>
 		</div>
 	);

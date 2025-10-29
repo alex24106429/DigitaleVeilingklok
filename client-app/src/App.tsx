@@ -40,9 +40,9 @@ function AppBarContent() {
 			<Toolbar>
 
 				<Box sx={{ flexGrow: 1 }} display={"flex"} alignItems={"center"}>
-					<a href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
+					<NavLink to="/">
 						<img src="logo-petalbid.svg" height={50} alt="PetalBid logo"></img>
-					</a>
+					</NavLink>
 				</Box>
 
 				<Button color="inherit" component={NavLink} to="/" end sx={activeButtonSx}>
