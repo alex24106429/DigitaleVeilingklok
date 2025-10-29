@@ -1,12 +1,17 @@
 import Box from '@mui/material/Box';
-import {Typography } from '@mui/material';
-import TabelElement  from '../components/TabelElement';
+import { Typography } from '@mui/material';
+import TabelElement from '../components/TabelElement';
+import { createData } from '../components/TabelElement';
 export default function OrderScherm() {
 
+
+	const rows = [
+		createData(1, 'Theehybriden', 5, 5, 5, 5)
+	]
 	return (
 		<div>
 			<Box>
-			
+
 				<Typography
 					variant="h3"
 					component="h1"
@@ -15,9 +20,10 @@ export default function OrderScherm() {
 				>
 					Maak een order aan
 				</Typography>
-				<TabelElement>
-
+				<TabelElement rows={rows}>
+					
 				</TabelElement>
+
 			</Box>
 
 		</div>

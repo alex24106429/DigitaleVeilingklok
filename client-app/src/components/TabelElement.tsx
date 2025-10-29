@@ -31,7 +31,7 @@ interface Data {
 	protein: number;
 }
 
-function createData(
+export function createData(
 	id: number,
 	name: string,
 	calories: number,
@@ -238,8 +238,11 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
 // 	createData(12, 'Nougat', 360, 19.0, 9, 37.0),
 // 	createData(13, 'Oreo', 437, 18.0, 63, 4.0),
 // ];
+interface TabelElementProps {
+	rows: Data[];
+}
 
-export default function TabelElement(rows: Data[]) {
+export default function TabelElement({rows}: TabelElementProps) {
 	const [order, setOrder] = React.useState<Order>('asc');
 	const [orderBy, setOrderBy] = React.useState<keyof Data>('calories');
 	const [selected, setSelected] = React.useState<readonly number[]>([]);
