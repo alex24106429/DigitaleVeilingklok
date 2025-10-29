@@ -1,8 +1,10 @@
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import { Typography } from '@mui/material';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function HomePage() {
+	const { user } = useAuth();
 	return (
 		<div>
 			<Box bgcolor={"primary.100"} width="100vw" padding={"50px"}>
@@ -12,15 +14,18 @@ export default function HomePage() {
 				<Typography mb="20px">
 					Handel al je commerciële processen eenvoudig af op één plek. PetalBid, het wereldwijde platform voor de sierteeltsector!
 				</Typography>
-
-				<Button variant="contained" color="primary" sx={{ mr: 1 }}>
-					Inloggen
-				</Button>
-
-				<Button variant="outlined" color="secondary">
-					Meer info
-				</Button>
-
+				{!user && (
+					<a href="/login" style={{ textDecoration: 'none' }}>
+						<Button variant="contained" color="primary" sx={{ mr: 1 }}>
+							Inloggen
+						</Button>
+					</a>
+				)}
+				<a href='/info' style={{ textDecoration: 'none' }}>
+					<Button variant="outlined" color="secondary">
+						Meer info
+					</Button>
+				</a>
 			</Box>
 		</div>
 	);
