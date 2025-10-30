@@ -29,7 +29,25 @@ function AppBarContent() {
 
 				<Box sx={{ flexGrow: 1 }} display={"flex"} alignItems={"center"}>
 					<NavLink to="/">
-						<img src="logo-petalbid.svg" height={50} alt="PetalBid logo"></img>
+						<Box
+							component="img"
+							src="logo-petalbid.svg"
+							alt="PetalBid logo"
+							sx={{
+								height: 50,
+								display: { xs: 'none', md: 'block' },
+							}}
+						/>
+
+						<Box
+							component="img"
+							src="logo-petalbid-small.svg"
+							alt="PetalBid logo"
+							sx={{
+								height: 50,
+								display: { xs: 'block', md: 'none' },
+							}}
+						/>
 					</NavLink>
 				</Box>
 
