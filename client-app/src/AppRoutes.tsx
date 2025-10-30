@@ -9,6 +9,7 @@ import LoginPage from "./pages/LoginPage";
 import OrderScherm from "./pages/OrderScherm";
 import Veilbrief from "./pages/Veilbrief";
 import VerkoopOrders from "./pages/VerkoopOrders";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 export default function AppRoutes() {
 	return <Routes>
@@ -23,6 +24,7 @@ export default function AppRoutes() {
 		<Route path="/register" element={<LoginPage isRegisterPage={true} />} />
 		<Route path="/auctionclock" element={<AuctionClock />} />
 		<Route path="/info" element={<InfoPage />} />
+		<Route path="/privacy" element={<PrivacyPolicy />} />
 	</Routes>
 }
 
