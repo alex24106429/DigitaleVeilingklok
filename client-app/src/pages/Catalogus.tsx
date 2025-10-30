@@ -1,10 +1,7 @@
 export default function Catalogus() {
+	return (
+		<div>
 
-    return (
-        <div>
-
-        </div>
-    )
-
-
+		</div>
+	)
 }

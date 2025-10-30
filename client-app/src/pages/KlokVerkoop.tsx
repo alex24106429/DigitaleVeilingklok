@@ -1,10 +1,7 @@
 export default function KlokVerkoop() {
+	return (
+		<div>
 
-    return (
-        <div>
-
-        </div>
-    )
-
-
+		</div>
+	)
 }

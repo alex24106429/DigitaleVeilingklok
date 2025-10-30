@@ -14,8 +14,6 @@ const activeButtonSx = {
 	},
 };
 
-
-
 function AppBarContent() {
 	const { user, logout } = useAuth();
 

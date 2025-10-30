@@ -2,7 +2,6 @@ import Box from '@mui/material/Box';
 import { Typography } from '@mui/material';
 import TabelElement, { HeadCell } from '../components/TableComponent';
 
-
 export default function OrderScherm() {
 	interface BloemData {
 		id: number;
@@ -13,7 +12,6 @@ export default function OrderScherm() {
 		datum: number;
 	}
 
-
 	const HeadCells: HeadCell<BloemData>[] = [
 		{ id: 'name', numeric: false, disablePadding: true, label: 'Soort bloem' },
 		{ id: 'prijs', numeric: true, label: 'Prijs (in Euro)' },
@@ -21,7 +19,6 @@ export default function OrderScherm() {
 		{ id: 'aantalf', numeric: true, label: 'Fusten geselecteerd' },
 		{ id: 'datum', numeric: true, label: 'Datum' },
 	];
-
 
 	const Rows: BloemData[] = [
 		{ id: 1, name: 'Theehybriden', prijs: 1.5, fusten: 100, aantalf: 70, datum: 30 },
@@ -48,15 +45,4 @@ export default function OrderScherm() {
 			</Box>
 		</div>
 	)
-
-
-
-
 }
-
-
-
-
-
-
-

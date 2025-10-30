@@ -1,10 +1,7 @@
 export default function Veilbrief() {
+	return (
+		<div>
 
-    return (
-        <div>
-
-        </div>
-    )
-
-
+		</div>
+	)
 }

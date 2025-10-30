@@ -1,10 +1,7 @@
 export default function VerkoopOrders() {
+	return (
+		<div>
 
-    return (
-        <div>
-
-        </div>
-    )
-
-
+		</div>
+	)
 }
