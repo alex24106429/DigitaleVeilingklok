@@ -2,7 +2,7 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "React App",
+			"name": "Frontend",
 			"type": "node-terminal",
 			"request": "launch",
 			"command": "npm run dev",
@@ -13,7 +13,7 @@
 			}
 		},
 		{
-			"name": "Backend API",
+			"name": "Backend",
 			"type": "node-terminal",
 			"request": "launch",
 			"command": "dotnet run",
@@ -28,8 +28,21 @@
 			"name": "Update Database",
 			"type": "node-terminal",
 			"request": "launch",
-			"command": "dotnet ef database update",
+			"command": "dotnet ef database update && exit",
 			"cwd": "${workspaceFolder}/PetalBid.Api"
+		},
+		{
+			"name": "npm install dependencies",
+			"type": "node-terminal",
+			"request": "launch",
+			"command": "npm i && exit",
+			"cwd": "${workspaceFolder}/client-app"
+		}
+	],
+	"compounds": [
+		{
+			"name": "Frontend+Backend",
+			"configurations": ["Frontend", "Backend"]
 		}
 	]
 }

@@ -27,8 +27,8 @@ public class Program
 			options.AddPolicy("AllowFrontend", policy =>
 			{
 				policy.WithOrigins("http://localhost:5173") // Vite default port
-					  .AllowAnyHeader()
-					  .AllowAnyMethod();
+					.AllowAnyHeader()
+					.AllowAnyMethod();
 			});
 		});
 
