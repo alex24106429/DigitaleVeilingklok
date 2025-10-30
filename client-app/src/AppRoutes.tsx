@@ -10,6 +10,7 @@ import OrderScherm from "./pages/OrderScherm";
 import Veilbrief from "./pages/Veilbrief";
 import VerkoopOrders from "./pages/VerkoopOrders";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 
 export default function AppRoutes() {
 	return <Routes>
@@ -25,6 +26,7 @@ export default function AppRoutes() {
 		<Route path="/auctionclock" element={<AuctionClock />} />
 		<Route path="/info" element={<InfoPage />} />
 		<Route path="/privacy" element={<PrivacyPolicy />} />
+		<Route path="/terms" element={<TermsOfService />} />
 	</Routes>
 }
 
