@@ -6,7 +6,7 @@ interface DocumentRendererProps {
 }
 
 export default function DocumentRenderer({ content }: DocumentRendererProps) {
-	return <Box maxWidth="sm" margin="0 auto" overflow="scroll">
+	return <Box maxWidth="sm" margin="0 auto">
 		<ReactMarkdown>
 			{content}
 		</ReactMarkdown>
