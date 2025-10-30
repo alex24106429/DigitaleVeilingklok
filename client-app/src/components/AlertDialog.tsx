@@ -6,7 +6,11 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 
-export default function AlertDialog(title: string, dialogText: string) {
+interface AlertDialogProps {
+	title: string,
+	dialogText: string,
+}
+export default function AlertDialog({ title, dialogText }: AlertDialogProps) {
 	const [open, setOpen] = React.useState(true);
 
 	const handleClose = () => {
@@ -20,6 +24,8 @@ export default function AlertDialog(title: string, dialogText: string) {
 				onClose={handleClose}
 				aria-labelledby="alert-dialog-title"
 				aria-describedby="alert-dialog-description"
+				maxWidth="sm"
+				fullWidth
 			>
 				<DialogTitle id="alert-dialog-title">
 					{title}
@@ -35,6 +41,6 @@ export default function AlertDialog(title: string, dialogText: string) {
 					</Button>
 				</DialogActions>
 			</Dialog>
-		</React.Fragment>
+		</React.Fragment >
 	);
 }
