@@ -1,4 +1,3 @@
-import * as React from 'react';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -7,40 +6,31 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 
 interface AlertDialogProps {
-	title: string,
-	dialogText: string,
+	open: boolean;
+	title: string;
+	message: string;
+	onClose: () => void;
 }
-export default function AlertDialog({ title, dialogText }: AlertDialogProps) {
-	const [open, setOpen] = React.useState(true);
 
-	const handleClose = () => {
-		setOpen(false);
-	};
-
+export default function AlertDialog({ open, title, message, onClose }: AlertDialogProps) {
 	return (
-		<React.Fragment>
-			<Dialog
-				open={open}
-				onClose={handleClose}
-				aria-labelledby="alert-dialog-title"
-				aria-describedby="alert-dialog-description"
-				maxWidth="sm"
-				fullWidth
-			>
-				<DialogTitle id="alert-dialog-title">
-					{title}
-				</DialogTitle>
-				<DialogContent>
-					<DialogContentText id="alert-dialog-description">
-						{dialogText}
-					</DialogContentText>
-				</DialogContent>
-				<DialogActions>
-					<Button onClick={handleClose} autoFocus>
-						Ok
-					</Button>
-				</DialogActions>
-			</Dialog>
-		</React.Fragment >
+		<Dialog
+			open={open}
+			onClose={onClose}
+			aria-labelledby="alert-dialog-title"
+			aria-describedby="alert-dialog-description"
+		>
+			<DialogTitle id="alert-dialog-title">{title}</DialogTitle>
+			<DialogContent>
+				<DialogContentText id="alert-dialog-description">
+					{message}
+				</DialogContentText>
+			</DialogContent>
+			<DialogActions>
+				<Button variant="contained" onClick={onClose} autoFocus>
+					Ok
+				</Button>
+			</DialogActions>
+		</Dialog>
 	);
 }

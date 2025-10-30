@@ -4,15 +4,16 @@ import { useNavigate } from "react-router-dom";
 import { authService } from "../api/services/authService";
 import { UserRole } from "../types/user";
 import { useAuth } from "../contexts/AuthContext";
+import { useAlert } from '../components/AlertProvider';
 
 interface LoginPageProps {
 	isRegisterPage: boolean;
 }
 
 export default function LoginPage({ isRegisterPage }: LoginPageProps) {
+	const { showAlert } = useAlert();
 	const navigate = useNavigate();
 	const { login } = useAuth();
-	const [error, setError] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
 	const [name, setName] = useState("");
 	const [email, setEmail] = useState("");
@@ -22,16 +23,15 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 	const [userType, setUserType] = useState("grower");
 
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-		setError(""); // Reset de foutmelding bij elke nieuwe poging
 		event.preventDefault(); // Voorkomt dat de pagina herlaadt
 
 		if (isRegisterPage && password.length < 6) {
-			setError("Wachtwoord moet minimaal 6 karakters zijn!");
+			showAlert({ title: "Ongeldige informatie", message: "Wachtwoord moet minimaal 6 karakters zijn!" });
 			return;
 		}
 
 		if (isRegisterPage && password !== confirmPassword) {
-			setError("Wachtwoorden komen niet overeen!");
+			showAlert({ title: "Ongeldige informatie", message: "Wachtwoorden komen niet overeen!" });
 			return;
 		}
 
@@ -52,7 +52,7 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 				});
 
 				if (response.error) {
-					setError(response.error);
+					showAlert({ title: "Serverfout", message: response.error });
 				} else {
 					// Registration successful, navigate to login
 					navigate("/login");
@@ -65,11 +65,11 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 					// Login successful - navigate to home
 					navigate("/");
 				} else {
-					setError("Ongeldige e-mail of wachtwoord");
+					showAlert({ title: "Fout", message: "Ongeldige e-mail of wachtwoord" });
 				}
 			}
 		} catch (err) {
-			setError("Er is een onverwachte fout opgetreden. Probeer het opnieuw.");
+			showAlert({ title: "Fout", message: "Er is een onverwachte fout opgetreden. Probeer het opnieuw." });
 		} finally {
 			setIsLoading(false);
 		}
@@ -170,12 +170,6 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 						<br />
 
 					</>
-				)}
-
-				{error && (
-					<Typography color="error" align="center" style={{ marginTop: '10px' }}>
-						{error}
-					</Typography>
 				)}
 
 				<Box display="flex" justifyContent="center" mt={2}>

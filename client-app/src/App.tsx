@@ -2,6 +2,14 @@ import { NavLink } from 'react-router-dom';
 import { AppBar, Toolbar, Button, Box } from '@mui/material';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import AppRoutes from './AppRoutes';
+import { AlertProvider } from './components/AlertProvider';
+import PersonIcon from '@mui/icons-material/Person';
+import LogoutIcon from '@mui/icons-material/Logout';
+import AvTimerIcon from '@mui/icons-material/AvTimer';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import HomeIcon from '@mui/icons-material/Home';
+import LoginIcon from '@mui/icons-material/Login';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 
 const activeButtonSx = {
 	transition: 'none',
@@ -52,16 +60,19 @@ function AppBarContent() {
 				</Box>
 
 				<Button color="inherit" component={NavLink} to="/" end sx={activeButtonSx}>
+					<HomeIcon sx={{ mr: 1 }}></HomeIcon>
 					Home
 				</Button>
 
 				{user && (
 					<>
 						<Button color="inherit" component={NavLink} to="/growerdashboard" end sx={activeButtonSx}>
+							<DashboardIcon sx={{ mr: 1 }}></DashboardIcon>
 							Leverancier dashboard
 						</Button>
 
 						<Button color="inherit" component={NavLink} to="/auctionclock" end sx={activeButtonSx}>
+							<AvTimerIcon sx={{ mr: 1 }}></AvTimerIcon>
 							Veilingklok
 						</Button>
 					</>
@@ -70,19 +81,23 @@ function AppBarContent() {
 				{!user ? (
 					<>
 						<Button color="inherit" component={NavLink} to="/login" sx={activeButtonSx}>
+							<LoginIcon sx={{ mr: 1 }}></LoginIcon>
 							Inloggen
 						</Button>
 
 						<Button color="inherit" component={NavLink} to="/register" sx={activeButtonSx}>
+							<PersonAddIcon sx={{ mr: 1 }}></PersonAddIcon>
 							Aanmelden
 						</Button>
 					</>
 				) : (
 					<>
-						<Button color="inherit" sx={{ ml: 2 }}>
+						<Button color="inherit">
+							<PersonIcon sx={{ mr: 1 }}></PersonIcon>
 							{user.fullName}
 						</Button>
 						<Button color="inherit" onClick={logout} sx={activeButtonSx}>
+							<LogoutIcon sx={{ mr: 1 }}></LogoutIcon>
 							Uitloggen
 						</Button>
 					</>
@@ -95,8 +110,7 @@ function AppBarContent() {
 export default function App() {
 	return (
 		<AuthProvider>
-			<div>
-
+			<AlertProvider>
 				<Box minHeight="100vh" display="flex" flexDirection="column">
 					<AppBarContent />
 					<AppRoutes></AppRoutes>
@@ -119,8 +133,7 @@ export default function App() {
 						</Box>
 					</div>
 				</Box>
-
-			</div>
+			</AlertProvider>
 		</AuthProvider>
 	);
 }
