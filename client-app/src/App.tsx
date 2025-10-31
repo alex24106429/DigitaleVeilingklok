@@ -39,7 +39,7 @@ function AppBarContent() {
 					<NavLink to="/">
 						<Box
 							component="img"
-							src="logo-petalbid.svg"
+							src="images/logo-petalbid.svg"
 							alt="PetalBid logo"
 							sx={{
 								height: 50,
@@ -49,7 +49,7 @@ function AppBarContent() {
 
 						<Box
 							component="img"
-							src="logo-petalbid-small.svg"
+							src="images/logo-petalbid-small.svg"
 							alt="PetalBid logo"
 							sx={{
 								height: 50,

@@ -11,4 +11,14 @@ export default defineConfig({
 		css: true,
 		ui: true,
 	},
+	build: {
+		rollupOptions: {
+			output: {
+				manualChunks: {
+					vendor: ['react', 'react-dom'],
+					mui: ['@mui/material', '@mui/icons-material'],
+				},
+			},
+		},
+	},
 })

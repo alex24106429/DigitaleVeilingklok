@@ -18,7 +18,7 @@
 		"typescript": "^4.9.5"
 	},
 	"scripts": {
-		"dev": "vite",
+		"dev": "vite --host",
 		"build": "tsc -b && vite build",
 		"preview": "vite preview",
 		"test": "vitest",

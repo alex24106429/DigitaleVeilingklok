@@ -1,15 +1,22 @@
 {
-	"short_name": "Digitale Veilingklok",
-	"name": "Digitale Veilingklok",
+	"short_name": "PetalBid",
+	"name": "PetalBid",
+	"description": "Het wereldwijde platform voor de sierteeltsector.",
 	"icons": [
 		{
 			"src": "favicon.ico",
-			"sizes": "64x64 32x32 24x24 16x16",
+			"sizes": "256x256",
 			"type": "image/x-icon"
+		},
+		{
+			"src": "/images/logo-petalbid-small.svg",
+			"sizes": "any",
+			"type": "image/svg+xml"
 		}
 	],
-	"start_url": ".",
+	"id": "/",
+	"start_url": "/",
 	"display": "standalone",
-	"theme_color": "#000000",
+	"theme_color": "#6bc90c",
 	"background_color": "#ffffff"
 }
