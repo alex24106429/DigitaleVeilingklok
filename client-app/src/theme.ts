@@ -1,4 +1,4 @@
-import { createTheme } from '@mui/material/styles';
+import { createTheme, Shadows } from '@mui/material/styles';
 
 const headerFont = "Lexend";
 
@@ -61,7 +61,7 @@ const theme = createTheme({
 	},
 	shape: {
 	},
-	shadows: Array(25).fill('none') as any,
+	shadows: Array(25).fill('none') as Shadows,
 	components: {
 		MuiButton: {
 			defaultProps: {

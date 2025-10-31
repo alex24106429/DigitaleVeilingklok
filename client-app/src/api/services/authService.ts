@@ -20,7 +20,7 @@ export const authService = {
 			}
 
 			return { data };
-		} catch (error) {
+		} catch {
 			return { error: 'Network error. Please try again.' };
 		}
 	},
@@ -42,7 +42,7 @@ export const authService = {
 			}
 
 			return { data };
-		} catch (error) {
+		} catch {
 			return { error: 'Network error. Please try again.' };
 		}
 	},

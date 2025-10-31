@@ -24,16 +24,18 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-	const [user, setUser] = useState<User | null>(null);
+	const [user, setUser] = useState<User | null>(() => {
+		const storedUser = localStorage.getItem('user');
+		if (storedUser) {
+			return JSON.parse(storedUser);
+		}
+		return null;
+	});
+
 	const [isLoading, setIsLoading] = useState(true);
 
 	useEffect(() => {
-		// Check if user is logged in on app start
-		// In a real app, you would check for a valid token
-		const storedUser = localStorage.getItem('user');
-		if (storedUser) {
-			setUser(JSON.parse(storedUser));
-		}
+		// eslint-disable-next-line react-hooks/set-state-in-effect
 		setIsLoading(false);
 	}, []);
 

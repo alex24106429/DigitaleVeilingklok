@@ -68,7 +68,7 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 					showAlert({ title: "Fout", message: "Ongeldige e-mail of wachtwoord" });
 				}
 			}
-		} catch (err) {
+		} catch {
 			showAlert({ title: "Fout", message: "Er is een onverwachte fout opgetreden. Probeer het opnieuw." });
 		} finally {
 			setIsLoading(false);

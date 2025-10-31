@@ -17,7 +17,7 @@ export const PageTitleUpdater = ({ titleMap }: PageTitleUpdaterProps) => {
 			return;
 		}
 		document.title = siteName;
-	}, [location.pathname]);
+	}, [location.pathname, titleMap]);
 
 	return null;
 }

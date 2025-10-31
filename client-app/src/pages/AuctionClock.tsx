@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-	Toolbar,
 	Typography,
 	Container,
 	Box,
@@ -18,9 +17,7 @@ import {
 	DialogTitle,
 	DialogContent,
 	DialogActions,
-	FormHelperText,
 	CircularProgress,
-	CssBaseline,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -134,8 +131,10 @@ export default function AuctionClock() {
 
 	// Validate buy quantity
 	useEffect(() => {
-		setErrors((prev) => {
-			const e: typeof prev = {};
+		setErrors(() => {
+			const e: {
+				qty?: string | undefined;
+			} = {};
 			if (buyQty <= 0) {
 				e.qty = 'Aantal moet groter dan 0 zijn';
 			} else if (buyQty > remainingQty) {

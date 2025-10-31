@@ -164,7 +164,7 @@ interface DynamicTableProps<T> {
 	tableName?: string;
 }
 
-export default function TableComponent<T extends { [key: string]: any }>({
+export default function TableComponent<T extends { [key: string]: never }>({
 	rows,
 	headCells,
 	idKey,

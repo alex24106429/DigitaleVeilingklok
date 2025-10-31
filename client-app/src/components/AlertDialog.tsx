@@ -27,6 +27,7 @@ export default function AlertDialog({ open, title, message, onClose }: AlertDial
 				</DialogContentText>
 			</DialogContent>
 			<DialogActions>
+				{/* eslint-disable-next-line jsx-a11y/no-autofocus */}
 				<Button variant="contained" onClick={onClose} autoFocus>
 					Ok
 				</Button>
