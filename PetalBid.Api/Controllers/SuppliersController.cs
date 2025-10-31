@@ -43,4 +43,15 @@ public class SuppliersController(AppDbContext db) : ApiControllerBase(db)
 		await Db.SaveChangesAsync();
 		return Ok(existing);
 	}
+
+	[HttpDelete("{id:int}")]
+	public async Task<ActionResult> Delete(int id)
+	{
+		var supplier = await Db.Suppliers.FindAsync(id);
+		if (supplier is null) return NotFound();
+
+		Db.Suppliers.Remove(supplier);
+		await Db.SaveChangesAsync();
+		return NoContent();
+	}
 }

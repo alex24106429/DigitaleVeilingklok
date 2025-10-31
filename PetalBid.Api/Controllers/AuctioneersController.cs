@@ -42,4 +42,15 @@ public class AuctioneersController(AppDbContext db) : ApiControllerBase(db)
 		await Db.SaveChangesAsync();
 		return Ok(existing);
 	}
+
+	[HttpDelete("{id:int}")]
+	public async Task<ActionResult> Delete(int id)
+	{
+		var auctioneer = await Db.Auctioneers.FindAsync(id);
+		if (auctioneer is null) return NotFound();
+
+		Db.Auctioneers.Remove(auctioneer);
+		await Db.SaveChangesAsync();
+		return NoContent();
+	}
 }

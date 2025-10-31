@@ -30,4 +30,15 @@ public class SalesController(AppDbContext db) : ApiControllerBase(db)
 		await Db.SaveChangesAsync();
 		return CreatedAtAction(nameof(GetById), new { id = sale.Id }, sale);
 	}
+
+	[HttpDelete("{id:int}")]
+	public async Task<ActionResult> Delete(int id)
+	{
+		var sale = await Db.Sales.FindAsync(id);
+		if (sale is null) return NotFound();
+
+		Db.Sales.Remove(sale);
+		await Db.SaveChangesAsync();
+		return NoContent();
+	}
 }

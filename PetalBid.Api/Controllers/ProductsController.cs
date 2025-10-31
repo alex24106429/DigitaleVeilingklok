@@ -49,4 +49,15 @@ public class ProductsController(AppDbContext db) : ApiControllerBase(db)
 		await Db.SaveChangesAsync();
 		return Ok(existing);
 	}
+
+	[HttpDelete("{id:int}")]
+	public async Task<ActionResult> Delete(int id)
+	{
+		var product = await Db.Products.FindAsync(id);
+		if (product is null) return NotFound();
+
+		Db.Products.Remove(product);
+		await Db.SaveChangesAsync();
+		return NoContent();
+	}
 }

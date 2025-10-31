@@ -112,4 +112,15 @@ public class UsersController(AppDbContext db) : ApiControllerBase(db)
 		await Db.SaveChangesAsync();
 		return Ok(existing);
 	}
+
+	[HttpDelete("{id:int}")]
+	public async Task<ActionResult> Delete(int id)
+	{
+		var user = await Db.Users.FindAsync(id);
+		if (user is null) return NotFound();
+
+		Db.Users.Remove(user);
+		await Db.SaveChangesAsync();
+		return NoContent();
+	}
 }
