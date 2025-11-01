@@ -1,10 +1,21 @@
-import { Box, Button, FormControl, FormControlLabel, FormLabel, Link, Radio, RadioGroup, TextField, Typography, CircularProgress } from "@mui/material";
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import FormControl from '@mui/material/FormControl';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import FormLabel from '@mui/material/FormLabel';
+import Link from '@mui/material/Link';
+import Radio from '@mui/material/Radio';
+import RadioGroup from '@mui/material/RadioGroup';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
+import CircularProgress from '@mui/material/CircularProgress';
+
 import { useState, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { authService } from "../api/services/authService";
-import { UserRole } from "../types/user";
-import { useAuth } from "../contexts/AuthContext";
-import { useAlert } from '../components/AlertProvider';
+import { authService } from "../../api/services/authService";
+import { UserRole } from "../../types/user";
+import { useAuth } from "../../contexts/AuthContext";
+import { useAlert } from '../../components/AlertProvider';
 
 interface LoginPageProps {
 	isRegisterPage: boolean;

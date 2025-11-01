@@ -1,7 +1,7 @@
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import { Typography } from '@mui/material';
-import { useAuth } from '../contexts/AuthContext';
+import Typography from '@mui/material/Typography';
+import { useAuth } from '../../contexts/AuthContext';
 import { NavLink } from 'react-router-dom';
 
 export default function HomePage() {

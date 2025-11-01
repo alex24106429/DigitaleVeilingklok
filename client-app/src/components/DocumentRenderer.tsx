@@ -1,5 +1,5 @@
 import ReactMarkdown from 'react-markdown';
-import { Box } from '@mui/material';
+import Box from '@mui/material/Box';
 
 interface DocumentRendererProps {
 	content: string;
