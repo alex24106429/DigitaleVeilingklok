@@ -1,13 +1,17 @@
 import { Route, Routes } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { PageTitleUpdater } from "./util/PageTitleUpdater";
+import ErrorPage from "./components/ErrorPage";
+
+import ProtectedRoute from "./components/ProtectedRoute";
+import { UserRole } from "./types/user";
+
 import ManageAuction from "./pages/auctioneer/ManageAuction";
 import Account from "./pages/public/Account";
 import ProductManagement from "./pages/grower/ProductManagement";
 import Sales from "./pages/grower/Sales";
 import ManageUsers from "./pages/admin/ManageUsers";
 
-const PageNotFound = lazy(() => import("./pages/public/PageNotFound"));
 const AuctionClock = lazy(() => import("./pages/buyer/AuctionClock"));
 const Purchases = lazy(() => import("./pages/buyer/Purchases"));
 const AuctioneerDashboard = lazy(() => import("./pages/auctioneer/AuctioneerDashboard"));
@@ -21,13 +25,15 @@ const Contact = lazy(() => import("./pages/public/Contact"));
 const titleMap: { [key: string]: string } = {
 	// Public
 	"/": "Home",
-	"/account": "Account",
 	"/login": "Inloggen",
 	"/register": "Aanmelden",
 	"/info": "Info",
 	"/contact": "Contact",
 	"/privacy": "Privacybeleid",
 	"/terms": "Algemene voorwaarden",
+
+	// Alle ingelogde gebruikers
+	"/account": "Account",
 
 	// Buyer
 	"/buyer/auctionclock": "Veilingklok",
@@ -63,7 +69,6 @@ export default function AppRoutes() {
 			<Routes>
 				{/* Public */}
 				<Route path="/" element={<HomePage />} />
-				<Route path="/account" element={<Account />} />
 				<Route path="/login" element={<LoginPage isRegisterPage={false} />} />
 				<Route path="/register" element={<LoginPage isRegisterPage={true} />} />
 				<Route path="/info" element={<InfoPage />} />
@@ -71,23 +76,58 @@ export default function AppRoutes() {
 				<Route path="/privacy" element={<PrivacyPolicy />} />
 				<Route path="/terms" element={<TermsOfService />} />
 
-				{/* Buyer */}
-				<Route path="/buyer/auctionclock" element={<AuctionClock />} />
-				<Route path="/buyer/purchases" element={<Purchases />} />
+				{/* Elke ingelogde gebruiker */}
+				<Route path="/account" element={
+					<ProtectedRoute>
+						<Account />
+					</ProtectedRoute>
+				} />
 
-				{/* Grower */}
-				<Route path="/grower/products" element={<ProductManagement />} />
-				<Route path="/grower/sales" element={<Sales />} />
+				{/* Buyer */}
+				<Route path="/buyer/auctionclock" element={
+					<ProtectedRoute allowedRoles={[UserRole.Buyer]}>
+						<AuctionClock />
+					</ProtectedRoute>
+				} />
+				<Route path="/buyer/purchases" element={
+					<ProtectedRoute allowedRoles={[UserRole.Buyer]}>
+						<Purchases />
+					</ProtectedRoute>
+				} />
+
+				{/* Grower/Supplier */}
+				<Route path="/grower/products" element={
+					<ProtectedRoute allowedRoles={[UserRole.Supplier]}>
+						<ProductManagement />
+					</ProtectedRoute>
+				} />
+				<Route path="/grower/sales" element={
+					<ProtectedRoute allowedRoles={[UserRole.Supplier]}>
+						<Sales />
+					</ProtectedRoute>
+				} />
 
 				{/* Auctioneer */}
-				<Route path="/auctioneer/dashboard" element={<AuctioneerDashboard />} />
-				<Route path="/auctioneer/manageauction" element={<ManageAuction />} />
+				<Route path="/auctioneer/dashboard" element={
+					<ProtectedRoute allowedRoles={[UserRole.Auctioneer]}>
+						<AuctioneerDashboard />
+					</ProtectedRoute>
+				} />
+				<Route path="/auctioneer/manageauction" element={
+					<ProtectedRoute allowedRoles={[UserRole.Auctioneer]}>
+						<ManageAuction />
+					</ProtectedRoute>
+				} />
 
 				{/* Admin */}
-				<Route path="/admin/manageusers" element={<ManageUsers />} />
+				<Route path="/admin/manageusers" element={
+					<ProtectedRoute allowedRoles={[UserRole.Admin]}>
+						<ManageUsers />
+					</ProtectedRoute>
+				} />
 
 				{/* 404 - Pagina niet gevonden */}
-				<Route path="*" element={<PageNotFound />} />
+				<Route path="*" element={<ErrorPage statusCode={404}></ErrorPage>} />
 			</Routes>
 		</Suspense>
 	</>
