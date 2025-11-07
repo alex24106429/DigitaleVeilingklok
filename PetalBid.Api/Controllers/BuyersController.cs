@@ -23,14 +23,6 @@ public class BuyersController(AppDbContext db) : ApiControllerBase(db)
 		return buyer is null ? NotFound() : Ok(buyer);
 	}
 
-	[HttpPost]
-	public async Task<ActionResult<Buyer>> Create(Buyer buyer)
-	{
-		Db.Buyers.Add(buyer);
-		await Db.SaveChangesAsync();
-		return CreatedAtAction(nameof(GetById), new { id = buyer.Id }, buyer);
-	}
-
 	[HttpPut("{id:int}")]
 	public async Task<ActionResult<Buyer>> Update(int id, Buyer updated)
 	{
@@ -38,7 +30,8 @@ public class BuyersController(AppDbContext db) : ApiControllerBase(db)
 		if (existing is null) return NotFound();
 
 		existing.CompanyName = updated.CompanyName;
-		existing.UserId = updated.UserId;
+		existing.FullName = updated.FullName;
+		existing.Email = updated.Email;
 
 		await Db.SaveChangesAsync();
 		return Ok(existing);

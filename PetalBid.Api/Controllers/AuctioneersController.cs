@@ -37,7 +37,8 @@ public class AuctioneersController(AppDbContext db) : ApiControllerBase(db)
 		var existing = await Db.Auctioneers.FindAsync(id);
 		if (existing is null) return NotFound();
 
-		existing.UserId = updated.UserId;
+		existing.FullName = updated.FullName;
+		existing.Email = updated.Email;
 
 		await Db.SaveChangesAsync();
 		return Ok(existing);

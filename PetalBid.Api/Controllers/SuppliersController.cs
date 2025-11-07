@@ -38,7 +38,8 @@ public class SuppliersController(AppDbContext db) : ApiControllerBase(db)
 		if (existing is null) return NotFound();
 
 		existing.CompanyName = updated.CompanyName;
-		existing.UserId = updated.UserId;
+		existing.FullName = updated.FullName;
+		existing.Email = updated.Email;
 
 		await Db.SaveChangesAsync();
 		return Ok(existing);

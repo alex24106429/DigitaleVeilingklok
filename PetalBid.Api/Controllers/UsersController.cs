@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PetalBid.Api.Data;
 using PetalBid.Api.Domain.Entities;
+using PetalBid.Api.Domain.Enums;
 using PetalBid.Api.DTOs;
 using PetalBid.Api.Services;
 
@@ -19,18 +20,26 @@ public class UsersController(AppDbContext db) : ApiControllerBase(db)
 	}
 
 	[HttpGet("{id:int}")]
-	public async Task<ActionResult<User>> GetById(int id)
+	public async Task<ActionResult<UserResponseDto>> GetById(int id)
 	{
 		var user = await Db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id);
-		return user is null ? NotFound() : Ok(user);
-	}
+		if (user is null) return NotFound();
 
-	[HttpPost]
-	public async Task<ActionResult<User>> Create(User user)
-	{
-		Db.Users.Add(user);
-		await Db.SaveChangesAsync();
-		return CreatedAtAction(nameof(GetById), new { id = user.Id }, user);
+		UserRole role;
+		if (user is Buyer) role = UserRole.Buyer;
+		else if (user is Supplier) role = UserRole.Supplier;
+		else if (user is Auctioneer) role = UserRole.Auctioneer;
+		else if (user is Admin) role = UserRole.Admin;
+		else return StatusCode(500, "Unknown user type");
+
+		var response = new UserResponseDto
+		{
+			Id = user.Id,
+			FullName = user.FullName,
+			Email = user.Email,
+			Role = role
+		};
+		return Ok(response);
 	}
 
 	[HttpPost("register")]
@@ -46,14 +55,28 @@ public class UsersController(AppDbContext db) : ApiControllerBase(db)
 		// Hash the password
 		var passwordHash = PasswordService.HashPassword(registerDto.Password);
 
-		// Create new user
-		var user = new User
+		User user;
+		switch (registerDto.Role)
 		{
-			FullName = registerDto.FullName,
-			Email = registerDto.Email,
-			PasswordHash = passwordHash,
-			Role = registerDto.Role
-		};
+			case UserRole.Buyer:
+				user = new Buyer { CompanyName = "Default Company" };
+				break;
+			case UserRole.Supplier:
+				user = new Supplier { CompanyName = "Default Company" };
+				break;
+			case UserRole.Auctioneer:
+				user = new Auctioneer();
+				break;
+			case UserRole.Admin:
+				user = new Admin();
+				break;
+			default:
+				return BadRequest(new { message = "Invalid user role specified" });
+		}
+
+		user.FullName = registerDto.FullName;
+		user.Email = registerDto.Email;
+		user.PasswordHash = passwordHash;
 
 		Db.Users.Add(user);
 		await Db.SaveChangesAsync();
@@ -64,7 +87,7 @@ public class UsersController(AppDbContext db) : ApiControllerBase(db)
 			Id = user.Id,
 			FullName = user.FullName,
 			Email = user.Email,
-			Role = user.Role
+			Role = registerDto.Role
 		};
 
 		return CreatedAtAction(nameof(GetById), new { id = user.Id }, response);
@@ -85,32 +108,23 @@ public class UsersController(AppDbContext db) : ApiControllerBase(db)
 		{
 			return BadRequest(new { message = "Invalid email or password" });
 		}
+		
+		UserRole role;
+		if (user is Buyer) role = UserRole.Buyer;
+		else if (user is Supplier) role = UserRole.Supplier;
+		else if (user is Auctioneer) role = UserRole.Auctioneer;
+		else if (user is Admin) role = UserRole.Admin;
+		else return StatusCode(500, "Unknown user type during login");
 
-		// Return user response without password hash
 		var response = new UserResponseDto
 		{
 			Id = user.Id,
 			FullName = user.FullName,
 			Email = user.Email,
-			Role = user.Role
+			Role = role
 		};
 
 		return Ok(response);
-	}
-
-	[HttpPut("{id:int}")]
-	public async Task<ActionResult<User>> Update(int id, User updated)
-	{
-		var existing = await Db.Users.FindAsync(id);
-		if (existing is null) return NotFound();
-
-		existing.FullName = updated.FullName;
-		existing.Email = updated.Email;
-		existing.PasswordHash = updated.PasswordHash;
-		existing.Role = updated.Role;
-
-		await Db.SaveChangesAsync();
-		return Ok(existing);
 	}
 
 	[HttpDelete("{id:int}")]

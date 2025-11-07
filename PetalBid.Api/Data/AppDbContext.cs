@@ -9,6 +9,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 	public DbSet<Auctioneer> Auctioneers { get; set; } = null!;
 	public DbSet<Buyer> Buyers { get; set; } = null!;
 	public DbSet<Supplier> Suppliers { get; set; } = null!;
+	public DbSet<Admin> Admins { get; set; } = null!;
 	public DbSet<Auction> Auctions { get; set; } = null!;
 	public DbSet<Product> Products { get; set; } = null!;
 	public DbSet<Sale> Sales { get; set; } = null!;
@@ -18,16 +19,24 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 	{
 		base.OnModelCreating(model);
 
-		model.Entity<Sale>()
-			.HasOne(s => s.Auction)
-			.WithMany()
-			.HasForeignKey(s => s.AuctionId)
-			.OnDelete(DeleteBehavior.Restrict);
+		model.Entity<User>().UseTptMappingStrategy();
 
 		model.Entity<Sale>()
 			.HasOne(s => s.Buyer)
 			.WithMany()
 			.HasForeignKey(s => s.BuyerId)
+			.OnDelete(DeleteBehavior.Restrict);
+
+		model.Entity<Auction>()
+			.HasOne(a => a.Auctioneer)
+			.WithMany()
+			.HasForeignKey(a => a.AuctioneerId)
+			.OnDelete(DeleteBehavior.Cascade);
+
+		model.Entity<Sale>()
+			.HasOne(s => s.Auction)
+			.WithMany()
+			.HasForeignKey(s => s.AuctionId)
 			.OnDelete(DeleteBehavior.Restrict);
 
 		model.Entity<Product>()
@@ -46,12 +55,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 			.HasOne(i => i.Product)
 			.WithMany()
 			.HasForeignKey(i => i.ProductId)
-			.OnDelete(DeleteBehavior.Cascade);
-
-		model.Entity<Auction>()
-			.HasOne(a => a.Auctioneer)
-			.WithMany()
-			.HasForeignKey(a => a.AuctioneerId)
 			.OnDelete(DeleteBehavior.Cascade);
 	}
 }
