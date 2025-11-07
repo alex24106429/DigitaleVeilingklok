@@ -50,10 +50,22 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 
 		try {
 			if (isRegisterPage) {
-				// Map user type string to UserRole enum
-				let role = UserRole.Supplier; // Default to grower/supplier
-				if (userType === "buyer") role = UserRole.Buyer;
-				if (userType === "auctioneer") role = UserRole.Auctioneer;
+				let role: UserRole;
+				switch (userType) {
+					case "buyer":
+						role = UserRole.Buyer;
+						break;
+					case "auctioneer":
+						role = UserRole.Auctioneer;
+						break;
+					case "admin":
+						role = UserRole.Admin;
+						break;
+					case "grower":
+					default:
+						role = UserRole.Supplier;
+						break;
+				}
 
 				const response = await authService.register({
 					fullName: name,
@@ -145,10 +157,11 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 								<FormControlLabel value="grower" control={<Radio />} label="Leverancier" />
 								<FormControlLabel value="buyer" control={<Radio />} label="Koper" />
 								<FormControlLabel value="auctioneer" control={<Radio />} label="Veilingmeester" />
+								<FormControlLabel value="admin" control={<Radio />} label="Administrator" />
 							</RadioGroup>
 						</FormControl>
 
-						{userType !== "auctioneer" &&
+						{(userType === "grower" || userType === "buyer") &&
 							<TextField
 								label="RFH Nummer"
 								margin="normal"
@@ -200,4 +213,3 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 		</div>
 	);
 }
-
