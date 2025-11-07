@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { User } from '../../types/user';
 
 export default function Account() {
+	const [token, setToken] = useState("");
 	const [id, setId] = useState(0);
 	const [fullName, setFullName] = useState("");
 	const [email, setEmail] = useState("");
@@ -14,9 +15,11 @@ export default function Account() {
 	useEffect(() => {
 		try {
 			const userString = localStorage.getItem('user');
+			const token = localStorage.getItem('token') as string;
 			if (userString) {
 				const user: User = JSON.parse(userString);
 				// eslint-disable-next-line react-hooks/set-state-in-effect
+				setToken(token);
 				setId(user.id);
 				setFullName(user.fullName);
 				setEmail(user.email);
@@ -28,7 +31,8 @@ export default function Account() {
 	}, []);
 
 	const handleSubmit = () => {
-		localStorage.user = JSON.stringify({ id, fullName, email, role })
+		localStorage.setItem("token", token);
+		localStorage.user = JSON.stringify({ id, fullName, email, role });
 	}
 
 	return (
@@ -42,6 +46,16 @@ export default function Account() {
 					Hier komt later:<br />
 					Mogelijkheid om wachtwoord te wijzigen en contact- of bedrijfsgegevens aan te passen.
 				</Typography>
+
+				<TextField
+					label="token"
+					type="text"
+					margin="normal"
+					fullWidth
+					required
+					value={token}
+					onChange={(e) => setToken(e.target.value)}
+				/>
 
 				<TextField
 					label="id"

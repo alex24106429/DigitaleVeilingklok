@@ -1,18 +1,26 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using PetalBid.Api.Data;
 using PetalBid.Api.Domain.Entities;
 using PetalBid.Api.Domain.Enums;
 using PetalBid.Api.DTOs;
 using PetalBid.Api.Services;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace PetalBid.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class UsersController(AppDbContext db) : ApiControllerBase(db)
+public class UsersController(AppDbContext db, IConfiguration config) : ApiControllerBase(db)
 {
+	private readonly IConfiguration _config = config;
+
 	[HttpGet]
+	[Authorize(Roles = "Admin")]
 	public async Task<ActionResult<List<User>>> GetAll()
 	{
 		var users = await Db.Users.AsNoTracking().ToListAsync();
@@ -20,6 +28,7 @@ public class UsersController(AppDbContext db) : ApiControllerBase(db)
 	}
 
 	[HttpGet("{id:int}")]
+	[Authorize]
 	public async Task<ActionResult<UserResponseDto>> GetById(int id)
 	{
 		var user = await Db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id);
@@ -94,27 +103,29 @@ public class UsersController(AppDbContext db) : ApiControllerBase(db)
 	}
 
 	[HttpPost("login")]
-	public async Task<ActionResult<UserResponseDto>> Login(LoginDto loginDto)
+	public async Task<ActionResult<object>> Login(LoginDto loginDto)
 	{
 		// Find user by email
 		var user = await Db.Users.FirstOrDefaultAsync(u => u.Email == loginDto.Email);
 		if (user == null)
 		{
-			return BadRequest(new { message = "Invalid email or password" });
+			return Unauthorized(new { message = "Invalid email or password" });
 		}
 
 		// Verify password
 		if (!PasswordService.VerifyPassword(user.PasswordHash, loginDto.Password))
 		{
-			return BadRequest(new { message = "Invalid email or password" });
+			return Unauthorized(new { message = "Invalid email or password" });
 		}
-		
+
 		UserRole role;
 		if (user is Buyer) role = UserRole.Buyer;
 		else if (user is Supplier) role = UserRole.Supplier;
 		else if (user is Auctioneer) role = UserRole.Auctioneer;
 		else if (user is Admin) role = UserRole.Admin;
 		else return StatusCode(500, "Unknown user type during login");
+
+		var token = GenerateJwtToken(user, role);
 
 		var response = new UserResponseDto
 		{
@@ -124,10 +135,11 @@ public class UsersController(AppDbContext db) : ApiControllerBase(db)
 			Role = role
 		};
 
-		return Ok(response);
+		return Ok(new { Token = token, User = response });
 	}
 
 	[HttpDelete("{id:int}")]
+	[Authorize(Roles = "Admin")]
 	public async Task<ActionResult> Delete(int id)
 	{
 		var user = await Db.Users.FindAsync(id);
@@ -136,5 +148,27 @@ public class UsersController(AppDbContext db) : ApiControllerBase(db)
 		Db.Users.Remove(user);
 		await Db.SaveChangesAsync();
 		return NoContent();
+	}
+
+	private string GenerateJwtToken(User user, UserRole role)
+	{
+		var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
+		var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+		var claims = new[]
+		{
+			new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+			new Claim(JwtRegisteredClaimNames.Email, user.Email),
+			new Claim(ClaimTypes.Role, role.ToString())
+		};
+
+		var token = new JwtSecurityToken(
+			issuer: _config["Jwt:Issuer"],
+			audience: _config["Jwt:Audience"],
+			claims: claims,
+			expires: DateTime.Now.AddHours(2),
+			signingCredentials: credentials);
+
+		return new JwtSecurityTokenHandler().WriteToken(token);
 	}
 }

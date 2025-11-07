@@ -1,4 +1,4 @@
-import { RegisterUserRequest, LoginRequest, User, ApiResponse } from '../../types/user';
+import { RegisterUserRequest, LoginRequest, User, ApiResponse, LoginResponse } from '../../types/user';
 
 const API_BASE_URL = 'http://localhost:5048/api';
 
@@ -25,7 +25,7 @@ export const authService = {
 		}
 	},
 
-	async login(credentials: LoginRequest): Promise<ApiResponse<User>> {
+	async login(credentials: LoginRequest): Promise<ApiResponse<LoginResponse>> {
 		try {
 			const response = await fetch(`${API_BASE_URL}/users/login`, {
 				method: 'POST',

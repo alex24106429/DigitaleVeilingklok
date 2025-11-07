@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PetalBid.Api.Data;
@@ -7,6 +8,7 @@ namespace PetalBid.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Roles = "Admin,Buyer")]
 public class SaleItemsController(AppDbContext db) : ApiControllerBase(db)
 {
 	[HttpGet]

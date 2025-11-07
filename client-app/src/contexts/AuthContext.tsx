@@ -4,6 +4,7 @@ import { authService } from '../api/services/authService';
 
 interface AuthContextType {
 	user: User | null;
+	token: string | null;
 	login: (email: string, password: string) => Promise<boolean>;
 	logout: () => void;
 	isLoading: boolean;
@@ -26,15 +27,18 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	const [user, setUser] = useState<User | null>(() => {
 		const storedUser = localStorage.getItem('user');
-		if (storedUser) {
-			return JSON.parse(storedUser);
-		}
-		return null;
+		return storedUser ? JSON.parse(storedUser) : null;
+	});
+
+	const [token, setToken] = useState<string | null>(() => {
+		return localStorage.getItem('token');
 	});
 
 	const [isLoading, setIsLoading] = useState(true);
 
 	useEffect(() => {
+		// This effect is to simulate initial loading, e.g., validating a token.
+		// For now, we just check localStorage synchronously.
 		// eslint-disable-next-line react-hooks/set-state-in-effect
 		setIsLoading(false);
 	}, []);
@@ -43,8 +47,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		const response = await authService.login({ email, password });
 
 		if (response.data) {
-			setUser(response.data);
-			localStorage.setItem('user', JSON.stringify(response.data));
+			const { user: userData, token: userToken } = response.data;
+			setUser(userData);
+			setToken(userToken);
+			localStorage.setItem('user', JSON.stringify(userData));
+			localStorage.setItem('token', userToken);
 			return true;
 		}
 
@@ -53,11 +60,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
 	const logout = () => {
 		setUser(null);
+		setToken(null);
 		localStorage.removeItem('user');
+		localStorage.removeItem('token');
 	};
 
 	const value = {
 		user,
+		token,
 		login,
 		logout,
 		isLoading
