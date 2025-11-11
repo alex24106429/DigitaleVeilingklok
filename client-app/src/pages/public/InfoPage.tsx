@@ -1,6 +1,10 @@
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 
+/**
+ * InfoPage component for displaying information about PetalBid
+ * @returns JSX.Element
+ */
 export default function InfoPage() {
 	return (
 		<div>

@@ -1,5 +1,8 @@
 import Typography from '@mui/material/Typography';
-
+/**
+ * ProductManagement component for managing products
+ * @returns JSX.Element
+ */
 export default function ProductManagement() {
 	return (
 		<div>

@@ -27,6 +27,9 @@ import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import AddIcon from '@mui/icons-material/Add';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 
+/**
+ * Transaction type for auction purchases
+ */
 type Transaction = {
 	buyer: string;
 	qty: number;
@@ -34,17 +37,33 @@ type Transaction = {
 	sideBuy?: boolean; // meekoop
 	id: string;
 };
-
+// Euro currency formatter
 const euro = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' });
 
+/**
+ * Clamps a number between a minimum and maximum value.
+ * @param n The number to clamp
+ * @param min The minimum value
+ * @param max The maximum value
+ * @returns The clamped value
+ */
 function clamp(n: number, min: number, max: number) {
 	return Math.min(max, Math.max(min, n));
 }
 
+/**
+ * Rounds a number to two decimal places.
+ * @param n The number to round
+ * @returns The rounded number
+ */
 function round2(n: number) {
 	return Math.round(n * 100) / 100;
 }
-
+/**
+ * Custom hook to manage intervals.
+ * @param callback The function to call on each interval
+ * @param delayMs The interval delay in milliseconds
+ */
 function useInterval(callback: () => void, delayMs: number | null) {
 	const savedRef = useRef(callback);
 	useEffect(() => {
@@ -56,7 +75,10 @@ function useInterval(callback: () => void, delayMs: number | null) {
 		return () => clearInterval(id);
 	}, [delayMs]);
 }
-
+/**
+ * AuctionClock component for the auction clock
+ * @returns JSX.Element
+ */
 export default function AuctionClock() {
 	// Lot/product settings
 	const [product, setProduct] = useState('Rozen (A1)');
@@ -96,7 +118,7 @@ export default function AuctionClock() {
 		const dropped = startPrice - currentPrice;
 		return clamp((dropped / priceRange) * 100, 0, 100);
 	}, [startPrice, currentPrice, priceRange]);
-
+	// Can start clock
 	const canStart = useMemo(() => {
 		return (
 			totalQty > 0 &&
@@ -158,7 +180,7 @@ export default function AuctionClock() {
 			setRunning(false);
 		}
 	};
-
+	// Reset clock and state
 	const handleReset = () => {
 		setRunning(false);
 		setTicks(0);
@@ -167,7 +189,7 @@ export default function AuctionClock() {
 		setPausedForSale(false);
 		setSideBuyMode(null);
 	};
-
+	// Open purchase dialog
 	const openBuyDialog = (sideBuy?: boolean) => {
 		setRunning(false);
 		setPausedForSale(true);
@@ -176,7 +198,7 @@ export default function AuctionClock() {
 		setBuyQty(Math.min(Math.max(minPerBuy, orderStep ? orderStep : minPerBuy), remainingQty));
 		setPurchaseOpen(true);
 	};
-
+	// Commit purchase
 	const commitPurchase = () => {
 		if (errors.qty) return;
 		const price = sideBuyMode?.price ?? currentPrice;
@@ -198,7 +220,7 @@ export default function AuctionClock() {
 			setRunning(false);
 		}
 	};
-
+	// Resume clock after sales
 	const resumeAfterSales = () => {
 		setPausedForSale(false);
 		setSideBuyMode(null);
@@ -206,14 +228,14 @@ export default function AuctionClock() {
 			setRunning(true);
 		}
 	};
-
+	// Finish lot immediately
 	const finishLot = () => {
 		setRunning(false);
 		setPausedForSale(false);
 		setSideBuyMode(null);
 		setRemainingQty(0);
 	};
-
+	// Check if buyer can make a purchase
 	const canBuy = remainingQty > 0 && currentPrice > 0 && !purchaseOpen;
 	const atFloor = currentPrice <= floorPrice + 1e-9;
 

@@ -1,5 +1,8 @@
 import Typography from '@mui/material/Typography';
-
+/**
+ * Purchases component for displaying user purchases
+ * @returns JSX.Element
+ */
 export default function Purchases() {
 	return (
 		<div>

@@ -17,10 +17,15 @@ import { UserRole } from "../../types/user";
 import { useAuth } from "../../contexts/AuthContext";
 import { useAlert } from '../../components/AlertProvider';
 
+// Props for LoginPage component
 interface LoginPageProps {
 	isRegisterPage: boolean;
 }
-
+/**
+ * LoginPage component for user authentication
+ * @param param0 - Props for the component
+ * @returns JSX.Element
+ */
 export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 	const { showAlert } = useAlert();
 	const navigate = useNavigate();
@@ -47,7 +52,7 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 		}
 
 		setIsLoading(true);
-
+		// Handle registration or login
 		try {
 			if (isRegisterPage) {
 				let role: UserRole;

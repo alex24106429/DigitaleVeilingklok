@@ -1,5 +1,9 @@
 import Typography from '@mui/material/Typography';
 
+/**
+ * ManageAuction component for auction management
+ * @returns JSX.Element
+ */
 export default function ManageAuction() {
 	return (
 		<div>
