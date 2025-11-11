@@ -6,12 +6,12 @@ import { NavLink } from "react-router-dom";
 interface ErrorPageProps {
 	statusCode: number;
 }
-
+// Tekst gebaseerd op Error
 const errorMessages = {
 	403: "Toegang geweigerd",
 	404: "Pagina niet gevonden"
 }
-
+//Link terug naar home en img
 export default function ErrorPage(props: ErrorPageProps) {
 	return <>
 		<Typography variant="h2" component="h1" align="center" sx={{ mt: 5 }}>{errorMessages[props.statusCode as keyof typeof errorMessages] || "Er is een fout opgetreden"}</Typography>

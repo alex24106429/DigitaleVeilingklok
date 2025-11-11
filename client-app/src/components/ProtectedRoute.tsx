@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
 	children: ReactNode;
 	allowedRoles?: UserRole[];
 }
-
+// voor login authentication 
 export default function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
 	const { user, isLoading } = useAuth();
 	const location = useLocation();

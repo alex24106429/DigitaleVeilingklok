@@ -17,9 +17,8 @@ import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import DeleteIcon from '@mui/icons-material/Delete';
 import FilterListIcon from '@mui/icons-material/FilterList';
-// CURRENTLY UNUSED/WIP TABLE COMPONENT
 import visuallyHidden from '@mui/utils/visuallyHidden';
-
+// CURRENTLY UNUSED/WIP TABLE COMPONENT
 export interface HeadCell<T> {
 	id: keyof T;
 	label: string;
