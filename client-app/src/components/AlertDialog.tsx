@@ -4,14 +4,14 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
-
+// Pop up variabelen
 interface AlertDialogProps {
 	open: boolean;
 	title: string;
 	message: string;
 	onClose: () => void;
 }
-
+ // Pop up logica en vormgeving
 export default function AlertDialog({ open, title, message, onClose }: AlertDialogProps) {
 	return (
 		<Dialog

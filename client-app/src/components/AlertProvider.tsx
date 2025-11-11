@@ -1,11 +1,11 @@
 import * as React from 'react';
 import AlertDialog from './AlertDialog';
-
+// Variabelen
 interface AlertOptions {
 	title: string;
 	message: string;
 }
-
+// Alertbasis
 interface AlertContextType {
 	showAlert: (options: AlertOptions) => void;
 }
