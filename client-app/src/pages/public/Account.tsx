@@ -5,13 +5,18 @@ import Typography from '@mui/material/Typography';
 import { useEffect, useState } from 'react';
 import { User } from '../../types/user';
 
+/**
+ * Account component for managing user account information
+ * @returns JSX.Element
+ */
 export default function Account() {
+	// State variables for user account information
 	const [token, setToken] = useState("");
 	const [id, setId] = useState(0);
 	const [fullName, setFullName] = useState("");
 	const [email, setEmail] = useState("");
 	const [role, setRole] = useState(0);
-
+	// Load user information from localStorage on component mount
 	useEffect(() => {
 		try {
 			const userString = localStorage.getItem('user');
@@ -29,12 +34,12 @@ export default function Account() {
 			console.error("Failed to parse user from localStorage", error);
 		}
 	}, []);
-
+	// Handle form submission to save updated user information
 	const handleSubmit = () => {
 		localStorage.setItem("token", token);
 		localStorage.user = JSON.stringify({ id, fullName, email, role });
 	}
-
+	// Render the account management form
 	return (
 		<div>
 			<Box component="form" onSubmit={handleSubmit} maxWidth="sm" margin="auto" mt="30px" padding="20px">

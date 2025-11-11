@@ -1,5 +1,8 @@
 import Typography from '@mui/material/Typography';
-
+/**
+ * AuctioneerDashboard component for auctioneer dashboard
+ * @returns JSX.Element
+ */
 export default function AuctioneerDashboard() {
 	return (
 		<div>

@@ -1,5 +1,9 @@
 import Typography from '@mui/material/Typography';
 
+/**
+ * ManageUsers component for admin user management
+ * @returns JSX.Element
+ */
 export default function ManageUsers() {
 	return (
 		<div>

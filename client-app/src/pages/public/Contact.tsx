@@ -1,7 +1,10 @@
 import Box from '@mui/material/Box';
 import Link from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
-
+/**
+ * Contact component for displaying contact information
+ * @returns JSX.Element
+ */
 export default function Contact() {
 	return <div>
 		<Box bgcolor={"primary.100"} width="100vw" padding={"50px"}>

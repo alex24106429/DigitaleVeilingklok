@@ -1,5 +1,8 @@
 import Typography from '@mui/material/Typography';
-
+/**
+ * Sales component for displaying sales information
+ * @returns JSX.Element
+ */
 export default function Sales() {
 	return (
 		<div>

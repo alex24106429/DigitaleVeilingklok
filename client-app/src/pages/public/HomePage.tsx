@@ -7,13 +7,19 @@ import Grid from '@mui/material/Grid';
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
 
+/**
+ * HomePage component for displaying the home page
+ * @returns JSX.Element
+ */
 export default function HomePage() {
+	// Features of the platform
 	const features = [
 		'Toegang tot grote markt',
 		'Gemakkelijk zaken doen',
 		'Handige extra diensten',
 	];
 	const { user } = useAuth();
+	// Render the home page content
 	return (
 		<div>
 			<Box bgcolor={"primary.100"} width="100vw" padding={"50px"}>
