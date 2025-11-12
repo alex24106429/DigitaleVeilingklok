@@ -17,14 +17,21 @@ import { UserRole } from "../../types/user";
 import { useAuth } from "../../contexts/AuthContext";
 import { useAlert } from '../../components/AlertProvider';
 
-// Props for LoginPage component
+/**
+ * Props for the LoginPage component.
+ */
 interface LoginPageProps {
+	/** Determines if the component should render the registration form (`true`) or the login form (`false`). */
 	isRegisterPage: boolean;
 }
+
 /**
- * LoginPage component for user authentication
- * @param param0 - Props for the component
- * @returns JSX.Element
+ * A component that renders a form for either user login or registration.
+ * The mode is controlled by the `isRegisterPage` prop. It handles form state,
+ * input validation, API calls for authentication, and provides user feedback.
+ *
+ * @param {LoginPageProps} props The props for the component.
+ * @returns {JSX.Element} The rendered login or registration form.
  */
 export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 	const { showAlert } = useAlert();
@@ -38,8 +45,14 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 	const [RFHnumber, setRFHnumber] = useState("");
 	const [userType, setUserType] = useState("grower");
 
+	/**
+	 * Handles the form submission for both login and registration.
+	 * It performs validation, calls the appropriate API service,
+	 * and manages UI responses like loading states, alerts, and navigation.
+	 * @param {FormEvent<HTMLFormElement>} event The form submission event.
+	 */
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-		event.preventDefault(); // Voorkomt dat de pagina herlaadt
+		event.preventDefault(); // Prevents the page from reloading
 
 		if (isRegisterPage && password.length < 6) {
 			showAlert({ title: "Ongeldige informatie", message: "Wachtwoord moet minimaal 6 karakters zijn!" });
@@ -52,9 +65,9 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 		}
 
 		setIsLoading(true);
-		// Handle registration or login
 		try {
 			if (isRegisterPage) {
+				// Handle registration
 				let role: UserRole;
 				switch (userType) {
 					case "buyer":
@@ -83,10 +96,11 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 					showAlert({ title: "Serverfout", message: response.error });
 				} else {
 					// Registration successful, navigate to login
+					showAlert({ title: "Succes", message: "Registratie voltooid! U kunt nu inloggen." });
 					navigate("/login");
 				}
 			} else {
-				// Login
+				// Handle login
 				const success = await login(email, password);
 
 				if (success) {

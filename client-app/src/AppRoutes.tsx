@@ -6,12 +6,14 @@ import ErrorPage from "./components/ErrorPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { UserRole } from "./types/user";
 
+// Eagerly loaded components (for frequently accessed pages or pages with complex dependencies)
 import ManageAuction from "./pages/auctioneer/ManageAuction";
 import Account from "./pages/public/Account";
 import ProductManagement from "./pages/grower/ProductManagement";
 import Sales from "./pages/grower/Sales";
 import ManageUsers from "./pages/admin/ManageUsers";
 
+// Lazily loaded components for code-splitting and better initial load times
 const AuctionClock = lazy(() => import("./pages/buyer/AuctionClock"));
 const Purchases = lazy(() => import("./pages/buyer/Purchases"));
 const AuctioneerDashboard = lazy(() => import("./pages/auctioneer/AuctioneerDashboard"));
@@ -22,6 +24,10 @@ const PrivacyPolicy = lazy(() => import("./pages/public/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/public/TermsOfService"));
 const Contact = lazy(() => import("./pages/public/Contact"));
 
+/**
+ * A mapping of URL paths to their corresponding page titles.
+ * This is used by the `PageTitleUpdater` component to set the document title dynamically.
+ */
 const titleMap: { [key: string]: string } = {
 	// Public
 	"/": "Home",
@@ -51,6 +57,10 @@ const titleMap: { [key: string]: string } = {
 	"/admin/manageusers": "Gebruikerbeheer",
 };
 
+/**
+ * A simple fallback component displayed while lazy-loaded components are being fetched.
+ * @returns {JSX.Element} A loading indicator.
+ */
 const LoadingFallback = () => (
 	<div style={{
 		display: 'flex',
@@ -62,12 +72,19 @@ const LoadingFallback = () => (
 	</div>
 );
 
+/**
+ * Defines all the application's routes using React Router.
+ * It handles public routes, role-based protected routes, and a 404 catch-all page.
+ * It also utilizes lazy loading with a Suspense fallback to improve initial load performance.
+ *
+ * @returns {JSX.Element} The main router configuration for the application.
+ */
 export default function AppRoutes() {
 	return <>
 		<PageTitleUpdater titleMap={titleMap} />
 		<Suspense fallback={<LoadingFallback />}>
 			<Routes>
-				{/* Public */}
+				{/* Public Routes: Accessible to everyone. */}
 				<Route path="/" element={<HomePage />} />
 				<Route path="/login" element={<LoginPage isRegisterPage={false} />} />
 				<Route path="/register" element={<LoginPage isRegisterPage={true} />} />
@@ -76,14 +93,14 @@ export default function AppRoutes() {
 				<Route path="/privacy" element={<PrivacyPolicy />} />
 				<Route path="/terms" element={<TermsOfService />} />
 
-				{/* Elke ingelogde gebruiker */}
+				{/* Protected Route for any logged-in user. */}
 				<Route path="/account" element={
 					<ProtectedRoute>
 						<Account />
 					</ProtectedRoute>
 				} />
 
-				{/* Buyer */}
+				{/* Buyer-specific Routes */}
 				<Route path="/buyer/auctionclock" element={
 					<ProtectedRoute allowedRoles={[UserRole.Buyer]}>
 						<AuctionClock />
@@ -95,7 +112,7 @@ export default function AppRoutes() {
 					</ProtectedRoute>
 				} />
 
-				{/* Grower/Supplier */}
+				{/* Grower/Supplier-specific Routes */}
 				<Route path="/grower/products" element={
 					<ProtectedRoute allowedRoles={[UserRole.Supplier]}>
 						<ProductManagement />
@@ -107,7 +124,7 @@ export default function AppRoutes() {
 					</ProtectedRoute>
 				} />
 
-				{/* Auctioneer */}
+				{/* Auctioneer-specific Routes */}
 				<Route path="/auctioneer/dashboard" element={
 					<ProtectedRoute allowedRoles={[UserRole.Auctioneer]}>
 						<AuctioneerDashboard />
@@ -119,17 +136,16 @@ export default function AppRoutes() {
 					</ProtectedRoute>
 				} />
 
-				{/* Admin */}
+				{/* Admin-specific Routes */}
 				<Route path="/admin/manageusers" element={
 					<ProtectedRoute allowedRoles={[UserRole.Admin]}>
 						<ManageUsers />
 					</ProtectedRoute>
 				} />
 
-				{/* 404 - Pagina niet gevonden */}
+				{/* 404 Catch-all Route for unmatched paths. */}
 				<Route path="*" element={<ErrorPage statusCode={404}></ErrorPage>} />
 			</Routes>
 		</Suspense>
 	</>
 }
-

@@ -2,16 +2,38 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { User } from '../types/user';
 import { authService } from '../api/services/authService';
 
+/**
+ * Defines the shape of the authentication context provided to consumers.
+ */
 interface AuthContextType {
+	/** The currently authenticated user object, or `null` if no user is logged in. */
 	user: User | null;
+	/** The authentication token (JWT), or `null` if not authenticated. */
 	token: string | null;
+	/**
+	 * Logs in a user with the given credentials.
+	 * @param {string} email - The user's email address.
+	 * @param {string} password - The user's password.
+	 * @returns {Promise<boolean>} A promise that resolves to `true` on successful login, `false` otherwise.
+	 */
 	login: (email: string, password: string) => Promise<boolean>;
+	/** Logs out the current user, clearing their session data. */
 	logout: () => void;
+	/** A boolean flag indicating if the initial authentication state is being loaded or checked. */
 	isLoading: boolean;
 }
 
+/**
+ * React context for managing global authentication state.
+ */
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/**
+ * Custom hook for accessing the authentication context.
+ * Provides an easy way to get the current user, token, and auth functions.
+ * @returns {AuthContextType} The authentication context value.
+ * @throws {Error} If used outside of an `AuthProvider`.
+ */
 export const useAuth = () => {
 	const context = useContext(AuthContext);
 	if (context === undefined) {
@@ -20,10 +42,21 @@ export const useAuth = () => {
 	return context;
 };
 
+/**
+ * Props for the AuthProvider component.
+ */
 interface AuthProviderProps {
+	/** The child components that will have access to the auth context. */
 	children: ReactNode;
 }
 
+/**
+ * Provider component that makes authentication state and functions available to its children.
+ * It manages user data and tokens, persisting them to `localStorage`.
+ *
+ * @param {AuthProviderProps} props - The component props.
+ * @returns {JSX.Element} The provider component wrapping its children.
+ */
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	const [user, setUser] = useState<User | null>(() => {
 		const storedUser = localStorage.getItem('user');
@@ -37,12 +70,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	const [isLoading, setIsLoading] = useState(true);
 
 	useEffect(() => {
-		// This effect is to simulate initial loading, e.g., validating a token.
-		// For now, we just check localStorage synchronously.
+		// This effect simulates the initial loading phase where an app might
+		// validate a stored token with the server. For this implementation,
+		// we simply trust the data in localStorage and set loading to false.
 		// eslint-disable-next-line react-hooks/set-state-in-effect
 		setIsLoading(false);
 	}, []);
 
+	/**
+	 * Handles the user login process.
+	 * Calls the auth service, and on success, updates the state and localStorage.
+	 */
 	const login = async (email: string, password: string): Promise<boolean> => {
 		const response = await authService.login({ email, password });
 
@@ -58,6 +96,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		return false;
 	};
 
+	/**
+	 * Handles the user logout process.
+	 * Clears the user state and removes authentication data from localStorage.
+	 */
 	const logout = () => {
 		setUser(null);
 		setToken(null);
@@ -65,6 +107,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		localStorage.removeItem('token');
 	};
 
+	/**
+	 * The value provided to the consumers of the AuthContext.
+	 */
 	const value = {
 		user,
 		token,

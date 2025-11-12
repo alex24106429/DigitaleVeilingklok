@@ -5,7 +5,6 @@
 
 # Node.js
 node_modules/
-package-lock.json
 npm-debug.log
 
 # dependencies
@@ -31,3 +30,6 @@ yarn-error.log*
 
 # database
 *.db
+
+# docs
+client-app/docs
