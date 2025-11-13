@@ -124,7 +124,7 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 					<Typography variant="h4" component="h1" align="center">Inloggen bij PetalBid</Typography>
 				) : (
 					<>
-						<Typography variant="h4" component="h1" align="center">Aanmelden bij PetalBid</Typography>
+						<Typography variant="h4" component="h1" align="center">Registreren bij PetalBid</Typography>
 						<TextField
 							label="Naam"
 							margin="normal"
@@ -225,7 +225,7 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 						disabled={isLoading}
 						startIcon={isLoading ? <CircularProgress size={20} /> : null}
 					>
-						{isLoading ? "Bezig..." : (isRegisterPage ? "Aanmelden" : "Inloggen")}
+						{isLoading ? "Bezig..." : (isRegisterPage ? "Registreren" : "Inloggen")}
 					</Button>
 				</Box>
 			</Box>

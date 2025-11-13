@@ -146,7 +146,7 @@ function AppBarContent() {
 
 						<Button color="inherit" component={NavLink} to="/register" sx={activeButtonSx}>
 							<PersonAddIcon sx={{ mr: 1 }}></PersonAddIcon>
-							Aanmelden
+							Registreren
 						</Button>
 					</>
 				) : (
