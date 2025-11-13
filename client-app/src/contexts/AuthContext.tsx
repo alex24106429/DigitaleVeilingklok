@@ -56,8 +56,76 @@ interface AuthProviderProps {
 }
 
 /**
+ * Module-scoped de-duplication for session validation to avoid double fetches in React.StrictMode.
+ */
+type ValidationResult = { user: User | null; token: string | null };
+let sessionValidationInFlight: Promise<ValidationResult> | null = null;
+
+/**
+ * Validates the stored session once (de-duplicated). It checks:
+ * - token existence
+ * - user existence on the server
+ * - user data matches stored data
+ *
+ * If invalid, it clears localStorage.
+ */
+async function validateStoredSessionOnce(): Promise<ValidationResult> {
+	if (sessionValidationInFlight) return sessionValidationInFlight;
+
+	sessionValidationInFlight = (async () => {
+		const storedUserRaw = localStorage.getItem('user');
+		const storedToken = localStorage.getItem('token');
+
+		if (!storedUserRaw || !storedToken) {
+			// Nothing to validate; ensure clean storage
+			localStorage.removeItem('user');
+			localStorage.removeItem('token');
+			return { user: null, token: null };
+		}
+
+		const storedUser: User = JSON.parse(storedUserRaw);
+
+		// Validate token + user by fetching from server
+		const res = await authService.getUserById(storedUser.id);
+
+		if (!res.data) {
+			// Invalid token or user; clear storage
+			localStorage.removeItem('user');
+			localStorage.removeItem('token');
+			return { user: null, token: null };
+		}
+
+		const serverUser = res.data;
+
+		const matches =
+			serverUser.id === storedUser.id &&
+			serverUser.email === storedUser.email &&
+			serverUser.fullName === storedUser.fullName &&
+			serverUser.role === storedUser.role;
+
+		if (!matches) {
+			// Mismatch; clear storage
+			localStorage.removeItem('user');
+			localStorage.removeItem('token');
+			return { user: null, token: null };
+		}
+
+		// Valid session; return stored values
+		return { user: storedUser, token: storedToken };
+	})().finally(() => {
+		// Keep the in-flight promise only during the request lifecycle
+		sessionValidationInFlight = null;
+	});
+
+	return sessionValidationInFlight;
+}
+
+/**
  * Provider component that makes authentication state and functions available to its children.
  * It manages user data and tokens, persisting them to `localStorage`.
+ *
+ * On initial load it validates the stored token and user against the server.
+ * If validation fails, the user is logged out.
  *
  * @param {AuthProviderProps} props - The component props.
  * @returns {JSX.Element} The provider component wrapping its children.
@@ -75,11 +143,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	const [isLoading, setIsLoading] = useState(true);
 
 	useEffect(() => {
-		// This effect simulates the initial loading phase where an app might
-		// validate a stored token with the server. For this implementation,
-		// we simply trust the data in localStorage and set loading to false.
-		// eslint-disable-next-line react-hooks/set-state-in-effect
-		setIsLoading(false);
+		let cancelled = false;
+
+		const run = async () => {
+			try {
+				const result = await validateStoredSessionOnce();
+				if (cancelled) return;
+
+				setUser(result.user);
+				setToken(result.token);
+			} finally {
+				if (!cancelled) setIsLoading(false);
+			}
+		};
+
+		void run();
+
+		return () => {
+			cancelled = true;
+		};
 	}, []);
 
 	/**

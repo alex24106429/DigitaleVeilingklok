@@ -100,6 +100,28 @@ export const authService = {
 	},
 
 	/**
+	 * Fetch a user by ID using the current auth token.
+	 * Useful for validating the stored session.
+	 * @param {number} id
+	 * @returns {Promise<ApiResponse<User>>}
+	 */
+	async getUserById(id: number): Promise<ApiResponse<User>> {
+		try {
+			const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+				method: 'GET',
+				headers: getAuthHeaders(),
+			});
+			const data = await response.json();
+			if (!response.ok) {
+				return { error: data?.message || 'Failed to fetch user.' };
+			}
+			return { data };
+		} catch {
+			return { error: 'Network error. Please try again.' };
+		}
+	},
+
+	/**
 	 * Updates the authenticated user's profile (name + email).
 	 * @param {UpdateProfileRequest} payload
 	 * @returns {Promise<ApiResponse<User>>}
