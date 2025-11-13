@@ -10,7 +10,13 @@ public class Product
 	public double? PotSize { get; set; }
 	public double? StemLength { get; set; }
 	public int Stock { get; set; }
+	public double MinimumPrice { get; set; }
 
-	public int AuctionId { get; set; }
-	public Auction Auction { get; set; } = null!;
+	// Link to Supplier
+	public int SupplierId { get; set; }
+	public Supplier Supplier { get; set; } = null!;
+
+	// AuctionId is now nullable
+	public int? AuctionId { get; set; }
+	public Auction? Auction { get; set; }
 }

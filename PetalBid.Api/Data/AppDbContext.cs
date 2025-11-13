@@ -43,6 +43,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 			.HasOne(p => p.Auction)
 			.WithMany()
 			.HasForeignKey(p => p.AuctionId)
+			.OnDelete(DeleteBehavior.SetNull);
+
+		model.Entity<Product>()
+			.HasOne(p => p.Supplier)
+			.WithMany()
+			.HasForeignKey(p => p.SupplierId)
 			.OnDelete(DeleteBehavior.Cascade);
 
 		model.Entity<SaleItem>()

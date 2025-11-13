@@ -17,6 +17,7 @@ import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import DeleteIcon from '@mui/icons-material/Delete';
 import FilterListIcon from '@mui/icons-material/FilterList';
+import EditIcon from '@mui/icons-material/Edit';
 import visuallyHidden from '@mui/utils/visuallyHidden';
 
 export interface HeadCell<T> {
@@ -107,10 +108,11 @@ interface EnhancedTableToolbarProps {
 	numSelected: number;
 	tableName: string;
 	onDelete?: () => void;
+	onEdit?: () => void;
 }
 
 function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
-	const { numSelected, tableName, onDelete } = props;
+	const { numSelected, tableName, onDelete, onEdit } = props;
 	return (
 		<Toolbar
 			sx={{
@@ -142,11 +144,22 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
 				</Typography>
 			)}
 			{numSelected > 0 ? (
-				<Tooltip title="Delete">
-					<IconButton onClick={onDelete} disabled={!onDelete}>
-						<DeleteIcon />
-					</IconButton>
-				</Tooltip>
+				<>
+					{onEdit && (
+						<Tooltip title="Edit">
+							<span>
+								<IconButton onClick={onEdit} disabled={numSelected !== 1}>
+									<EditIcon />
+								</IconButton>
+							</span>
+						</Tooltip>
+					)}
+					<Tooltip title="Delete">
+						<IconButton onClick={onDelete} disabled={!onDelete}>
+							<DeleteIcon />
+						</IconButton>
+					</Tooltip>
+				</>
 			) : (
 				<Tooltip title="Filter list">
 					<IconButton>
@@ -164,6 +177,7 @@ interface DynamicTableProps<T> {
 	idKey: keyof T;
 	tableName?: string;
 	onDelete?: (selectedIds: readonly (string | number)[]) => void;
+	onEdit?: (selectedId: string | number) => void;
 }
 
 export default function TableComponent<T extends Record<string, any>>({
@@ -171,7 +185,8 @@ export default function TableComponent<T extends Record<string, any>>({
 	headCells,
 	idKey,
 	tableName = "Table",
-	onDelete
+	onDelete,
+	onEdit
 }: DynamicTableProps<T>) {
 	const [order, setOrder] = React.useState<Order>('asc');
 
@@ -245,6 +260,11 @@ export default function TableComponent<T extends Record<string, any>>({
 					onDelete={() => {
 						onDelete?.(selected);
 						setSelected([]);
+					}}
+					onEdit={() => {
+						if (selected.length === 1) {
+							onEdit?.(selected[0]);
+						}
 					}}
 				/>
 				<TableContainer>
