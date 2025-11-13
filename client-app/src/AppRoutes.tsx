@@ -32,7 +32,7 @@ const titleMap: { [key: string]: string } = {
 	// Public
 	"/": "Home",
 	"/login": "Inloggen",
-	"/register": "Aanmelden",
+	"/register": "Registreren",
 	"/info": "Info",
 	"/contact": "Contact",
 	"/privacy": "Privacybeleid",
