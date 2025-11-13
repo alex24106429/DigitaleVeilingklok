@@ -28,21 +28,24 @@
 			"name": "Update Database",
 			"type": "node-terminal",
 			"request": "launch",
-			"command": "dotnet ef database update && exit",
+			"command": "dotnet ef database update",
 			"cwd": "${workspaceFolder}/PetalBid.Api"
 		},
 		{
 			"name": "npm install dependencies",
 			"type": "node-terminal",
 			"request": "launch",
-			"command": "npm i && exit",
+			"command": "npm i",
 			"cwd": "${workspaceFolder}/client-app"
 		}
 	],
 	"compounds": [
 		{
 			"name": "Frontend+Backend",
-			"configurations": ["Frontend", "Backend"]
+			"configurations": [
+				"Frontend",
+				"Backend"
+			]
 		}
 	]
 }

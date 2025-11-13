@@ -21,10 +21,32 @@ public class UsersController(AppDbContext db, IConfiguration config) : ApiContro
 
 	[HttpGet]
 	[Authorize(Roles = "Admin")]
-	public async Task<ActionResult<List<User>>> GetAll()
+	public async Task<ActionResult<List<UserResponseDto>>> GetAll()
 	{
 		var users = await Db.Users.AsNoTracking().ToListAsync();
-		return Ok(users);
+		var responseDtos = users.Select(user =>
+		{
+			UserRole role;
+			if (user is Buyer) role = UserRole.Buyer;
+			else if (user is Supplier) role = UserRole.Supplier;
+			else if (user is Auctioneer) role = UserRole.Auctioneer;
+			else if (user is Admin) role = UserRole.Admin;
+			else
+			{
+				// This case should ideally not be hit if data is consistent
+				throw new InvalidOperationException($"Unknown user type found for user ID {user.Id}");
+			}
+
+			return new UserResponseDto
+			{
+				Id = user.Id,
+				FullName = user.FullName,
+				Email = user.Email,
+				Role = role
+			};
+		}).ToList();
+
+		return Ok(responseDtos);
 	}
 
 	[HttpGet("{id:int}")]

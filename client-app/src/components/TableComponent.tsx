@@ -18,7 +18,7 @@ import Tooltip from '@mui/material/Tooltip';
 import DeleteIcon from '@mui/icons-material/Delete';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import visuallyHidden from '@mui/utils/visuallyHidden';
-// CURRENTLY UNUSED/WIP TABLE COMPONENT
+
 export interface HeadCell<T> {
 	id: keyof T;
 	label: string;
@@ -106,10 +106,11 @@ function EnhancedTableHead<T>(props: EnhancedTableHeadProps<T>) {
 interface EnhancedTableToolbarProps {
 	numSelected: number;
 	tableName: string;
+	onDelete?: () => void;
 }
 
 function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
-	const { numSelected, tableName } = props;
+	const { numSelected, tableName, onDelete } = props;
 	return (
 		<Toolbar
 			sx={{
@@ -142,7 +143,7 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
 			)}
 			{numSelected > 0 ? (
 				<Tooltip title="Delete">
-					<IconButton>
+					<IconButton onClick={onDelete} disabled={!onDelete}>
 						<DeleteIcon />
 					</IconButton>
 				</Tooltip>
@@ -159,16 +160,18 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
 
 interface DynamicTableProps<T> {
 	rows: T[];
-	headCells: HeadCell<T>[];
+	headCells: readonly HeadCell<T>[];
 	idKey: keyof T;
 	tableName?: string;
+	onDelete?: (selectedIds: readonly (string | number)[]) => void;
 }
 
-export default function TableComponent<T extends { [key: string]: never }>({
+export default function TableComponent<T extends Record<string, any>>({
 	rows,
 	headCells,
 	idKey,
-	tableName = "Table"
+	tableName = "Table",
+	onDelete
 }: DynamicTableProps<T>) {
 	const [order, setOrder] = React.useState<Order>('asc');
 
@@ -236,7 +239,14 @@ export default function TableComponent<T extends { [key: string]: never }>({
 	return (
 		<Box sx={{ width: '100%' }}>
 			<Paper sx={{ width: '100%', mb: 2 }}>
-				<EnhancedTableToolbar numSelected={selected.length} tableName={tableName} />
+				<EnhancedTableToolbar
+					numSelected={selected.length}
+					tableName={tableName}
+					onDelete={() => {
+						onDelete?.(selected);
+						setSelected([]);
+					}}
+				/>
 				<TableContainer>
 					<Table>
 						<EnhancedTableHead
