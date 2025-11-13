@@ -18,7 +18,7 @@ namespace PetalBid.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 public class UsersController(AppDbContext db, IConfiguration config) : ApiControllerBase(db)
-{ 
+{
 	/// <summary>
 	/// Retrieves all users
 	/// </summary>
@@ -53,11 +53,11 @@ public class UsersController(AppDbContext db, IConfiguration config) : ApiContro
 
 		return Ok(responseDtos);
 	}
-     /// <summary>
-	 /// Retrieves a specific user
-	 /// </summary>
-	 /// <param name="id"></param>
-	 /// <returns></returns>
+	/// <summary>
+	/// Retrieves a specific user
+	/// </summary>
+	/// <param name="id"></param>
+	/// <returns></returns>
 	[HttpGet("{id:int}")]
 	[Authorize]
 	public async Task<ActionResult<UserResponseDto>> GetById(int id)
@@ -81,22 +81,22 @@ public class UsersController(AppDbContext db, IConfiguration config) : ApiContro
 		};
 		return Ok(response);
 	}
-     /// <summary>
-	 /// Registers a new user
-	 /// </summary>
-	 /// <param name="registerDto"></param>
-	 /// <returns></returns>
+	/// <summary>
+	/// Registers a new user
+	/// </summary>
+	/// <param name="registerDto"></param>
+	/// <returns></returns>
 	[HttpPost("register")]
 	public async Task<ActionResult<UserResponseDto>> Register(RegisterUserDto registerDto)
 	{
-		
+
 		var existingUser = await Db.Users.FirstOrDefaultAsync(u => u.Email == registerDto.Email);
 		if (existingUser != null)
 		{
 			return BadRequest(new { message = "Email is already registered" });
 		}
 
-		
+
 		var passwordHash = PasswordService.HashPassword(registerDto.Password);
 
 		User user;
@@ -136,9 +136,9 @@ public class UsersController(AppDbContext db, IConfiguration config) : ApiContro
 
 		return CreatedAtAction(nameof(GetById), new { id = user.Id }, response);
 	}
-     /// <summary>
-	 /// Logs in a user
-	 /// </summary>
+	/// <summary>
+	/// Logs in a user
+	/// </summary>
 	[HttpPost("login")]
 	public async Task<ActionResult<object>> Login(LoginDto loginDto)
 	{
@@ -174,9 +174,85 @@ public class UsersController(AppDbContext db, IConfiguration config) : ApiContro
 
 		return Ok(new { Token = token, User = response });
 	}
-     /// <summary>
-	 /// Deletes a user
-	 /// </summary>
+
+	/// <summary>
+	/// Updates the authenticated user's profile (name + email)
+	/// </summary>
+	[HttpPut("me")]
+	[Authorize]
+	public async Task<ActionResult<UserResponseDto>> UpdateMe(UpdateProfileDto dto)
+	{
+		var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+		if (userIdString is null) return Unauthorized();
+
+		var userId = int.Parse(userIdString);
+		var existing = await Db.Users.FindAsync(userId);
+		if (existing is null) return NotFound();
+
+		// Enforce unique email across users (except current)
+		var emailExists = await Db.Users.AnyAsync(u => u.Email == dto.Email && u.Id != userId);
+		if (emailExists)
+		{
+			return BadRequest(new { message = "Email is already registered" });
+		}
+
+		existing.FullName = dto.FullName;
+		existing.Email = dto.Email;
+
+		await Db.SaveChangesAsync();
+
+		UserRole role = existing switch
+		{
+			Buyer => UserRole.Buyer,
+			Supplier => UserRole.Supplier,
+			Auctioneer => UserRole.Auctioneer,
+			Admin => UserRole.Admin,
+			_ => throw new InvalidOperationException("Unknown user type")
+		};
+
+		var response = new UserResponseDto
+		{
+			Id = existing.Id,
+			FullName = existing.FullName,
+			Email = existing.Email,
+			Role = role
+		};
+
+		return Ok(response);
+	}
+
+	/// <summary>
+	/// Changes the authenticated user's password
+	/// </summary>
+	[HttpPut("me/password")]
+	[Authorize]
+	public async Task<ActionResult<object>> ChangePassword(ChangePasswordDto dto)
+	{
+		var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+		if (userIdString is null) return Unauthorized();
+
+		var userId = int.Parse(userIdString);
+		var existing = await Db.Users.FindAsync(userId);
+		if (existing is null) return NotFound();
+
+		if (!PasswordService.VerifyPassword(existing.PasswordHash, dto.CurrentPassword))
+		{
+			return BadRequest(new { message = "Huidig wachtwoord is onjuist." });
+		}
+
+		if (string.IsNullOrWhiteSpace(dto.NewPassword) || dto.NewPassword.Length < 6)
+		{
+			return BadRequest(new { message = "Nieuw wachtwoord moet minimaal 6 karakters zijn." });
+		}
+
+		existing.PasswordHash = PasswordService.HashPassword(dto.NewPassword);
+		await Db.SaveChangesAsync();
+
+		return Ok(new { message = "Wachtwoord succesvol gewijzigd." });
+	}
+	/// <summary>
+	/// Deletes a user
+	/// </summary>
 	[HttpDelete("{id:int}")]
 	[Authorize(Roles = "Admin")]
 	public async Task<ActionResult> Delete(int id)
@@ -188,9 +264,9 @@ public class UsersController(AppDbContext db, IConfiguration config) : ApiContro
 		await Db.SaveChangesAsync();
 		return NoContent();
 	}
-        /// <summary>
-       /// Generates a JWT token for the authenticated user
-      /// </summary>
+	/// <summary>
+	/// Generates a JWT token for the authenticated user
+	/// </summary>
 
 	private string GenerateJwtToken(User user, UserRole role)
 	{

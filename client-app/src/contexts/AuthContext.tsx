@@ -21,6 +21,11 @@ interface AuthContextType {
 	logout: () => void;
 	/** A boolean flag indicating if the initial authentication state is being loaded or checked. */
 	isLoading: boolean;
+	/**
+	 * Updates the current user object in context and localStorage.
+	 * Useful after profile updates (name/email).
+	 */
+	updateUser: (updatedUser: User) => void;
 }
 
 /**
@@ -108,6 +113,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	};
 
 	/**
+	 * Updates the user object in state and localStorage.
+	 */
+	const updateUser = (updatedUser: User) => {
+		setUser(updatedUser);
+		localStorage.setItem('user', JSON.stringify(updatedUser));
+	};
+
+	/**
 	 * The value provided to the consumers of the AuthContext.
 	 */
 	const value = {
@@ -115,7 +128,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		token,
 		login,
 		logout,
-		isLoading
+		isLoading,
+		updateUser,
 	};
 
 	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

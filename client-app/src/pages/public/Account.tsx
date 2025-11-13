@@ -1,126 +1,184 @@
+import { useEffect, useMemo, useState } from 'react';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
-import { useEffect, useState } from 'react';
-import { User } from '../../types/user';
+import Divider from '@mui/material/Divider';
+import Paper from '@mui/material/Paper';
+import Grid from '@mui/material/Grid';
+import { useAuth } from '../../contexts/AuthContext';
+import { useAlert } from '../../components/AlertProvider';
+import { authService } from '../../api/services/authService';
 
 /**
- * Account component for managing user account information
+ * Account component for managing user account information (name, email, password)
  * @returns JSX.Element
  */
 export default function Account() {
-	// State variables for user account information
-	const [token, setToken] = useState("");
-	const [id, setId] = useState(0);
-	const [fullName, setFullName] = useState("");
-	const [email, setEmail] = useState("");
-	const [role, setRole] = useState(0);
-	// Load user information from localStorage on component mount
+	const { user, updateUser } = useAuth();
+	const { showAlert } = useAlert();
+
+	// Profile form state
+	const [fullName, setFullName] = useState('');
+	const [email, setEmail] = useState('');
+	const [savingProfile, setSavingProfile] = useState(false);
+
+	// Password form state
+	const [currentPassword, setCurrentPassword] = useState('');
+	const [newPassword, setNewPassword] = useState('');
+	const [confirmPassword, setConfirmPassword] = useState('');
+	const [savingPassword, setSavingPassword] = useState(false);
+
 	useEffect(() => {
-		try {
-			const userString = localStorage.getItem('user');
-			const token = localStorage.getItem('token') as string;
-			if (userString) {
-				const user: User = JSON.parse(userString);
-				// eslint-disable-next-line react-hooks/set-state-in-effect
-				setToken(token);
-				setId(user.id);
-				setFullName(user.fullName);
-				setEmail(user.email);
-				setRole(user.role);
-			}
-		} catch (error) {
-			console.error("Failed to parse user from localStorage", error);
+		if (user) {
+			// eslint-disable-next-line react-hooks/set-state-in-effect
+			setFullName(user.fullName);
+			setEmail(user.email);
 		}
-	}, []);
-	// Handle form submission to save updated user information
-	const handleSubmit = () => {
-		localStorage.setItem("token", token);
-		localStorage.user = JSON.stringify({ id, fullName, email, role });
-	}
-	// Render the account management form
+	}, [user]);
+
+	const profileChanged = useMemo(() => {
+		return user ? (fullName !== user.fullName || email !== user.email) : false;
+	}, [user, fullName, email]);
+
+	const handleSaveProfile = async () => {
+		if (!profileChanged) return;
+		// Basic validation
+		if (fullName.trim().length === 0) {
+			showAlert({ title: 'Ongeldige invoer', message: 'Naam mag niet leeg zijn.' });
+			return;
+		}
+		if (email.length < 3 || !email.includes("@")) {
+			showAlert({ title: 'Ongeldige invoer', message: 'Voer een geldig e-mailadres in.' });
+			return;
+		}
+
+		setSavingProfile(true);
+		const res = await authService.updateProfile({ fullName: fullName.trim(), email: email.trim() });
+		setSavingProfile(false);
+
+		if (res.error || !res.data) {
+			showAlert({ title: 'Fout', message: res.error || 'Profiel bijwerken mislukt.' });
+			return;
+		}
+
+		updateUser(res.data);
+		showAlert({ title: 'Succes', message: 'Profiel succesvol bijgewerkt.' });
+	};
+
+	const handleChangePassword = async () => {
+		if (newPassword.length < 6) {
+			showAlert({ title: 'Ongeldige invoer', message: 'Nieuw wachtwoord moet minimaal 6 karakters zijn.' });
+			return;
+		}
+		if (newPassword !== confirmPassword) {
+			showAlert({ title: 'Ongeldige invoer', message: 'Nieuw wachtwoord en bevestiging komen niet overeen.' });
+			return;
+		}
+		setSavingPassword(true);
+		const res = await authService.changePassword({ currentPassword, newPassword });
+		setSavingPassword(false);
+
+		if (res.error) {
+			showAlert({ title: 'Fout', message: res.error });
+			return;
+		}
+
+		setCurrentPassword('');
+		setNewPassword('');
+		setConfirmPassword('');
+		showAlert({ title: 'Succes', message: res.data?.message || 'Wachtwoord succesvol gewijzigd.' });
+	};
+
 	return (
-		<div>
-			<Box component="form" onSubmit={handleSubmit} maxWidth="sm" margin="auto" mt="30px" padding="20px">
-				<Typography>
-					Veranderd hier de opgeslagen gegevens in je browser om de frontend te testen.<br />
-					<b>Dit veranderd nog niet de gegevens in de backend of database.</b>
+		<Box maxWidth="md" margin="auto" mt={4} px={2}>
+			<Typography variant="h4" component="h1" gutterBottom>
+				Mijn Account
+			</Typography>
+			<Typography variant="body1" color="text.secondary" mb={3}>
+				Beheer uw profielgegevens en wijzig uw wachtwoord.
+			</Typography>
+
+			<Paper variant="outlined" sx={{ p: 3, mb: 4 }}>
+				<Typography variant="h6" component="h2" gutterBottom>
+					Profiel
 				</Typography>
-				<Typography>
-					Hier komt later:<br />
-					Mogelijkheid om wachtwoord te wijzigen en contact- of bedrijfsgegevens aan te passen.
+				<Grid container spacing={2}>
+					<Grid size={{ xs: 12, md: 6 }}>
+						<TextField
+							label="Volledige naam"
+							fullWidth
+							value={fullName}
+							onChange={(e) => setFullName(e.target.value)}
+						/>
+					</Grid>
+					<Grid size={{ xs: 12, md: 6 }}>
+						<TextField
+							label="E-mail"
+							type="email"
+							fullWidth
+							value={email}
+							onChange={(e) => setEmail(e.target.value)}
+						/>
+					</Grid>
+				</Grid>
+				<Box mt={2} display="flex" gap={2}>
+					<Button
+						variant="contained"
+						onClick={handleSaveProfile}
+						disabled={!profileChanged || savingProfile}
+					>
+						{savingProfile ? 'Opslaan...' : 'Opslaan'}
+					</Button>
+				</Box>
+			</Paper>
+
+			<Divider sx={{ mb: 4 }} />
+
+			<Paper variant="outlined" sx={{ p: 3 }}>
+				<Typography variant="h6" component="h2" gutterBottom>
+					Wachtwoord wijzigen
 				</Typography>
-
-				<TextField
-					label="token"
-					type="text"
-					margin="normal"
-					fullWidth
-					required
-					value={token}
-					onChange={(e) => setToken(e.target.value)}
-				/>
-
-				<TextField
-					label="id"
-					type="number"
-					margin="normal"
-					fullWidth
-					required
-					value={id}
-					onChange={(e) => setId(parseInt(e.target.value))}
-				/>
-
-				<TextField
-					label="fullName"
-					type="text"
-					margin="normal"
-					fullWidth
-					required
-					value={fullName}
-					onChange={(e) => setFullName(e.target.value)}
-				/>
-
-				<TextField
-					label="email"
-					type="email"
-					margin="normal"
-					fullWidth
-					required
-					value={email}
-					onChange={(e) => setEmail(e.target.value)}
-				/>
-
-				<TextField
-					label="role"
-					type="number"
-					margin="normal"
-					fullWidth
-					required
-					value={role}
-					onChange={(e) => setRole(parseInt(e.target.value))}
-					slotProps={{ htmlInput: { min: 0, max: 3 } }}
-				/>
-
-				<Typography>
-					0: Koper<br />
-					1: Veilingmeester<br />
-					2: Leverancier<br />
-					3: Administrator<br />
-				</Typography>
-
-				<Button
-					type="submit"
-					variant="contained"
-					color="primary"
-					size="large"
-					fullWidth
-				>
-					Opslaan
-				</Button>
-			</Box>
-		</div>
+				<Grid container spacing={2}>
+					<Grid size={{ xs: 12 }}>
+						<TextField
+							label="Huidig wachtwoord"
+							type="password"
+							fullWidth
+							value={currentPassword}
+							onChange={(e) => setCurrentPassword(e.target.value)}
+						/>
+					</Grid>
+					<Grid size={{ xs: 12, md: 6 }}>
+						<TextField
+							label="Nieuw wachtwoord"
+							type="password"
+							fullWidth
+							value={newPassword}
+							onChange={(e) => setNewPassword(e.target.value)}
+						/>
+					</Grid>
+					<Grid size={{ xs: 12, md: 6 }}>
+						<TextField
+							label="Bevestig nieuw wachtwoord"
+							type="password"
+							fullWidth
+							value={confirmPassword}
+							onChange={(e) => setConfirmPassword(e.target.value)}
+						/>
+					</Grid>
+				</Grid>
+				<Box mt={2} display="flex" gap={2}>
+					<Button
+						variant="contained"
+						color="primary"
+						onClick={handleChangePassword}
+						disabled={savingPassword || !currentPassword || !newPassword || !confirmPassword}
+					>
+						{savingPassword ? 'Wijzigen...' : 'Wachtwoord wijzigen'}
+					</Button>
+				</Box>
+			</Paper>
+		</Box>
 	);
 }
-
