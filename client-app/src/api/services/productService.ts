@@ -25,35 +25,61 @@ const getAuthHeaders = (): HeadersInit => {
 	};
 };
 
+// Simple cache + in-flight dedup for GET /products
+let myProductsCache: Product[] | null = null;
+let myProductsInFlight: Promise<ApiResponse<Product[]>> | null = null;
+const invalidateMyProductsCache = () => {
+	myProductsCache = null;
+};
+
+
 /**
  * Service for handling product-related API calls.
  */
 export const productService = {
 	/**
-	 * Fetches all products belonging to the currently authenticated supplier.
-	 * @returns {Promise<ApiResponse<Product[]>>} A promise resolving to the list of products or an error.
+	 * Fetches all products for the current supplier (or all, if Admin).
+	 * Pass { force: true } to bypass cache.
+	 * @returns {Promise<ApiResponse<Product[]>>} 
 	 */
-	async getMyProducts(): Promise<ApiResponse<Product[]>> {
-		try {
-			const response = await fetch(`${API_BASE_URL}/products`, {
-				method: 'GET',
-				headers: getAuthHeaders(),
-			});
-			const data = await response.json();
-			if (!response.ok) {
-				return { error: data.message || `Failed to fetch products: ${response.statusText}` };
-			}
-			return { data };
-		} catch (err) {
-			return { error: 'Network error. Please try again.' };
+	async getMyProducts(options?: { force?: boolean }): Promise<ApiResponse<Product[]>> {
+		const force = Boolean(options?.force);
+
+		if (!force) {
+			if (myProductsCache) return { data: myProductsCache };
+			if (myProductsInFlight) return myProductsInFlight;
 		}
+
+		const headers = getAuthHeaders();
+
+		const promise = (async () => {
+			try {
+				const response = await fetch(`${API_BASE_URL}/products`, {
+					method: 'GET',
+					headers,
+				});
+				const data = await response.json();
+				if (!response.ok) {
+					return { error: data.message || `Failed to fetch products: ${response.statusText}` };
+				}
+				myProductsCache = data as Product[];
+				return { data: myProductsCache };
+			} catch {
+				return { error: 'Network error. Please try again.' };
+			} finally {
+				myProductsInFlight = null;
+			}
+		})();
+
+		myProductsInFlight = promise;
+		return promise;
 	},
 
 	/**
-	 * Creates a new product for the authenticated supplier.
-	 * @param {ProductDto} productData - The data for the new product.
-	 * @returns {Promise<ApiResponse<Product>>} A promise resolving to the newly created product or an error.
-	 */
+		 * Creates a new product for the authenticated supplier.
+		 * @param {ProductDto} productData - The data for the new product.
+		 * @returns {Promise<ApiResponse<Product>>} A promise resolving to the newly created product or an error.
+		 */
 	async createProduct(productData: ProductDto): Promise<ApiResponse<Product>> {
 		try {
 			const response = await fetch(`${API_BASE_URL}/products`, {
@@ -65,8 +91,9 @@ export const productService = {
 			if (!response.ok) {
 				return { error: data.message || 'Failed to create product.' };
 			}
+			invalidateMyProductsCache();
 			return { data };
-		} catch (err) {
+		} catch {
 			return { error: 'Network error. Please try again.' };
 		}
 	},
@@ -88,8 +115,9 @@ export const productService = {
 			if (!response.ok) {
 				return { error: data.message || 'Failed to update product.' };
 			}
+			invalidateMyProductsCache();
 			return { data };
-		} catch (err) {
+		} catch {
 			return { error: 'Network error. Please try again.' };
 		}
 	},
@@ -109,8 +137,9 @@ export const productService = {
 				const data = await response.json();
 				return { error: data.message || `Failed to delete product: ${response.statusText}` };
 			}
+			invalidateMyProductsCache();
 			return { data: null, message: 'Product deleted successfully.' };
-		} catch (err) {
+		} catch {
 			return { error: 'Network error. Please try again.' };
 		}
 	},

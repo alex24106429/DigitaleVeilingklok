@@ -29,10 +29,6 @@ const initialFormData: ProductDto = {
 	stemLength: undefined,
 };
 
-/**
- * ProductManagement component for suppliers to manage their products.
- * @returns {JSX.Element} The rendered component.
- */
 export default function ProductManagement() {
 	const { showAlert } = useAlert();
 	const [products, setProducts] = useState<Product[]>([]);
@@ -41,9 +37,9 @@ export default function ProductManagement() {
 	const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 	const [formData, setFormData] = useState<ProductDto>(initialFormData);
 
-	const fetchProducts = useCallback(async () => {
+	const fetchProducts = useCallback(async (force = false) => {
 		setLoading(true);
-		const response = await productService.getMyProducts();
+		const response = await productService.getMyProducts({ force });
 		if (response.data) {
 			setProducts(response.data);
 		} else {
@@ -53,12 +49,15 @@ export default function ProductManagement() {
 	}, [showAlert]);
 
 	useEffect(() => {
-		fetchProducts();
+		// Initial load (deduped by service to avoid duplicate fetch in StrictMode)
+		// eslint-disable-next-line react-hooks/set-state-in-effect
+		fetchProducts(false);
 	}, [fetchProducts]);
 
 	const handleOpenDialog = (product: Product | null = null) => {
 		setEditingProduct(product);
 		if (product) {
+			// eslint-disable-next-line @typescript-eslint/no-unused-vars
 			const { id, supplierId, auctionId, ...dto } = product;
 			setFormData(dto);
 		} else {
@@ -91,7 +90,8 @@ export default function ProductManagement() {
 		if (response.data) {
 			showAlert({ title: 'Succes', message: `Product succesvol ${editingProduct ? 'bijgewerkt' : 'aangemaakt'}.` });
 			handleCloseDialog();
-			fetchProducts(); // Refresh list
+			// Force refresh to bypass cache after mutation
+			fetchProducts(true);
 		} else {
 			showAlert({ title: 'Fout', message: response.error || 'Opslaan mislukt.' });
 		}
@@ -113,7 +113,8 @@ export default function ProductManagement() {
 			showAlert({ title: 'Succes', message: `${selectedIds.length} product(en) succesvol verwijderd.` });
 		}
 
-		fetchProducts();
+		// Force refresh to bypass cache after mutation
+		fetchProducts(true);
 	};
 
 	if (loading) {

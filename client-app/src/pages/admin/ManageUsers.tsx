@@ -37,9 +37,9 @@ export default function ManageUsers() {
 	const [users, setUsers] = useState<User[]>([]);
 	const [loading, setLoading] = useState(true);
 
-	const fetchUsers = useCallback(async () => {
+	const fetchUsers = useCallback(async (force = false) => {
 		setLoading(true);
-		const response = await userService.getAllUsers();
+		const response = await userService.getAllUsers({ force });
 		if (response.data) {
 			setUsers(response.data);
 		} else {
@@ -49,7 +49,8 @@ export default function ManageUsers() {
 	}, [showAlert]);
 
 	useEffect(() => {
-		fetchUsers();
+		// eslint-disable-next-line react-hooks/set-state-in-effect
+		fetchUsers(false);
 	}, [fetchUsers]);
 
 	const handleDelete = async (selectedIds: readonly (string | number)[]) => {
@@ -83,8 +84,8 @@ export default function ManageUsers() {
 			showAlert({ title: 'Succes', message: `${idsToDelete.length} gebruiker(s) succesvol verwijderd.` });
 		}
 
-		// Refresh the user list
-		fetchUsers();
+		// Force refresh to bypass cache after mutation
+		fetchUsers(true);
 	};
 
 	// Memoize the data prepared for the table to avoid re-calculating on every render
