@@ -9,6 +9,8 @@ namespace PetalBid.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+
+// Haalt alle users uit de database.
 public class UsersController(AppDbContext db) : ApiControllerBase(db)
 {
 	[HttpGet]
@@ -18,6 +20,7 @@ public class UsersController(AppDbContext db) : ApiControllerBase(db)
 		return Ok(users);
 	}
 
+	// Haalt een specifieke user op basis van de ID.
 	[HttpGet("{id:int}")]
 	public async Task<ActionResult<User>> GetById(int id)
 	{
@@ -25,6 +28,7 @@ public class UsersController(AppDbContext db) : ApiControllerBase(db)
 		return user is null ? NotFound() : Ok(user);
 	}
 
+	// Maakt een nieuwe user aan in de database.
 	[HttpPost]
 	public async Task<ActionResult<User>> Create(User user)
 	{
@@ -33,6 +37,7 @@ public class UsersController(AppDbContext db) : ApiControllerBase(db)
 		return CreatedAtAction(nameof(GetById), new { id = user.Id }, user);
 	}
 
+	// Registreert een nieuwe user met gehashte wachtwoord.
 	[HttpPost("register")]
 	public async Task<ActionResult<UserResponseDto>> Register(RegisterUserDto registerDto)
 	{
@@ -70,6 +75,7 @@ public class UsersController(AppDbContext db) : ApiControllerBase(db)
 		return CreatedAtAction(nameof(GetById), new { id = user.Id }, response);
 	}
 
+	// Logt een user in door email en wachtwoord te verifiëren.
 	[HttpPost("login")]
 	public async Task<ActionResult<UserResponseDto>> Login(LoginDto loginDto)
 	{
@@ -98,6 +104,7 @@ public class UsersController(AppDbContext db) : ApiControllerBase(db)
 		return Ok(response);
 	}
 
+	// Update een bestaande user op basis van de ID.
 	[HttpPut("{id:int}")]
 	public async Task<ActionResult<User>> Update(int id, User updated)
 	{

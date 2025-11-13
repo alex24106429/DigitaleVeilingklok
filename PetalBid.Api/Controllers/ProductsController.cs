@@ -7,6 +7,8 @@ namespace PetalBid.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+
+// Haalt alle products uit de database.
 public class ProductsController(AppDbContext db) : ApiControllerBase(db)
 {
 	[HttpGet]
@@ -16,12 +18,16 @@ public class ProductsController(AppDbContext db) : ApiControllerBase(db)
 		return Ok(products);
 	}
 
+	// Haalt een specifieke product op basis van de ID.
+
 	[HttpGet("{id:int}")]
 	public async Task<ActionResult<Product>> GetById(int id)
 	{
 		var product = await Db.Products.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
 		return product is null ? NotFound() : Ok(product);
 	}
+
+	// Maakt een nieuwe product aan in de database.
 
 	[HttpPost]
 	public async Task<ActionResult<Product>> Create(Product product)
@@ -30,6 +36,8 @@ public class ProductsController(AppDbContext db) : ApiControllerBase(db)
 		await Db.SaveChangesAsync();
 		return CreatedAtAction(nameof(GetById), new { id = product.Id }, product);
 	}
+
+	// Update een bestaande product op basis van de ID.
 
 	[HttpPut("{id:int}")]
 	public async Task<ActionResult<Product>> Update(int id, Product updated)

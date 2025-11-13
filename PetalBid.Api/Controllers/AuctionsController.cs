@@ -7,6 +7,8 @@ namespace PetalBid.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+
+// Haalt alle auctions uit de database.
 public class AuctionsController(AppDbContext db) : ApiControllerBase(db)
 {
 	[HttpGet]
@@ -19,6 +21,8 @@ public class AuctionsController(AppDbContext db) : ApiControllerBase(db)
 		return Ok(auctions);
 	}
 
+	// Haalt een specifieke auction op basis van de ID.
+
 	[HttpGet("{id:int}")]
 	public async Task<ActionResult<Auction>> GetById(int id)
 	{
@@ -29,6 +33,8 @@ public class AuctionsController(AppDbContext db) : ApiControllerBase(db)
 		return auction is null ? NotFound() : Ok(auction);
 	}
 
+	// Maakt een nieuwe auction aan in de database.
+
 	[HttpPost]
 	public async Task<ActionResult<Auction>> Create(Auction auction)
 	{
@@ -37,6 +43,8 @@ public class AuctionsController(AppDbContext db) : ApiControllerBase(db)
 
 		return CreatedAtAction(nameof(GetById), new { id = auction.Id }, auction);
 	}
+
+	// Update een bestaande auction op basis van de ID.
 
 	[HttpPut("{id:int}")]
 	public async Task<ActionResult<Auction>> Update(int id, Auction updated)
