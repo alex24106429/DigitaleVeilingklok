@@ -13,7 +13,10 @@ const headCells: readonly HeadCell<Purchase>[] = [
 	{ id: 'purchasePrice', numeric: true, disablePadding: false, label: 'Prijs (€)' },
 	{ id: 'purchaseDate', numeric: false, disablePadding: false, label: 'Datum' },
 ];
-
+/**
+ * Displays a list of purchases made by the user.
+ * @returns JSX.Element 
+ */
 export default function Purchases() {
 	const [purchases, setPurchases] = useState<Purchase[]>([]);
 	const [isLoading, setIsLoading] = useState<boolean>(true);

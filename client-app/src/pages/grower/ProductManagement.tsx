@@ -28,7 +28,10 @@ const initialFormData: ProductDto = {
 	potSize: undefined,
 	stemLength: undefined,
 };
-
+/**
+ * Manages the products for the grower, including creating, updating, and deleting products.
+ * @returns JSX.Element
+ */
 export default function ProductManagement() {
 	const { showAlert } = useAlert();
 	const [products, setProducts] = useState<Product[]>([]);
