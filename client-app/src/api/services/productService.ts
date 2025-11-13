@@ -89,7 +89,7 @@ export const productService = {
 			});
 			const data = await response.json();
 			if (!response.ok) {
-				return { error: data.message || 'Failed to create product.' };
+				return { error: Object.values(data.errors).join("\n") || 'Failed to create product.' };
 			}
 			invalidateMyProductsCache();
 			return { data };
@@ -113,7 +113,7 @@ export const productService = {
 			});
 			const data = await response.json();
 			if (!response.ok) {
-				return { error: data.message || 'Failed to update product.' };
+				return { error: Object.values(data.errors).join(" ") || 'Failed to update product.' };
 			}
 			invalidateMyProductsCache();
 			return { data };
