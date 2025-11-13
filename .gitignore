@@ -35,3 +35,6 @@ yarn-error.log*
 
 # docs
 client-app/docs
+PetalBid.Api/docs
+PetalBid.Api/_site
+PetalBid.Api/api
