@@ -5,18 +5,28 @@ using PetalBid.Api.Data;
 using PetalBid.Api.Domain.Entities;
 
 namespace PetalBid.Api.Controllers;
+/// <summary>
+/// Controller for "Supplier" users
+/// </summary>
 
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Roles = "Admin")]
 public class SuppliersController(AppDbContext db) : ApiControllerBase(db)
 {
+	/// <summary>
+	/// Retrieves all "Suppliers"
+	/// </summary>
+	
 	[HttpGet]
 	public async Task<ActionResult<List<Supplier>>> GetAll()
 	{
 		var suppliers = await Db.Suppliers.AsNoTracking().ToListAsync();
 		return Ok(suppliers);
 	}
+    /// <summary>
+	/// Retrieves a specific "Supplier"
+	/// </summary>
 
 	[HttpGet("{id:int}")]
 	public async Task<ActionResult<Supplier>> GetById(int id)
@@ -24,7 +34,10 @@ public class SuppliersController(AppDbContext db) : ApiControllerBase(db)
 		var supplier = await Db.Suppliers.AsNoTracking().FirstOrDefaultAsync(s => s.Id == id);
 		return supplier is null ? NotFound() : Ok(supplier);
 	}
-
+     /// <summary>
+	 /// Creates a new "Supplier"	
+	 /// </summary>
+	
 	[HttpPost]
 	public async Task<ActionResult<Supplier>> Create(Supplier supplier)
 	{
@@ -32,6 +45,9 @@ public class SuppliersController(AppDbContext db) : ApiControllerBase(db)
 		await Db.SaveChangesAsync();
 		return CreatedAtAction(nameof(GetById), new { id = supplier.Id }, supplier);
 	}
+     /// <summary>
+	 /// Updates an existing "Supplier"
+	 /// </summary>
 
 	[HttpPut("{id:int}")]
 	public async Task<ActionResult<Supplier>> Update(int id, Supplier updated)
@@ -46,7 +62,9 @@ public class SuppliersController(AppDbContext db) : ApiControllerBase(db)
 		await Db.SaveChangesAsync();
 		return Ok(existing);
 	}
-
+     /// <summary>
+	 /// Deletes an existing "Supplier"
+	 /// </summary>
 	[HttpDelete("{id:int}")]
 	public async Task<ActionResult> Delete(int id)
 	{

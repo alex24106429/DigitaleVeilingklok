@@ -12,11 +12,16 @@ using System.Security.Claims;
 using System.Text;
 
 namespace PetalBid.Api.Controllers;
-
+/// <summary>
+/// Controller for all users
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class UsersController(AppDbContext db, IConfiguration config) : ApiControllerBase(db)
-{
+{ 
+	/// <summary>
+	/// Retrieves all users
+	/// </summary>
 	private readonly IConfiguration _config = config;
 
 	[HttpGet]
@@ -48,7 +53,11 @@ public class UsersController(AppDbContext db, IConfiguration config) : ApiContro
 
 		return Ok(responseDtos);
 	}
-
+     /// <summary>
+	 /// Retrieves a specific user
+	 /// </summary>
+	 /// <param name="id"></param>
+	 /// <returns></returns>
 	[HttpGet("{id:int}")]
 	[Authorize]
 	public async Task<ActionResult<UserResponseDto>> GetById(int id)
@@ -72,18 +81,22 @@ public class UsersController(AppDbContext db, IConfiguration config) : ApiContro
 		};
 		return Ok(response);
 	}
-
+     /// <summary>
+	 /// Registers a new user
+	 /// </summary>
+	 /// <param name="registerDto"></param>
+	 /// <returns></returns>
 	[HttpPost("register")]
 	public async Task<ActionResult<UserResponseDto>> Register(RegisterUserDto registerDto)
 	{
-		// Check if email already exists
+		
 		var existingUser = await Db.Users.FirstOrDefaultAsync(u => u.Email == registerDto.Email);
 		if (existingUser != null)
 		{
 			return BadRequest(new { message = "Email is already registered" });
 		}
 
-		// Hash the password
+		
 		var passwordHash = PasswordService.HashPassword(registerDto.Password);
 
 		User user;
@@ -123,7 +136,9 @@ public class UsersController(AppDbContext db, IConfiguration config) : ApiContro
 
 		return CreatedAtAction(nameof(GetById), new { id = user.Id }, response);
 	}
-
+     /// <summary>
+	 /// Logs in a user
+	 /// </summary>
 	[HttpPost("login")]
 	public async Task<ActionResult<object>> Login(LoginDto loginDto)
 	{
@@ -159,7 +174,9 @@ public class UsersController(AppDbContext db, IConfiguration config) : ApiContro
 
 		return Ok(new { Token = token, User = response });
 	}
-
+     /// <summary>
+	 /// Deletes a user
+	 /// </summary>
 	[HttpDelete("{id:int}")]
 	[Authorize(Roles = "Admin")]
 	public async Task<ActionResult> Delete(int id)
@@ -171,6 +188,9 @@ public class UsersController(AppDbContext db, IConfiguration config) : ApiContro
 		await Db.SaveChangesAsync();
 		return NoContent();
 	}
+        /// <summary>
+       /// Generates a JWT token for the authenticated user
+      /// </summary>
 
 	private string GenerateJwtToken(User user, UserRole role)
 	{

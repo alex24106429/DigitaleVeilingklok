@@ -5,12 +5,20 @@ using PetalBid.Api.Data;
 using PetalBid.Api.Domain.Entities;
 
 namespace PetalBid.Api.Controllers;
+/// <summary>
+/// Controller for all auctions
+/// </summary>
+
 
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Roles = "Admin,Auctioneer")]
 public class AuctionsController(AppDbContext db) : ApiControllerBase(db)
 {
+	/// <summary>
+	/// Retrieves all auctions from the database
+	/// </summary>
+	
 	[HttpGet]
 	public async Task<ActionResult<List<Auction>>> GetAll()
 	{
@@ -20,7 +28,10 @@ public class AuctionsController(AppDbContext db) : ApiControllerBase(db)
 
 		return Ok(auctions);
 	}
-
+     /// <summary>
+	 /// Retrieves a specific auction
+	 /// </summary>
+	 
 	[HttpGet("{id:int}")]
 	public async Task<ActionResult<Auction>> GetById(int id)
 	{
@@ -31,6 +42,10 @@ public class AuctionsController(AppDbContext db) : ApiControllerBase(db)
 		return auction is null ? NotFound() : Ok(auction);
 	}
 
+    /// <summary>
+	/// Creates a new auction
+	/// </summary>
+	
 	[HttpPost]
 	public async Task<ActionResult<Auction>> Create(Auction auction)
 	{
@@ -39,7 +54,9 @@ public class AuctionsController(AppDbContext db) : ApiControllerBase(db)
 
 		return CreatedAtAction(nameof(GetById), new { id = auction.Id }, auction);
 	}
-
+     /// <summary>
+	 /// Updates an auction
+	 /// </summary>
 	[HttpPut("{id:int}")]
 	public async Task<ActionResult<Auction>> Update(int id, Auction updated)
 	{
@@ -56,7 +73,10 @@ public class AuctionsController(AppDbContext db) : ApiControllerBase(db)
 		await Db.SaveChangesAsync();
 		return Ok(existing);
 	}
-
+     /// <summary>
+	 /// Deletes an auction
+	 /// </summary>
+	
 	[HttpDelete("{id:int}")]
 	public async Task<ActionResult> Delete(int id)
 	{
