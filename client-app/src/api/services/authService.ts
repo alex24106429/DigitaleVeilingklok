@@ -1,4 +1,5 @@
-import { RegisterUserRequest, LoginRequest, User, ApiResponse, LoginResponse } from '../../types/user';
+import { User } from '../../types/user';
+import { RegisterUserRequest, LoginRequest, ApiResponse, LoginResponse } from '../../types/api';
 
 const API_BASE_URL = 'http://localhost:5048/api';
 
