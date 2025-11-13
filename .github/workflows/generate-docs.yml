@@ -1,4 +1,4 @@
-name: Generate and Deploy TypeDoc
+name: Generate and Deploy All Documentation
 
 on:
   push:
@@ -10,33 +10,64 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: read
+      contents: write # Needs write to push the new docs branch/commit
       pages: write
       id-token: write
+
+    env:
+      # Replace these with the actual paths to your project folders
+      REACT_APP_PATH: client-app
+      CSHARP_PROJECT_PATH: PetalBid.Api
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # --- TypeScript/React Documentation ---
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 25
-          cache: 'npm'
-          cache-dependency-path: client-app/package-lock.json
+          cache: "npm"
+          cache-dependency-path: ${{ env.REACT_APP_PATH }}/package-lock.json
 
-      - name: Install dependencies
+      - name: Install Node dependencies
         run: npm ci
-        working-directory: ./client-app
+        working-directory: ./${{ env.REACT_APP_PATH }}
 
       - name: Generate TypeDoc documentation
         run: npx typedoc
-        working-directory: ./client-app
+        working-directory: ./${{ env.REACT_APP_PATH }}
+
+      # --- .NET/C# Documentation ---
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x" # Use the .NET version your project targets
+
+      - name: Install DocFX
+        run: dotnet tool install -g docfx
+
+      - name: Generate DocFX documentation
+        run: docfx ${{ env.CSHARP_PROJECT_PATH }}/docfx.json
+
+      # --- Combine and Prepare for Deployment ---
+      - name: Prepare artifact structure
+        run: |
+          # Create a root directory for the combined pages
+          mkdir -p pages
+          # Create an index page to link to both documentation sites
+          echo '<!DOCTYPE html><html><head><title>Project Documentation</title></head><body><h1>Project Documentation</h1><ul><li><a href="ts-docs/">TypeScript/React Documentation</a></li><li><a href="cs-docs/">C#/.NET Documentation</a></li></ul></body></html>' > pages/index.html
+
+          # Move generated docs into subfolders
+          mv ./${{ env.REACT_APP_PATH }}/docs ./pages/ts-docs
+          mv ./${{ env.CSHARP_PROJECT_PATH }}/_site ./pages/cs-docs
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./client-app/docs
+          # Upload the combined 'pages' directory
+          path: ./pages
 
       - name: Deploy to GitHub Pages
         id: deployment
