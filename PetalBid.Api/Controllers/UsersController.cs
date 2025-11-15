@@ -17,12 +17,13 @@ namespace PetalBid.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-public class UsersController(AppDbContext db, IConfiguration config) : ApiControllerBase(db)
+public class UsersController(AppDbContext db, IConfiguration config, IPwnedPasswordsService pwnedPasswordsService) : ApiControllerBase(db)
 {
 	/// <summary>
 	/// Retrieves all users
 	/// </summary>
 	private readonly IConfiguration _config = config;
+	private readonly IPwnedPasswordsService _pwnedPasswordsService = pwnedPasswordsService;
 
 	[HttpGet]
 	[Authorize(Roles = "Admin")]
@@ -70,7 +71,7 @@ public class UsersController(AppDbContext db, IConfiguration config) : ApiContro
 		else if (user is Supplier) role = UserRole.Supplier;
 		else if (user is Auctioneer) role = UserRole.Auctioneer;
 		else if (user is Admin) role = UserRole.Admin;
-		else return StatusCode(500, "Unknown user type");
+		else return StatusCode(500, "Onbekend gebruikerstype.");
 
 		var response = new UserResponseDto
 		{
@@ -93,9 +94,14 @@ public class UsersController(AppDbContext db, IConfiguration config) : ApiContro
 		var existingUser = await Db.Users.FirstOrDefaultAsync(u => u.Email == registerDto.Email);
 		if (existingUser != null)
 		{
-			return BadRequest(new { message = "Email is already registered" });
+			return BadRequest(new { message = "Uw e-mailadres is al geregistreerd." });
 		}
 
+		// Check if the password has been exposed in a data breach
+		if (await _pwnedPasswordsService.IsPasswordPwnedAsync(registerDto.Password))
+		{
+			return BadRequest(new { message = "Dit wachtwoord komt te vaak voor en is uitgelekt bij datalekken. Kies alstublieft een ander wachtwoord." });
+		}
 
 		var passwordHash = PasswordService.HashPassword(registerDto.Password);
 
@@ -115,7 +121,7 @@ public class UsersController(AppDbContext db, IConfiguration config) : ApiContro
 				user = new Admin();
 				break;
 			default:
-				return BadRequest(new { message = "Invalid user role specified" });
+				return BadRequest(new { message = "Ongeldige gebruikersrol opgegeven." });
 		}
 
 		user.FullName = registerDto.FullName;
@@ -146,13 +152,13 @@ public class UsersController(AppDbContext db, IConfiguration config) : ApiContro
 		var user = await Db.Users.FirstOrDefaultAsync(u => u.Email == loginDto.Email);
 		if (user == null)
 		{
-			return Unauthorized(new { message = "Invalid email or password" });
+			return Unauthorized(new { message = "Ongeldig e-mailadres of wachtwoord." });
 		}
 
 		// Verify password
 		if (!PasswordService.VerifyPassword(user.PasswordHash, loginDto.Password))
 		{
-			return Unauthorized(new { message = "Invalid email or password" });
+			return Unauthorized(new { message = "Ongeldig e-mailadres of wachtwoord." });
 		}
 
 		UserRole role;
@@ -193,7 +199,7 @@ public class UsersController(AppDbContext db, IConfiguration config) : ApiContro
 		var emailExists = await Db.Users.AnyAsync(u => u.Email == dto.Email && u.Id != userId);
 		if (emailExists)
 		{
-			return BadRequest(new { message = "Email is already registered" });
+			return BadRequest(new { message = "Uw e-mailadres is al geregistreerd." });
 		}
 
 		existing.FullName = dto.FullName;
@@ -207,7 +213,7 @@ public class UsersController(AppDbContext db, IConfiguration config) : ApiContro
 			Supplier => UserRole.Supplier,
 			Auctioneer => UserRole.Auctioneer,
 			Admin => UserRole.Admin,
-			_ => throw new InvalidOperationException("Unknown user type")
+			_ => throw new InvalidOperationException("Onbekend gebruikerstype.")
 		};
 
 		var response = new UserResponseDto
@@ -243,6 +249,12 @@ public class UsersController(AppDbContext db, IConfiguration config) : ApiContro
 		if (string.IsNullOrWhiteSpace(dto.NewPassword) || dto.NewPassword.Length < 6)
 		{
 			return BadRequest(new { message = "Nieuw wachtwoord moet minimaal 6 karakters zijn." });
+		}
+
+		// Check if the new password has been exposed in a data breach
+		if (await _pwnedPasswordsService.IsPasswordPwnedAsync(dto.NewPassword))
+		{
+			return BadRequest(new { message = "Dit wachtwoord komt te vaak voor en is uitgelekt bij datalekken. Kies alstublieft een ander wachtwoord." });
 		}
 
 		existing.PasswordHash = PasswordService.HashPassword(dto.NewPassword);

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PetalBid.Api.Data;
+using PetalBid.Api.Services;
 using System.Text;
 
 namespace PetalBid.Api;
@@ -22,6 +23,9 @@ public class Program
 			options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 		builder.Services.AddControllers();
+
+		// Add Pwned Passwords service with IHttpClientFactory
+		builder.Services.AddHttpClient<IPwnedPasswordsService, PwnedPasswordsService>();
 
 		// Add Authentication Services
 		builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
