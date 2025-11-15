@@ -54,11 +54,6 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault(); // Prevents the page from reloading
 
-		if (isRegisterPage && password.length < 6) {
-			showAlert({ title: "Ongeldige informatie", message: "Wachtwoord moet minimaal 6 karakters zijn!" });
-			return;
-		}
-
 		if (isRegisterPage && password !== confirmPassword) {
 			showAlert({ title: "Ongeldige informatie", message: "Wachtwoorden komen niet overeen!" });
 			return;

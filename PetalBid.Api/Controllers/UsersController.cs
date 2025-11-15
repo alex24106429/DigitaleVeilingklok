@@ -97,6 +97,12 @@ public class UsersController(AppDbContext db, IConfiguration config, IPwnedPassw
 			return BadRequest(new { message = "Uw e-mailadres is al geregistreerd." });
 		}
 
+		var (isValid, errorMessage) = PasswordService.ValidatePasswordRequirements(registerDto.Password);
+		if (!isValid)
+		{
+			return BadRequest(new { message = errorMessage });
+		}
+
 		// Check if the password has been exposed in a data breach
 		if (await _pwnedPasswordsService.IsPasswordPwnedAsync(registerDto.Password))
 		{
@@ -246,9 +252,10 @@ public class UsersController(AppDbContext db, IConfiguration config, IPwnedPassw
 			return BadRequest(new { message = "Huidig wachtwoord is onjuist." });
 		}
 
-		if (string.IsNullOrWhiteSpace(dto.NewPassword) || dto.NewPassword.Length < 6)
+		var (isValid, errorMessage) = PasswordService.ValidatePasswordRequirements(dto.NewPassword);
+		if (!isValid)
 		{
-			return BadRequest(new { message = "Nieuw wachtwoord moet minimaal 6 karakters zijn." });
+			return BadRequest(new { message = errorMessage });
 		}
 
 		// Check if the new password has been exposed in a data breach

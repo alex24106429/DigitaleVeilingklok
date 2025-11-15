@@ -67,10 +67,6 @@ export default function Account() {
 	};
 
 	const handleChangePassword = async () => {
-		if (newPassword.length < 6) {
-			showAlert({ title: 'Ongeldige invoer', message: 'Nieuw wachtwoord moet minimaal 6 karakters zijn.' });
-			return;
-		}
 		if (newPassword !== confirmPassword) {
 			showAlert({ title: 'Ongeldige invoer', message: 'Nieuw wachtwoord en bevestiging komen niet overeen.' });
 			return;
