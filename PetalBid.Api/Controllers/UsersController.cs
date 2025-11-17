@@ -12,53 +12,37 @@ using System.Security.Claims;
 using System.Text;
 
 namespace PetalBid.Api.Controllers;
+
 /// <summary>
 /// Controller for all users
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-public class UsersController(AppDbContext db, IConfiguration config, IPwnedPasswordsService pwnedPasswordsService) : ApiControllerBase(db)
+public class UsersController(
+	AppDbContext db,
+	IConfiguration config,
+	IPwnedPasswordsService pwnedPasswordsService,
+	ITotpService totpService) : ApiControllerBase(db)
 {
+	private readonly IConfiguration _config = config;
+	private readonly IPwnedPasswordsService _pwnedPasswordsService = pwnedPasswordsService;
+	private readonly ITotpService _totpService = totpService;
+
 	/// <summary>
 	/// Retrieves all users
 	/// </summary>
-	private readonly IConfiguration _config = config;
-	private readonly IPwnedPasswordsService _pwnedPasswordsService = pwnedPasswordsService;
-
 	[HttpGet]
 	[Authorize(Roles = "Admin")]
 	public async Task<ActionResult<List<UserResponseDto>>> GetAll()
 	{
 		var users = await Db.Users.AsNoTracking().ToListAsync();
-		var responseDtos = users.Select(user =>
-		{
-			UserRole role;
-			if (user is Buyer) role = UserRole.Buyer;
-			else if (user is Supplier) role = UserRole.Supplier;
-			else if (user is Auctioneer) role = UserRole.Auctioneer;
-			else if (user is Admin) role = UserRole.Admin;
-			else
-			{
-				// This case should ideally not be hit if data is consistent
-				throw new InvalidOperationException($"Unknown user type found for user ID {user.Id}");
-			}
-
-			return new UserResponseDto
-			{
-				Id = user.Id,
-				FullName = user.FullName,
-				Email = user.Email,
-				Role = role
-			};
-		}).ToList();
-
+		var responseDtos = users.Select(MapUser).ToList();
 		return Ok(responseDtos);
 	}
+
 	/// <summary>
 	/// Retrieves a specific user
 	/// </summary>
-	/// <param name="id"></param>
-	/// <returns></returns>
 	[HttpGet("{id:int}")]
 	[Authorize]
 	public async Task<ActionResult<UserResponseDto>> GetById(int id)
@@ -66,27 +50,12 @@ public class UsersController(AppDbContext db, IConfiguration config, IPwnedPassw
 		var user = await Db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id);
 		if (user is null) return NotFound();
 
-		UserRole role;
-		if (user is Buyer) role = UserRole.Buyer;
-		else if (user is Supplier) role = UserRole.Supplier;
-		else if (user is Auctioneer) role = UserRole.Auctioneer;
-		else if (user is Admin) role = UserRole.Admin;
-		else return StatusCode(500, "Onbekend gebruikerstype.");
-
-		var response = new UserResponseDto
-		{
-			Id = user.Id,
-			FullName = user.FullName,
-			Email = user.Email,
-			Role = role
-		};
-		return Ok(response);
+		return Ok(MapUser(user));
 	}
+
 	/// <summary>
 	/// Registers a new user
 	/// </summary>
-	/// <param name="registerDto"></param>
-	/// <returns></returns>
 	[HttpPost("register")]
 	public async Task<ActionResult<UserResponseDto>> Register(RegisterUserDto registerDto)
 	{
@@ -111,43 +80,26 @@ public class UsersController(AppDbContext db, IConfiguration config, IPwnedPassw
 
 		var passwordHash = PasswordService.HashPassword(registerDto.Password);
 
-		User user;
-		switch (registerDto.Role)
+		User user = registerDto.Role switch
 		{
-			case UserRole.Buyer:
-				user = new Buyer { CompanyName = "Default Company" };
-				break;
-			case UserRole.Supplier:
-				user = new Supplier { CompanyName = "Default Company" };
-				break;
-			case UserRole.Auctioneer:
-				user = new Auctioneer();
-				break;
-			case UserRole.Admin:
-				user = new Admin();
-				break;
-			default:
-				return BadRequest(new { message = "Ongeldige gebruikersrol opgegeven." });
-		}
+			UserRole.Buyer => new Buyer { CompanyName = "Default Company" },
+			UserRole.Supplier => new Supplier { CompanyName = "Default Company" },
+			UserRole.Auctioneer => new Auctioneer(),
+			UserRole.Admin => new Admin(),
+			_ => throw new InvalidOperationException("Ongeldige gebruikersrol opgegeven.")
+		};
 
 		user.FullName = registerDto.FullName;
 		user.Email = registerDto.Email;
 		user.PasswordHash = passwordHash;
+		user.IsTotpEnabled = false;
 
 		Db.Users.Add(user);
 		await Db.SaveChangesAsync();
 
-		// Return user response without password hash
-		var response = new UserResponseDto
-		{
-			Id = user.Id,
-			FullName = user.FullName,
-			Email = user.Email,
-			Role = registerDto.Role
-		};
-
-		return CreatedAtAction(nameof(GetById), new { id = user.Id }, response);
+		return CreatedAtAction(nameof(GetById), new { id = user.Id }, MapUser(user));
 	}
+
 	/// <summary>
 	/// Logs in a user
 	/// </summary>
@@ -167,24 +119,27 @@ public class UsersController(AppDbContext db, IConfiguration config, IPwnedPassw
 			return Unauthorized(new { message = "Ongeldig e-mailadres of wachtwoord." });
 		}
 
-		UserRole role;
-		if (user is Buyer) role = UserRole.Buyer;
-		else if (user is Supplier) role = UserRole.Supplier;
-		else if (user is Auctioneer) role = UserRole.Auctioneer;
-		else if (user is Admin) role = UserRole.Admin;
-		else return StatusCode(500, "Unknown user type during login");
-
-		var token = GenerateJwtToken(user, role);
-
-		var response = new UserResponseDto
+		if (user.IsTotpEnabled)
 		{
-			Id = user.Id,
-			FullName = user.FullName,
-			Email = user.Email,
-			Role = role
-		};
+			if (string.IsNullOrEmpty(user.TotpSecret))
+			{
+				return StatusCode(500, "TOTP-configuratie ontbreekt voor deze gebruiker.");
+			}
 
-		return Ok(new { Token = token, User = response });
+			var code = loginDto.TwoFactorCode?.Trim();
+			if (string.IsNullOrWhiteSpace(code))
+			{
+				return Unauthorized(new { message = "Tweestapsverificatie vereist." });
+			}
+
+			if (!_totpService.ValidateCode(user.TotpSecret, code))
+			{
+				return Unauthorized(new { message = "Ongeldige 2FA-code." });
+			}
+		}
+
+		var token = GenerateJwtToken(user, GetRole(user));
+		return Ok(new { Token = token, User = MapUser(user) });
 	}
 
 	/// <summary>
@@ -212,25 +167,7 @@ public class UsersController(AppDbContext db, IConfiguration config, IPwnedPassw
 		existing.Email = dto.Email;
 
 		await Db.SaveChangesAsync();
-
-		UserRole role = existing switch
-		{
-			Buyer => UserRole.Buyer,
-			Supplier => UserRole.Supplier,
-			Auctioneer => UserRole.Auctioneer,
-			Admin => UserRole.Admin,
-			_ => throw new InvalidOperationException("Onbekend gebruikerstype.")
-		};
-
-		var response = new UserResponseDto
-		{
-			Id = existing.Id,
-			FullName = existing.FullName,
-			Email = existing.Email,
-			Role = role
-		};
-
-		return Ok(response);
+		return Ok(MapUser(existing));
 	}
 
 	/// <summary>
@@ -269,6 +206,84 @@ public class UsersController(AppDbContext db, IConfiguration config, IPwnedPassw
 
 		return Ok(new { message = "Wachtwoord succesvol gewijzigd." });
 	}
+
+	/// <summary>
+	/// Starts the TOTP setup for the authenticated user
+	/// </summary>
+	[HttpPost("me/totp/setup")]
+	[Authorize]
+	public async Task<ActionResult<TotpSetupResponseDto>> BeginTotpSetup()
+	{
+		var user = await GetCurrentUserAsync();
+		if (user is null) return Unauthorized();
+
+		if (user.IsTotpEnabled)
+		{
+			return BadRequest(new { message = "Tweestapsverificatie is al ingeschakeld. Schakel het eerst uit om opnieuw te configureren." });
+		}
+
+		var secret = _totpService.GenerateSecret();
+		user.TotpSecret = secret;
+		user.IsTotpEnabled = false;
+		await Db.SaveChangesAsync();
+
+		var otpauthUrl = _totpService.BuildOtpAuthUri(secret, user.Email, "PetalBid");
+		return Ok(new TotpSetupResponseDto { Secret = secret, OtpauthUrl = otpauthUrl });
+	}
+
+	/// <summary>
+	/// Confirms the TOTP setup with a code from the authenticator app
+	/// </summary>
+	[HttpPost("me/totp/verify")]
+	[Authorize]
+	public async Task<ActionResult<UserResponseDto>> VerifyTotp(VerifyTotpDto dto)
+	{
+		var user = await GetCurrentUserAsync();
+		if (user is null) return Unauthorized();
+
+		if (string.IsNullOrEmpty(user.TotpSecret))
+		{
+			return BadRequest(new { message = "Geen TOTP-configuratie gevonden. Start de setup opnieuw." });
+		}
+
+		if (!_totpService.ValidateCode(user.TotpSecret, dto.Code))
+		{
+			return BadRequest(new { message = "Ongeldige 2FA-code." });
+		}
+
+		user.IsTotpEnabled = true;
+		await Db.SaveChangesAsync();
+
+		return Ok(MapUser(user));
+	}
+
+	/// <summary>
+	/// Disables TOTP for the authenticated user
+	/// </summary>
+	[HttpPost("me/totp/disable")]
+	[Authorize]
+	public async Task<ActionResult<UserResponseDto>> DisableTotp(DisableTotpDto dto)
+	{
+		var user = await GetCurrentUserAsync();
+		if (user is null) return Unauthorized();
+
+		if (!user.IsTotpEnabled || string.IsNullOrEmpty(user.TotpSecret))
+		{
+			return BadRequest(new { message = "Tweestapsverificatie is niet ingeschakeld." });
+		}
+
+		if (!_totpService.ValidateCode(user.TotpSecret, dto.Code))
+		{
+			return BadRequest(new { message = "Ongeldige 2FA-code." });
+		}
+
+		user.IsTotpEnabled = false;
+		user.TotpSecret = null;
+		await Db.SaveChangesAsync();
+
+		return Ok(MapUser(user));
+	}
+
 	/// <summary>
 	/// Deletes a user
 	/// </summary>
@@ -283,10 +298,40 @@ public class UsersController(AppDbContext db, IConfiguration config, IPwnedPassw
 		await Db.SaveChangesAsync();
 		return NoContent();
 	}
+
+	private async Task<User?> GetCurrentUserAsync()
+	{
+		var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+		if (string.IsNullOrWhiteSpace(userIdString)) return null;
+
+		var userId = int.Parse(userIdString);
+		return await Db.Users.FindAsync(userId);
+	}
+
+	private UserResponseDto MapUser(User user)
+	{
+		return new UserResponseDto
+		{
+			Id = user.Id,
+			FullName = user.FullName,
+			Email = user.Email,
+			Role = GetRole(user),
+			IsTotpEnabled = user.IsTotpEnabled
+		};
+	}
+
+	private static UserRole GetRole(User user) => user switch
+	{
+		Buyer => UserRole.Buyer,
+		Supplier => UserRole.Supplier,
+		Auctioneer => UserRole.Auctioneer,
+		Admin => UserRole.Admin,
+		_ => throw new InvalidOperationException($"Onbekend gebruikerstype voor gebruiker {user.Id}")
+	};
+
 	/// <summary>
 	/// Generates a JWT token for the authenticated user
 	/// </summary>
-
 	private string GenerateJwtToken(User user, UserRole role)
 	{
 		var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));

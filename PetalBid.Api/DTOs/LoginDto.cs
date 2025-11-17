@@ -10,4 +10,8 @@ public class LoginDto
 
 	[Required]
 	public string Password { get; set; } = string.Empty;
+
+	[StringLength(10)]
+	[RegularExpression("^[0-9]*$", ErrorMessage = "2FA-code mag alleen cijfers bevatten.")]
+	public string? TwoFactorCode { get; set; }
 }

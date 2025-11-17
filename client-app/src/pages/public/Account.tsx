@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
@@ -6,9 +6,19 @@ import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
 import Paper from '@mui/material/Paper';
 import Grid from '@mui/material/Grid';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Chip from '@mui/material/Chip';
+import Stack from '@mui/material/Stack';
+import CircularProgress from '@mui/material/CircularProgress';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAlert } from '../../components/AlertProvider';
 import { authService } from '../../api/services/authService';
+import { TotpSetupResponse } from '../../types/api';
+import { Link } from '@mui/material';
 
 /**
  * Account component for managing user account information (name, email, password)
@@ -17,6 +27,9 @@ import { authService } from '../../api/services/authService';
 export default function Account() {
 	const { user, updateUser } = useAuth();
 	const { showAlert } = useAlert();
+	const location = useLocation();
+	const navigate = useNavigate();
+	const autoOpen2FaRef = useRef(false);
 
 	// Profile form state
 	const [fullName, setFullName] = useState('');
@@ -29,13 +42,37 @@ export default function Account() {
 	const [confirmPassword, setConfirmPassword] = useState('');
 	const [savingPassword, setSavingPassword] = useState(false);
 
+	// Two-factor state
+	const [isRequestingTotp, setIsRequestingTotp] = useState(false);
+	const [isVerifyingTotp, setIsVerifyingTotp] = useState(false);
+	const [isDisablingTotp, setIsDisablingTotp] = useState(false);
+	const [twoFactorDialogOpen, setTwoFactorDialogOpen] = useState(false);
+	const [disableDialogOpen, setDisableDialogOpen] = useState(false);
+	const [setupPayload, setSetupPayload] = useState<TotpSetupResponse | null>(null);
+	const [twoFactorCode, setTwoFactorCode] = useState('');
+	const [disableCode, setDisableCode] = useState('');
+
 	useEffect(() => {
 		if (user) {
-			// eslint-disable-next-line react-hooks/set-state-in-effect
 			setFullName(user.fullName);
 			setEmail(user.email);
 		}
 	}, [user]);
+
+	useEffect(() => {
+		if (!user || user.isTotpEnabled || autoOpen2FaRef.current) {
+			return;
+		}
+
+		const params = new URLSearchParams(location.search);
+		if (params.get('setup2fa') === '1') {
+			autoOpen2FaRef.current = true;
+			params.delete('setup2fa');
+			const nextSearch = params.toString();
+			navigate({ pathname: location.pathname, search: nextSearch ? `?${nextSearch}` : '' }, { replace: true });
+			void beginTwoFactorSetup();
+		}
+	}, [location.search, location.pathname, navigate, user]);
 
 	const profileChanged = useMemo(() => {
 		return user ? (fullName !== user.fullName || email !== user.email) : false;
@@ -86,6 +123,61 @@ export default function Account() {
 		showAlert({ title: 'Succes', message: res.data?.message || 'Wachtwoord succesvol gewijzigd.' });
 	};
 
+	const beginTwoFactorSetup = async () => {
+		try {
+			setIsRequestingTotp(true);
+			const response = await authService.beginTotpSetup();
+			if (!response.data) {
+				showAlert({ title: 'Fout', message: response.error || 'Kon 2FA niet voorbereiden.' });
+				return;
+			}
+			setSetupPayload(response.data);
+			setTwoFactorCode('');
+			setTwoFactorDialogOpen(true);
+		} catch {
+			showAlert({ title: 'Fout', message: 'Kon 2FA-setup niet starten.' });
+		} finally {
+			setIsRequestingTotp(false);
+		}
+	};
+
+	const verifyTwoFactor = async () => {
+		if (twoFactorCode.trim().length < 6) return;
+
+		setIsVerifyingTotp(true);
+		const res = await authService.verifyTotp({ code: twoFactorCode.trim() });
+		setIsVerifyingTotp(false);
+
+		if (res.error || !res.data) {
+			showAlert({ title: 'Fout', message: res.error || 'Ongeldige 2FA-code.' });
+			return;
+		}
+
+		updateUser(res.data);
+		showAlert({ title: 'Succes', message: 'Tweestapsverificatie is ingeschakeld.' });
+		setTwoFactorDialogOpen(false);
+		setSetupPayload(null);
+		setTwoFactorCode('');
+	};
+
+	const disableTwoFactor = async () => {
+		if (disableCode.trim().length < 6) return;
+
+		setIsDisablingTotp(true);
+		const res = await authService.disableTotp({ code: disableCode.trim() });
+		setIsDisablingTotp(false);
+
+		if (res.error || !res.data) {
+			showAlert({ title: 'Fout', message: res.error || 'Kon 2FA niet uitschakelen.' });
+			return;
+		}
+
+		updateUser(res.data);
+		showAlert({ title: 'Succes', message: 'Tweestapsverificatie is uitgeschakeld.' });
+		setDisableDialogOpen(false);
+		setDisableCode('');
+	};
+
 	return (
 		<Box maxWidth="md" margin="auto" mt={4} px={2}>
 			<Typography variant="h4" component="h1" gutterBottom>
@@ -131,7 +223,7 @@ export default function Account() {
 
 			<Divider sx={{ mb: 4 }} />
 
-			<Paper variant="outlined" sx={{ p: 3 }}>
+			<Paper variant="outlined" sx={{ p: 3, mb: 4 }}>
 				<Typography variant="h6" component="h2" gutterBottom>
 					Wachtwoord wijzigen
 				</Typography>
@@ -175,12 +267,119 @@ export default function Account() {
 					</Button>
 				</Box>
 			</Paper>
+
+			<Paper variant="outlined" sx={{ p: 3, mb: 4 }}>
+				<Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" spacing={2}>
+					<div>
+						<Typography variant="h6" component="h2" gutterBottom>
+							Tweestapsverificatie
+						</Typography>
+						<Typography variant="body2" color="text.secondary">
+							Voeg een extra beveiligingslaag toe met een authenticator-app zoals <Link href="https://2fas.com/auth/" target="_blank" rel="noreferrer">2FAS</Link>, <Link href="https://ente.io/auth/" target="_blank" rel="noreferrer">ente</Link>, <Link href="https://bitwarden.com/products/personal/" target="_blank" rel="noreferrer">Bitwarden</Link>, of <Link href="https://support.microsoft.com/en-us/account-billing/download-microsoft-authenticator-351498fc-850a-45da-b7b6-27e523b8702a" target="_blank" rel="noreferrer">Microsoft Authenticator</Link>.
+						</Typography>
+					</div>
+					<Chip
+						label={user?.isTotpEnabled ? 'Ingeschakeld' : 'Uitgeschakeld'}
+						color={user?.isTotpEnabled ? 'success' : 'default'}
+						variant="outlined"
+						sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}
+					/>
+				</Stack>
+				<Box mt={2} display="flex" gap={2} flexWrap="wrap">
+					{user?.isTotpEnabled ? (
+						<Button variant="outlined" color="warning" onClick={() => setDisableDialogOpen(true)}>
+							Uitschakelen
+						</Button>
+					) : (
+						<Button
+							variant="contained"
+							onClick={beginTwoFactorSetup}
+							disabled={isRequestingTotp}
+							startIcon={isRequestingTotp ? <CircularProgress size={18} /> : null}
+						>
+							{isRequestingTotp ? 'Voorbereiden...' : 'Inschakelen'}
+						</Button>
+					)}
+				</Box>
+			</Paper>
+
 			<Typography mt={3}>
 				Token:
 			</Typography>
 			<Typography variant="subtitle2" color="text.secondary" mb={3} sx={{ overflow: 'auto', userSelect: 'all', fontFamily: 'monospace' }}>
 				{localStorage.getItem("token")}
 			</Typography>
+
+			<Dialog open={twoFactorDialogOpen} onClose={() => setTwoFactorDialogOpen(false)} maxWidth="sm" fullWidth>
+				<DialogTitle>Scan de QR-code</DialogTitle>
+				<DialogContent dividers>
+					{setupPayload ? (
+						<Stack spacing={2} alignItems="center">
+							<img
+								src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(setupPayload.otpauthUrl)}`}
+								alt="2FA QR-code"
+								width={200}
+								height={200}
+							/>
+							<Typography variant="body2" textAlign="center">
+								Scan deze QR-code met uw authenticator-app en voer daarna de 6-cijferige code in.
+							</Typography>
+							<Box width="100%">
+								<Typography variant="caption" fontFamily="monospace">
+									Geheime sleutel: {setupPayload.secret}
+								</Typography>
+							</Box>
+							<TextField
+								label="Authenticator-code"
+								fullWidth
+								value={twoFactorCode}
+								onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+								inputProps={{ inputMode: 'numeric', pattern: '[0-9]*', maxLength: 6 }}
+								helperText="Voer de huidige code uit uw app in."
+							/>
+						</Stack>
+					) : (
+						<Typography>Laden...</Typography>
+					)}
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={() => setTwoFactorDialogOpen(false)}>Annuleren</Button>
+					<Button
+						variant="contained"
+						onClick={verifyTwoFactor}
+						disabled={!setupPayload || twoFactorCode.trim().length < 6 || isVerifyingTotp}
+					>
+						{isVerifyingTotp ? 'Controleren...' : 'Activeren'}
+					</Button>
+				</DialogActions>
+			</Dialog>
+
+			<Dialog open={disableDialogOpen} onClose={() => setDisableDialogOpen(false)} maxWidth="xs" fullWidth>
+				<DialogTitle>2FA uitschakelen</DialogTitle>
+				<DialogContent dividers>
+					<Typography variant="body2" mb={2}>
+						Voer een huidige code uit uw authenticator-app in om 2FA uit te schakelen.
+					</Typography>
+					<TextField
+						label="Authenticator-code"
+						fullWidth
+						value={disableCode}
+						onChange={(e) => setDisableCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+						inputProps={{ inputMode: 'numeric', pattern: '[0-9]*', maxLength: 6 }}
+					/>
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={() => setDisableDialogOpen(false)}>Annuleren</Button>
+					<Button
+						variant="contained"
+						color="warning"
+						onClick={disableTwoFactor}
+						disabled={disableCode.trim().length < 6 || isDisablingTotp}
+					>
+						{isDisablingTotp ? 'Bezig...' : 'Uitschakelen'}
+					</Button>
+				</DialogActions>
+			</Dialog>
 		</Box>
 	);
 }

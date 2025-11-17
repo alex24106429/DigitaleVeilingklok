@@ -24,4 +24,6 @@ export interface User {
 	email: string;
 	/** The role assigned to the user, determining their permissions. */
 	role: UserRole;
+	/** Indicates whether the user has enabled TOTP 2FA. */
+	isTotpEnabled: boolean;
 }

@@ -2,6 +2,11 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { User } from '../types/user';
 import { authService } from '../api/services/authService';
 
+interface LoginResult {
+	success: boolean;
+	error?: string;
+}
+
 /**
  * Defines the shape of the authentication context provided to consumers.
  */
@@ -14,9 +19,10 @@ interface AuthContextType {
 	 * Logs in a user with the given credentials.
 	 * @param {string} email - The user's email address.
 	 * @param {string} password - The user's password.
-	 * @returns {Promise<boolean>} A promise that resolves to `true` on successful login, `false` otherwise.
+	 * @param {{ twoFactorCode?: string }} [options] - Optional two-factor code.
+	 * @returns {Promise<LoginResult>} A promise describing the outcome.
 	 */
-	login: (email: string, password: string) => Promise<boolean>;
+	login: (email: string, password: string, options?: { twoFactorCode?: string }) => Promise<LoginResult>;
 	/** Logs out the current user, clearing their session data. */
 	logout: () => void;
 	/** A boolean flag indicating if the initial authentication state is being loaded or checked. */
@@ -101,7 +107,8 @@ async function validateStoredSessionOnce(): Promise<ValidationResult> {
 			serverUser.id === storedUser.id &&
 			serverUser.email === storedUser.email &&
 			serverUser.fullName === storedUser.fullName &&
-			serverUser.role === storedUser.role;
+			serverUser.role === storedUser.role &&
+			serverUser.isTotpEnabled === storedUser.isTotpEnabled;
 
 		if (!matches) {
 			// Mismatch; clear storage
@@ -168,8 +175,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	 * Handles the user login process.
 	 * Calls the auth service, and on success, updates the state and localStorage.
 	 */
-	const login = async (email: string, password: string): Promise<boolean> => {
-		const response = await authService.login({ email, password });
+	const login = async (
+		email: string,
+		password: string,
+		options?: { twoFactorCode?: string }
+	): Promise<LoginResult> => {
+		const response = await authService.login({
+			email,
+			password,
+			twoFactorCode: options?.twoFactorCode,
+		});
 
 		if (response.data) {
 			const { user: userData, token: userToken } = response.data;
@@ -177,10 +192,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 			setToken(userToken);
 			localStorage.setItem('user', JSON.stringify(userData));
 			localStorage.setItem('token', userToken);
-			return true;
+			return { success: true };
 		}
 
-		return false;
+		return { success: false, error: response.error };
 	};
 
 	/**

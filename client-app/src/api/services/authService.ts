@@ -1,5 +1,12 @@
 import { User } from '../../types/user';
-import { RegisterUserRequest, LoginRequest, ApiResponse, LoginResponse } from '../../types/api';
+import {
+	RegisterUserRequest,
+	LoginRequest,
+	ApiResponse,
+	LoginResponse,
+	TotpSetupResponse,
+	VerifyTotpRequest,
+} from '../../types/api';
 
 const API_BASE_URL = 'http://localhost:5048/api';
 
@@ -68,7 +75,7 @@ export const authService = {
 
 	/**
 	 * Logs in a user with the provided credentials.
-	 * @param {LoginRequest} credentials - The user's login credentials (email and password).
+	 * @param {LoginRequest} credentials - The user's login credentials (email and password, optionally a TOTP code).
 	 * @returns {Promise<ApiResponse<LoginResponse>>} A promise that resolves to an ApiResponse containing the login response (token + User object) or an error.
 	 */
 	async login(credentials: LoginRequest): Promise<ApiResponse<LoginResponse>> {
@@ -81,7 +88,7 @@ export const authService = {
 				body: JSON.stringify(credentials),
 			});
 
-			const raw = await response.json();
+			const raw = await response.json().catch(() => ({}));
 
 			if (!response.ok) {
 				return { error: raw.message || 'Login failed' };
@@ -158,6 +165,65 @@ export const authService = {
 			const data = await response.json().catch(() => ({}));
 			if (!response.ok) {
 				return { error: data.message || 'Failed to change password.' };
+			}
+			return { data };
+		} catch {
+			return { error: 'Network error. Please try again.' };
+		}
+	},
+
+	/**
+	 * Starts the TOTP setup flow and returns the shared secret + otpauth URL.
+	 */
+	async beginTotpSetup(): Promise<ApiResponse<TotpSetupResponse>> {
+		try {
+			const response = await fetch(`${API_BASE_URL}/users/me/totp/setup`, {
+				method: 'POST',
+				headers: getAuthHeaders(),
+			});
+			const data = await response.json();
+			if (!response.ok) {
+				return { error: data.message || 'Kan TOTP-configuratie niet starten.' };
+			}
+			return { data };
+		} catch {
+			return { error: 'Network error. Please try again.' };
+		}
+	},
+
+	/**
+	 * Confirms a TOTP setup with the provided code.
+	 */
+	async verifyTotp(payload: VerifyTotpRequest): Promise<ApiResponse<User>> {
+		try {
+			const response = await fetch(`${API_BASE_URL}/users/me/totp/verify`, {
+				method: 'POST',
+				headers: getAuthHeaders(),
+				body: JSON.stringify(payload),
+			});
+			const data = await response.json();
+			if (!response.ok) {
+				return { error: data.message || 'Verificatie van 2FA-code mislukt.' };
+			}
+			return { data };
+		} catch {
+			return { error: 'Network error. Please try again.' };
+		}
+	},
+
+	/**
+	 * Disables TOTP for the authenticated user (requires a valid code).
+	 */
+	async disableTotp(payload: VerifyTotpRequest): Promise<ApiResponse<User>> {
+		try {
+			const response = await fetch(`${API_BASE_URL}/users/me/totp/disable`, {
+				method: 'POST',
+				headers: getAuthHeaders(),
+				body: JSON.stringify(payload),
+			});
+			const data = await response.json();
+			if (!response.ok) {
+				return { error: data.message || 'Uitschakelen van 2FA mislukt.' };
 			}
 			return { data };
 		} catch {

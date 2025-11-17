@@ -36,6 +36,8 @@ export interface LoginRequest {
 	email: string;
 	/** The user's password. */
 	password: string;
+	/** Optional TOTP code when 2FA is enabled. */
+	twoFactorCode?: string;
 }
 
 /**
@@ -46,4 +48,22 @@ export interface LoginResponse {
 	token: string;
 	/** The authenticated user's data. */
 	user: User;
+}
+
+/**
+ * Payload returned when initiating a TOTP setup.
+ */
+export interface TotpSetupResponse {
+	/** The shared secret in Base32. */
+	secret: string;
+	/** The otpauth:// URI used to generate the QR code. */
+	otpauthUrl: string;
+}
+
+/**
+ * Request body for verifying or disabling TOTP.
+ */
+export interface VerifyTotpRequest {
+	/** The 6-digit code from the authenticator app. */
+	code: string;
 }

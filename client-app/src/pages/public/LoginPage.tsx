@@ -9,6 +9,7 @@ import RadioGroup from '@mui/material/RadioGroup';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
+import Checkbox from '@mui/material/Checkbox';
 
 import { useState, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
@@ -44,6 +45,43 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 	const [confirmPassword, setConfirmPassword] = useState("");
 	const [RFHnumber, setRFHnumber] = useState("");
 	const [userType, setUserType] = useState("grower");
+	const [needsTwoFactor, setNeedsTwoFactor] = useState(false);
+	const [twoFactorCode, setTwoFactorCode] = useState("");
+	const [enableTwoFactorAfterRegister, setEnableTwoFactorAfterRegister] = useState(false);
+
+	const sanitizeCode = (value: string) => value.replace(/\D/g, "").slice(0, 6);
+
+	const attemptLogin = async () => {
+		setIsLoading(true);
+		try {
+			const result = await login(email, password, {
+				twoFactorCode: needsTwoFactor ? twoFactorCode : undefined,
+			});
+
+			if (result.success) {
+				setNeedsTwoFactor(false);
+				setTwoFactorCode("");
+				navigate("/");
+				return;
+			}
+
+			const errorMessage = result.error || "Ongeldige e-mail of wachtwoord";
+
+			if (errorMessage.toLowerCase().includes("tweestapsverificatie vereist")) {
+				setNeedsTwoFactor(true);
+				return;
+			}
+
+			if (errorMessage.toLowerCase().includes("2fa")) {
+				setNeedsTwoFactor(true);
+				setTwoFactorCode("");
+			}
+
+			showAlert({ title: "Fout", message: errorMessage });
+		} finally {
+			setIsLoading(false);
+		}
+	};
 
 	/**
 	 * Handles the form submission for both login and registration.
@@ -54,57 +92,65 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault(); // Prevents the page from reloading
 
-		if (isRegisterPage && password !== confirmPassword) {
+		if (!isRegisterPage) {
+			await attemptLogin();
+			return;
+		}
+
+		if (password !== confirmPassword) {
 			showAlert({ title: "Ongeldige informatie", message: "Wachtwoorden komen niet overeen!" });
 			return;
 		}
 
 		setIsLoading(true);
 		try {
-			if (isRegisterPage) {
-				// Handle registration
-				let role: UserRole;
-				switch (userType) {
-					case "buyer":
-						role = UserRole.Buyer;
-						break;
-					case "auctioneer":
-						role = UserRole.Auctioneer;
-						break;
-					case "admin":
-						role = UserRole.Admin;
-						break;
-					case "grower":
-					default:
-						role = UserRole.Supplier;
-						break;
-				}
-
-				const response = await authService.register({
-					fullName: name,
-					email,
-					password,
-					role
-				});
-
-				if (response.error) {
-					showAlert({ title: "Serverfout", message: response.error });
-				} else {
-					// Registration successful, navigate to login
-					showAlert({ title: "Succes", message: "Registratie voltooid! U kunt nu inloggen." });
-					navigate("/login");
-				}
-			} else {
-				// Handle login
-				const success = await login(email, password);
-
-				if (success) {
-					// Login successful - navigate to home
-					navigate("/");
-				} else {
-					showAlert({ title: "Fout", message: "Ongeldige e-mail of wachtwoord" });
-				}
+			// Handle registration
+			let role: UserRole;
+			switch (userType) {
+				case "buyer":
+					role = UserRole.Buyer;
+					break;
+				case "auctioneer":
+					role = UserRole.Auctioneer;
+					break;
+				case "admin":
+					role = UserRole.Admin;
+					break;
+				case "grower":
+				default:
+					role = UserRole.Supplier;
+					break;
 			}
+
+			const response = await authService.register({
+				fullName: name,
+				email,
+				password,
+				role
+			});
+
+			if (response.error) {
+				showAlert({ title: "Serverfout", message: response.error });
+				return;
+			}
+
+			showAlert({ title: "Succes", message: "Registratie voltooid! U kunt nu inloggen." });
+
+			if (enableTwoFactorAfterRegister) {
+				const autoLogin = await login(email, password);
+				if (autoLogin.success) {
+					setEnableTwoFactorAfterRegister(false);
+					navigate("/account?setup2fa=1", { replace: true });
+					return;
+				}
+
+				showAlert({
+					title: "Let op",
+					message: "Registratie gelukt, maar automatisch inloggen mislukte. Log handmatig in en schakel 2FA via Mijn Account in."
+				});
+			}
+
+			navigate("/login");
 		} catch {
 			showAlert({ title: "Fout", message: "Er is een onverwachte fout opgetreden. Probeer het opnieuw." });
 		} finally {
@@ -206,8 +252,32 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 							</Link>
 						}
 						<br />
-
+						<FormControlLabel
+							control={
+								<Checkbox
+									checked={enableTwoFactorAfterRegister}
+									onChange={(e) => setEnableTwoFactorAfterRegister(e.target.checked)}
+								/>
+							}
+							label="Direct tweestapsverificatie instellen na registratie"
+						/>
+						<Typography variant="body2" color="text.secondary">
+							We loggen u automatisch in en tonen een QR-code om te scannen na afloop van de registratie.
+						</Typography>
 					</>
+				)}
+
+				{needsTwoFactor && !isRegisterPage && (
+					<TextField
+						label="Authenticator-code"
+						margin="normal"
+						fullWidth
+						required
+						value={twoFactorCode}
+						onChange={(e) => setTwoFactorCode(sanitizeCode(e.target.value))}
+						inputProps={{ inputMode: 'numeric', pattern: '[0-9]*', maxLength: 6 }}
+						helperText="Open uw authenticator-app en voer de 6-cijferige code in."
+					/>
 				)}
 
 				<Box display="flex" justifyContent="center" mt={2}>
@@ -217,7 +287,10 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 						color="primary"
 						size="large"
 						fullWidth
-						disabled={isLoading}
+						disabled={
+							isLoading ||
+							(!isRegisterPage && needsTwoFactor && twoFactorCode.trim().length < 6)
+						}
 						startIcon={isLoading ? <CircularProgress size={20} /> : null}
 					>
 						{isLoading ? "Bezig..." : (isRegisterPage ? "Registreren" : "Inloggen")}

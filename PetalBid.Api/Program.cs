@@ -26,6 +26,7 @@ public class Program
 
 		// Add Pwned Passwords service with IHttpClientFactory
 		builder.Services.AddHttpClient<IPwnedPasswordsService, PwnedPasswordsService>();
+		builder.Services.AddSingleton<ITotpService, TotpService>();
 
 		// Add Authentication Services
 		builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
