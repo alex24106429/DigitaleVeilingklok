@@ -5,5 +5,6 @@ import document from '../../documents/termsofservice.md?raw';
  * @returns JSX.Element
  */
 export default function TermsOfService() {
+	scrollTo(0, 0);
 	return <DocumentRenderer content={document}></DocumentRenderer>;
 }

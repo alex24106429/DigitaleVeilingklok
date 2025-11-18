@@ -5,5 +5,6 @@ import document from '../../documents/privacypolicy.md?raw';
  * @returns JSX.Element
  */
 export default function PrivacyPolicy() {
+	scrollTo(0, 0);
 	return <DocumentRenderer content={document}></DocumentRenderer>;
 }
