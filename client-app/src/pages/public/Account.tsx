@@ -19,6 +19,7 @@ import { useAlert } from '../../components/AlertProvider';
 import { authService } from '../../api/services/authService';
 import { TotpSetupResponse } from '../../types/api';
 import { Link } from '@mui/material';
+import QRCode from 'qrcode';
 
 /**
  * Account component for managing user account information (name, email, password)
@@ -51,6 +52,7 @@ export default function Account() {
 	const [setupPayload, setSetupPayload] = useState<TotpSetupResponse | null>(null);
 	const [twoFactorCode, setTwoFactorCode] = useState('');
 	const [disableCode, setDisableCode] = useState('');
+	const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
 
 	useEffect(() => {
 		if (user) {
@@ -73,6 +75,26 @@ export default function Account() {
 			void beginTwoFactorSetup();
 		}
 	}, [location.search, location.pathname, navigate, user]);
+
+	useEffect(() => {
+		if (setupPayload?.otpauthUrl) {
+			QRCode.toDataURL(setupPayload.otpauthUrl, {
+				scale: 8,
+				margin: 0,
+			}, (err, url) => {
+				if (err) {
+					console.error('QR Code generation error:', err);
+					showAlert({ title: 'Fout', message: 'Kon de QR-code niet genereren.' });
+					setQrCodeDataUrl('');
+				} else {
+					setQrCodeDataUrl(url);
+				}
+			});
+		} else {
+			// Clear QR code when dialog is closed or payload is removed
+			setQrCodeDataUrl('');
+		}
+	}, [setupPayload, showAlert]);
 
 	const profileChanged = useMemo(() => {
 		return user ? (fullName !== user.fullName || email !== user.email) : false;
@@ -315,12 +337,18 @@ export default function Account() {
 				<DialogContent dividers>
 					{setupPayload ? (
 						<Stack spacing={2} alignItems="center">
-							<img
-								src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(setupPayload.otpauthUrl)}`}
-								alt="2FA QR-code"
-								width={200}
-								height={200}
-							/>
+							{qrCodeDataUrl ? (
+								<img
+									src={qrCodeDataUrl}
+									alt="2FA QR-code"
+									width={200}
+									height={200}
+								/>
+							) : (
+								<Box sx={{ width: 200, height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+									<CircularProgress />
+								</Box>
+							)}
 							<Typography variant="body2" textAlign="center">
 								Scan deze QR-code met uw authenticator-app en voer daarna de 6-cijferige code in.
 							</Typography>
