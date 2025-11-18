@@ -24,7 +24,7 @@ export default function HomePage() {
 		<div>
 			<Box bgcolor={"primary.100"} width="100vw" padding={"50px"}>
 				<Typography variant="h3" component="h1" gutterBottom color={"secondary.700"}>
-					Planten ver/inkopen vanuit één plek
+					Planten verkopen en kopen vanuit één plek
 				</Typography>
 				<Typography mb="20px">
 					Handel al je commerciële processen eenvoudig af op één plek. PetalBid, het wereldwijde platform voor de sierteeltsector!
