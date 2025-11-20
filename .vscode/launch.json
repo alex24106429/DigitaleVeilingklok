@@ -37,6 +37,13 @@
 			"request": "launch",
 			"command": "npm i",
 			"cwd": "${workspaceFolder}/client-app"
+		},
+		{
+			"name": "Frontend Tests",
+			"type": "node-terminal",
+			"request": "launch",
+			"command": "npm run test",
+			"cwd": "${workspaceFolder}/client-app"
 		}
 	],
 	"compounds": [
