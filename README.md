@@ -10,12 +10,12 @@ De applicatie wordt gebouwd met een moderne N-tier architectuur, bestaande uit e
 *   **Taal:** C#
 *   **Framework:** ASP.NET Core Web API
 *   **Data Access:** Entity Framework Core met LINQ
-*   **Testen:** Specflow (voor BDD - Behavior-Driven Development)
+*   **Testen:** xUnit (Unit Testing)
 
 ### Frontend
 *   **Bibliotheek:** React
 *   **Taal:** TypeScript
-*   **Testen:** Cypress (voor End-to-End tests)
+*   **Testen:** Vitest
 *   **Package Manager:** NPM
 
 ### Database
@@ -30,7 +30,7 @@ Volg deze stappen om de ontwikkelomgeving lokaal op te zetten en het project te 
 ### Vereisten
 
 Zorg ervoor dat de volgende software op je systeem is geïnstalleerd:
-*   [.NET SDK](https://dotnet.microsoft.com/download) (versie 6.0 of hoger)
+*   [.NET SDK](https://dotnet.microsoft.com/download) (versie 9.0 of hoger)
 *   [Node.js](https://nodejs.org/) (inclusief npm)
 *   [VS Code](https://code.visualstudio.com/)
 
@@ -77,3 +77,20 @@ Zorg ervoor dat de volgende software op je systeem is geïnstalleerd:
     npm run dev
     ```
     De React-applicatie wordt nu geopend in je browser.
+
+### Tests Uitvoeren
+
+Het project bevat unit tests voor de backend om de bedrijfslogica en API-controllers te verifiëren.
+
+1.  **Backend Unit Tests:**
+    ```bash
+	# Ga naar de tests-map
+	cd PetalBid.Api.Tests
+
+	# Installeer de dependencies
+	dotnet add package Moq
+	dotnet add package Microsoft.EntityFrameworkCore.InMemory --version 9.0.0
+
+    # Voer alle tests uit in de solution
+    dotnet test
+    ```

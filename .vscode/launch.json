@@ -37,6 +37,20 @@
 			"request": "launch",
 			"command": "npm i",
 			"cwd": "${workspaceFolder}/client-app"
+		},
+		{
+			"name": "Frontend Tests",
+			"type": "node-terminal",
+			"request": "launch",
+			"command": "npm run test",
+			"cwd": "${workspaceFolder}/client-app"
+		},
+		{
+			"name": "Backend Tests",
+			"type": "node-terminal",
+			"request": "launch",
+			"command": "dotnet test",
+			"cwd": "${workspaceFolder}/PetalBid.Api.Tests"
 		}
 	],
 	"compounds": [
@@ -45,6 +59,12 @@
 			"configurations": [
 				"Frontend",
 				"Backend"
+			]
+		},{
+			"name": "All Tests",
+			"configurations": [
+				"Frontend Tests",
+				"Backend Tests"
 			]
 		}
 	]
