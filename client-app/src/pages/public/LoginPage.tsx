@@ -16,7 +16,7 @@ import { useNavigate } from "react-router-dom";
 import { authService } from "../../api/services/authService";
 import { UserRole } from "../../types/user";
 import { useAuth } from "../../contexts/AuthContext";
-import { useAlert } from '../../components/AlertProvider';
+import { useAlert, AlertSlot } from '../../components/AlertProvider';
 
 /**
  * Props for the LoginPage component.
@@ -35,7 +35,7 @@ interface LoginPageProps {
  * @returns {JSX.Element} The rendered login or registration form.
  */
 export default function LoginPage({ isRegisterPage }: LoginPageProps) {
-	const { showAlert } = useAlert();
+	const { showAlert, clearAlert } = useAlert();
 	const navigate = useNavigate();
 	const { login } = useAuth();
 	const [isLoading, setIsLoading] = useState(false);
@@ -280,7 +280,11 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 					/>
 				)}
 
-				<Box display="flex" justifyContent="center" mt={2}>
+				{
+					/* AlertSlot renders the current provider alert inline in the document flow. */}
+				<AlertSlot />
+
+				<Box display="flex" justifyContent="space-between" alignItems="center" mt={2}>
 					<Button
 						type="submit"
 						variant="contained"

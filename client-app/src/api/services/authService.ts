@@ -64,12 +64,12 @@ export const authService = {
 			const data = await response.json();
 
 			if (!response.ok) {
-				return { error: data.message || 'Registration failed' };
+				return { error: data.message || 'Registratie mislukt!' };
 			}
 
 			return { data };
 		} catch {
-			return { error: 'Network error. Please try again.' };
+			return { error: 'Er is een onverwachte fout opgetreden. Probeer het opnieuw.' };
 		}
 	},
 
@@ -91,7 +91,7 @@ export const authService = {
 			const raw = await response.json().catch(() => ({}));
 
 			if (!response.ok) {
-				return { error: raw.message || 'Login failed' };
+				return { error: raw.message || 'Ongeldige e-mail of wachtwoord' };
 			}
 
 			// Backend returns { Token, User }, map to { token, user }
@@ -102,7 +102,7 @@ export const authService = {
 
 			return { data };
 		} catch {
-			return { error: 'Network error. Please try again.' };
+			return { error: 'Er is een onverwachte fout opgetreden. Probeer het opnieuw.' };
 		}
 	},
 
@@ -120,11 +120,11 @@ export const authService = {
 			});
 			const data = await response.json();
 			if (!response.ok) {
-				return { error: data?.message || 'Failed to fetch user.' };
+				return { error: data?.message || 'Kan gebruiker niet ophalen.' };
 			}
 			return { data };
 		} catch {
-			return { error: 'Network error. Please try again.' };
+			return { error: 'Er is een onverwachte fout opgetreden. Probeer het opnieuw.' };
 		}
 	},
 
@@ -142,11 +142,11 @@ export const authService = {
 			});
 			const data = await response.json();
 			if (!response.ok) {
-				return { error: data.message || 'Failed to update profile.' };
+				return { error: data.message || 'Profiel wijzingingen niet gelukt.' };
 			}
 			return { data };
 		} catch {
-			return { error: 'Network error. Please try again.' };
+			return { error: 'Er is een onverwachte fout opgetreden. Probeer het opnieuw.' };
 		}
 	},
 
@@ -168,7 +168,7 @@ export const authService = {
 			}
 			return { data };
 		} catch {
-			return { error: 'Network error. Please try again.' };
+			return { error: 'Er is een onverwachte fout opgetreden. Probeer het opnieuw.' };
 		}
 	},
 
