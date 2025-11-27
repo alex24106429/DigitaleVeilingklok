@@ -7,16 +7,8 @@ import { auctionService } from '../../api/services/auctionService';
 import { productService } from '../../api/services/productService';
 import { Product } from '../../types/product';
 import Box from '@mui/material/Box';
-import Checkbox from '@mui/material/Checkbox';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import FormGroup from '@mui/material/FormGroup';
-import CircularProgress from '@mui/material/CircularProgress';
-import Alert from '@mui/material/Alert';
-import Select, { SelectChangeEvent } from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
 import Grid from '@mui/material/Grid';
+import { ProductManagementModal } from '../../components/ProductManagementModal';
 
 /**
  * Enum for auction status
@@ -35,18 +27,19 @@ enum AuctionStatus {
  */
 export default function ManageAuction() {
 
-	const [isModalOpen, setIsModalOpen] = useState(false);
+	const [isAddAuctionModalOpen, setIsAddAuctionModalOpen] = useState(false);
+	const [isProductManagementModalOpen, setIsProductManagementModalOpen] = useState(false);
 	const [auctions, setAuctions] = useState<Auction[]>([]);
 	const [loadingAuctions, setLoadingAuctions] = useState(true);
 	const [errorAuctions, setErrorAuctions] = useState<string | null>(null);
 
-	const [products, setProducts] = useState<Product[]>([]);
+	const [availableProducts, setAvailableProducts] = useState<Product[]>([]);
+	const [linkedProducts, setLinkedProducts] = useState<Product[]>([]);
 	const [loadingProducts, setLoadingProducts] = useState(true);
 	const [errorProducts, setErrorProducts] = useState<string | null>(null);
 
 	const [selectedAuction, setSelectedAuction] = useState<Auction | null>(null);
 	const [selectedProductIds, setSelectedProductIds] = useState<number[]>([]);
-	const [linkedProducts, setLinkedProducts] = useState<Product[]>([]);
 
 	// Fetch auctions
 	useEffect(() => {
@@ -65,41 +58,64 @@ export default function ManageAuction() {
 	}, []);
 
 
-	// Fetch products
+	// Fetch available and linked products for the selected auction
 	useEffect(() => {
-		const fetchProducts = async () => {
+		const fetchProductsForAuction = async () => {
+			setLoadingProducts(true);
+			setErrorProducts(null);
+
+			if (!selectedAuction) {
+				setAvailableProducts([]);
+				setLinkedProducts([]);
+				setLoadingProducts(false);
+				return;
+			}
+
 			const response = await productService.getMyProducts();
 			if (response.data) {
-				setProducts(response.data.filter(p => !p.auctionId || p.auctionId !== selectedAuction?.id)); // Show unlinked products or products not linked to current auction
-				if (selectedAuction) {
-					setLinkedProducts(response.data.filter(p => p.auctionId === selectedAuction.id));
-				}
+				setAvailableProducts(response.data.filter(p => !p.auctionId)); // Products not linked to any auction
+				setLinkedProducts(response.data.filter(p => p.auctionId === selectedAuction.id)); // Products linked to the current auction
 			} else if (response.error) {
 				setErrorProducts(response.error);
 			}
 			setLoadingProducts(false);
 		};
-		void fetchProducts();
+
+		void fetchProductsForAuction();
 	}, [selectedAuction]); // Re-fetch products when selectedAuction changes
 
-	const handleOpenModal = () => {
-		setIsModalOpen(true);
+	const handleOpenAddAuctionModal = () => {
+		setIsAddAuctionModalOpen(true);
 	};
 
-	const handleCloseModal = () => {
-		setIsModalOpen(false);
+	const handleCloseAddAuctionModal = () => {
+		setIsAddAuctionModalOpen(false);
 	};
 
 	const handleAddAuction = (createdAuction: Auction) => {
 		setAuctions((prev) => [...prev, createdAuction]);
-		handleCloseModal();
+		handleCloseAddAuctionModal();
 	};
 
-	const handleAuctionSelect = (event: SelectChangeEvent<string>) => {
-		const auctionId = parseInt(event.target.value);
-		const auction = auctions.find((a) => a.id === auctionId) || null;
+	const handleOpenProductManagementModal = (auction: Auction) => {
 		setSelectedAuction(auction);
-		setSelectedProductIds([]); // Reset selected products when auction changes
+		setIsProductManagementModalOpen(true);
+		setSelectedProductIds([]); // Clear any previous selections
+	};
+
+	const handleCloseProductManagementModal = () => {
+		setIsProductManagementModalOpen(false);
+		setSelectedAuction(null); // Clear selected auction when closing modal
+		// Re-fetch auctions to update product counts if necessary
+		const fetchAuctions = async () => {
+			const { data, error } = await auctionService.getAllAuctions();
+			if (error) {
+				console.error("Error re-fetching auctions:", error);
+			} else if (data) {
+				setAuctions(data);
+			}
+		};
+		void fetchAuctions();
 	};
 
 	const handleProductToggle = (productId: number) => {
@@ -111,10 +127,10 @@ export default function ManageAuction() {
 	const handleLinkProducts = async () => {
 		if (!selectedAuction) return;
 
+		const successfulLinks: Product[] = [];
 		for (const productId of selectedProductIds) {
-			const productToUpdate = products.find(p => p.id === productId);
+			const productToUpdate = availableProducts.find(p => p.id === productId);
 			if (productToUpdate) {
-				// Create a DTO that omits server-managed fields
 				const productDto = {
 					name: productToUpdate.name,
 					weight: productToUpdate.weight,
@@ -122,25 +138,51 @@ export default function ManageAuction() {
 					species: productToUpdate.species,
 					stock: productToUpdate.stock,
 					minimumPrice: productToUpdate.minimumPrice,
-					potSize: productToUpdate.potSize, // Include optional fields
-					stemLength: productToUpdate.stemLength, // Include optional fields
-					auctionId: selectedAuction.id, // Link to the selected auction
+					potSize: productToUpdate.potSize,
+					stemLength: productToUpdate.stemLength,
+					auctionId: selectedAuction.id,
 				};
 				const response = await productService.updateProduct(productId, productDto);
 				if (response.data) {
 					console.log(`Product ${productId} linked to auction ${selectedAuction.id}`);
-					// Update the local state to reflect the change
-					setProducts((prev) =>
-						prev.filter((p) => p.id !== productId)
-					);
-					setLinkedProducts((prev) => [...prev, response.data!]); // Add to linked products
+					successfulLinks.push(response.data);
 				} else if (response.error) {
 					console.error(`Error linking product ${productId}:`, response.error);
-					// Optionally, show an error message
 				}
 			}
 		}
+		setAvailableProducts((prev) =>
+			prev.filter((p) => !selectedProductIds.includes(p.id))
+		);
+		setLinkedProducts((prev) => [...prev, ...successfulLinks]);
 		setSelectedProductIds([]); // Clear selections after linking
+	};
+
+	const handleUnlinkProduct = async (productId: number) => {
+		if (!selectedAuction) return;
+
+		const productToUpdate = linkedProducts.find(p => p.id === productId);
+		if (productToUpdate) {
+			const productDto = {
+				name: productToUpdate.name,
+				weight: productToUpdate.weight,
+				imageUrl: productToUpdate.imageUrl,
+				species: productToUpdate.species,
+				stock: productToUpdate.stock,
+				minimumPrice: productToUpdate.minimumPrice,
+				potSize: productToUpdate.potSize,
+				stemLength: productToUpdate.stemLength,
+				auctionId: undefined, // Unlink the product by setting auctionId to undefined
+			};
+			const response = await productService.updateProduct(productId, productDto);
+			if (response.data) {
+				console.log(`Product ${productId} unlinked from auction ${selectedAuction.id}`);
+				setLinkedProducts((prev) => prev.filter((p) => p.id !== productId));
+				setAvailableProducts((prev) => [...prev, response.data!]); // Add back to available products
+			} else if (response.error) {
+				console.error(`Error unlinking product ${productId}:`, response.error);
+			}
+		}
 	};
 
 	const handleMaxPriceChange = async (productId: number, newPrice: number) => {
@@ -175,13 +217,13 @@ export default function ManageAuction() {
 			<Typography variant="h4" component="h1" gutterBottom>
 				Veilingen Beheren
 			</Typography>
-			<Button variant="contained" color="primary" onClick={handleOpenModal} sx={{ mb: 2 }}>
+			<Button variant="contained" color="primary" onClick={handleOpenAddAuctionModal} sx={{ mb: 2 }}>
 				Nieuwe Veiling Aanmaken
 			</Button>
 
 			<AddAuctionModal
-				open={isModalOpen}
-				onClose={handleCloseModal}
+				open={isAddAuctionModalOpen}
+				onClose={handleCloseAddAuctionModal}
 				onSubmit={handleAddAuction}
 			/>
 			{loadingAuctions && <Typography>Veilingen laden...</Typography>}
@@ -194,14 +236,28 @@ export default function ManageAuction() {
 					{auctions.length > 0 ? (
 						<Grid container spacing={2}>
 							{auctions.map((auction) => (
-								<Grid key={auction.id} size={{ xs: 12, sm: 6, md: 4 }}>
-									<Box border={1} borderColor="grey.300" borderRadius="8px" padding={2}>
+								<Grid item key={auction.id} xs={12} sm={6} md={4}>
+									<Button
+										variant="outlined"
+										sx={{
+											width: '100%',
+											textAlign: 'left',
+											p: 2,
+											display: 'block',
+											borderColor: 'grey.300',
+											borderRadius: '8px',
+											'&:hover': {
+												borderColor: 'primary.main',
+											},
+										}}
+										onClick={() => handleOpenProductManagementModal(auction)}
+									>
 										<Typography variant="h6">{auction.description}</Typography>
 										<Typography>Starttijd: {new Date(auction.startsAt).toLocaleString()}</Typography>
 										<Typography>Status: {AuctionStatus[auction.status]}</Typography>
-										<Typography>Aantal: {auction.quantity}</Typography>
+										<Typography>Aantal gekoppelde producten: {linkedProducts.filter(p => p.auctionId === auction.id).length}</Typography>
 										<Typography>Minimumprijs: {auction.reservePrice}</Typography>
-									</Box>
+									</Button>
 								</Grid>
 							))}
 						</Grid>
@@ -210,97 +266,21 @@ export default function ManageAuction() {
 					)}
 				</Box>
 			)}
-			<Typography variant="h5" component="h2" sx={{ mt: 4, mb: 2 }}>
-				Producten Koppelen aan Veiling
-			</Typography>
-			<FormControl fullWidth sx={{ mb: 2 }}>
-				<InputLabel id="select-auction-label">Selecteer een Veiling</InputLabel>
 
-				<Select
-					labelId="select-auction-label"
-					id="select-auction"
-					value={selectedAuction?.id.toString() || ''}
-					label="Selecteer een Veiling"
-					onChange={handleAuctionSelect}
-					disabled={loadingAuctions || auctions.length === 0}
-				>
-					{auctions.map((auction) => (
-						<MenuItem key={auction.id} value={auction.id}>
-							{auction.description} (ID: {auction.id})
-						</MenuItem>
-					))}
-				</Select>
-			</FormControl>
-
-			{loadingAuctions && <CircularProgress />}
-			{errorAuctions && <Alert severity="error">{errorAuctions}</Alert>}
-
-			{selectedAuction && (
-				<Box sx={{ mt: 4 }}>
-					<Typography variant="h6" gutterBottom>
-						Beschikbare Producten voor Veiling {selectedAuction.description} (ID: {selectedAuction.id})
-					</Typography>
-					{loadingProducts ? (
-						<CircularProgress />
-					) : errorProducts ? (
-						<Alert severity="error">{errorProducts}</Alert>
-					) : products.length === 0 ? (
-						<Typography>Geen producten beschikbaar.</Typography>
-					) : (
-						<FormGroup>
-							{products.map((product) => (
-								<FormControlLabel
-									key={product.id}
-									control={
-										<Checkbox
-											checked={selectedProductIds.includes(product.id)}
-											onChange={() => handleProductToggle(product.id)}
-										/>
-									}
-									label={`${product.name} (ID: ${product.id}) - Voorraad: ${product.stock}`}
-								/>
-							))}
-						</FormGroup>
-					)}
-					<Button
-						variant="contained"
-						color="secondary"
-						onClick={handleLinkProducts}
-						sx={{ mt: 2 }}
-						disabled={selectedProductIds.length === 0}
-					>
-						Geselecteerde Producten Koppelen
-					</Button>
-				</Box>
-			)}
-
-			<Typography variant="h5" component="h2" sx={{ mt: 4, mb: 2 }}>
-				Gekoppelde Producten en Maximumprijs Instellen
-			</Typography>
-			{selectedAuction && linkedProducts.length > 0 ? (
-				<Box>
-					{linkedProducts.map((product) => (
-						<Box key={product.id} sx={{ mb: 2, p: 2, border: '1px solid #ccc', borderRadius: '4px' }}>
-							<Typography variant="subtitle1">
-								{product.name} (ID: {product.id})
-							</Typography>
-							<Typography variant="body2">Huidige Maximumprijs: {product.maxPricePerUnit ?? 'Niet ingesteld'}</Typography>
-							<FormControl sx={{ mt: 1 }}>
-								<InputLabel htmlFor={`max-price-${product.id}`}>Maximumprijs</InputLabel>
-								<input
-									id={`max-price-${product.id}`}
-									type="number"
-									value={product.maxPricePerUnit ?? ''}
-									onChange={(e) => handleMaxPriceChange(product.id, parseFloat(e.target.value))}
-									step="0.01"
-								/>
-							</FormControl>
-						</Box>
-					))}
-				</Box>
-			) : (
-				<Typography>Geen producten gekoppeld aan de geselecteerde veiling.</Typography>
-			)}
+			<ProductManagementModal
+				open={isProductManagementModalOpen}
+				onClose={handleCloseProductManagementModal}
+				auction={selectedAuction}
+				availableProducts={availableProducts}
+				linkedProducts={linkedProducts}
+				loadingProducts={loadingProducts}
+				errorProducts={errorProducts}
+				selectedProductIds={selectedProductIds}
+				onProductToggle={handleProductToggle}
+				onLinkProducts={handleLinkProducts}
+				onUnlinkProduct={handleUnlinkProduct}
+				onMaxPriceChange={handleMaxPriceChange}
+			/>
 
 			<Typography variant="h5" component="h2" sx={{ mt: 4, mb: 2 }}>
 				Veiling Status Beheer
