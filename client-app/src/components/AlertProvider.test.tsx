@@ -1,11 +1,12 @@
+import React from 'react';
+import '@testing-library/jest-dom';
+import theme from '../theme';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import '@testing-library/jest-dom';
 import { ThemeProvider } from '@mui/material/styles';
-import theme from '../theme';
-import { AlertProvider } from './AlertProvider';
-import React from 'react';
-import { AlertContext } from './AlertProvider';
+import { AlertProvider,AlertContext } from './AlertProvider';
+
+
 
 
 describe('AlertProvider Component', () => {
