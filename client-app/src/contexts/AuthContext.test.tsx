@@ -1,5 +1,3 @@
-// src/contexts/AuthContext.test.tsx
-
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
