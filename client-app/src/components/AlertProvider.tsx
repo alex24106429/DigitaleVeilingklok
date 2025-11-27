@@ -32,7 +32,7 @@ interface AlertContextType {
  * React context for managing and displaying global alerts.
  * Provides a `showAlert` function to be used by child components.
  */
-const AlertContext = React.createContext<AlertContextType>({
+export const AlertContext = React.createContext<AlertContextType>({
 	showAlert: () => { throw new Error('useAlert must be used within an AlertProvider'); },
 });
 
