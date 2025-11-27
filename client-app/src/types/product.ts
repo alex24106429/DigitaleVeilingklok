@@ -24,4 +24,6 @@ export interface Product {
 	supplierId: number;
 	/** The ID of the auction this product is assigned to, if any. */
 	auctionId?: number;
+	/** The maximum price per unit that a buyer can bid for the product in an auction. */
+	maxPricePerUnit?: number;
 }
