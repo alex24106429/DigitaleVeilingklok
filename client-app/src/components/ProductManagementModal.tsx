@@ -17,7 +17,11 @@ interface ProductManagementModalProps {
 	onUnlinkProduct: (productId: number) => Promise<void>;
 	onMaxPriceChange: (productId: number, newPrice: number) => Promise<void>;
 }
-
+/**
+ * Modal component for managing products linked to an auction.
+ * @param param0 The component props.
+ * @returns JSX.Element
+ */
 export const ProductManagementModal: React.FC<ProductManagementModalProps> = ({
 	open,
 	onClose,

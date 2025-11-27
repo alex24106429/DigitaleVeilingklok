@@ -22,7 +22,11 @@ interface AddAuctionModalProps {
 	onClose: () => void;
 	onSubmit: (auction: Auction) => void;
 }
-
+/**
+ * Modal component for adding a new auction.
+ * @param param0 The component props.
+ * @returns JSX.Element
+ */
 export const AddAuctionModal: React.FC<AddAuctionModalProps> = ({ open, onClose, onSubmit }) => {
 	const { user } = useAuth();
 	const [description, setDescription] = useState('');
