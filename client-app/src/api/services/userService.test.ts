@@ -129,7 +129,7 @@ describe('userService', () => {
 
 			const result = await userService.deleteUser(1);
 
-			expect(result.message).toBe('User deleted successfully');
+			expect(result.message).toBe('User deleted successfully.');
 			expect(deleteFetch).toHaveBeenCalledWith(
 				expect.stringContaining('/users/1'),
 				expect.objectContaining({ method: 'DELETE' })

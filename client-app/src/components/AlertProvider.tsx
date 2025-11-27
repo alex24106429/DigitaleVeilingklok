@@ -3,16 +3,19 @@ import Box from '@mui/material/Box';
 import Alert from '@mui/material/Alert';
 import AlertTitle from '@mui/material/AlertTitle';
 import Snackbar from '@mui/material/Snackbar';
+
 /**
  * Defines the options for displaying an alert.
  */
-interface AlertOptions {
+export interface AlertOptions {
 	/** The title of the alert dialog. */
 	title: string;
 	/** The main content message of the alert dialog. */
 	message: string;
 	/** The severity level of the alert. */
 	severity?: 'error' | 'warning' | 'info' | 'success';
+	/** Where to display the alert: 'snackbar' (default) or 'inline' (requires AlertSlot). */
+	display?: 'snackbar' | 'inline';
 }
 
 /**
@@ -57,14 +60,16 @@ export const AlertProvider = ({ children }: { children: React.ReactNode }) => {
 		open: false,
 		title: '',
 		message: '',
+		severity: 'error',
+		display: 'snackbar'
 	});
 
 	/**
 	 * Shows the alert dialog with the given title and message.
 	 * @param {AlertOptions} options - The content of the alert.
 	 */
-	const showAlert = ({ title, message, severity }: AlertOptions) => {
-		setAlertState({ open: true, title, message, severity });
+	const showAlert = ({ title, message, severity = 'error', display = 'snackbar' }: AlertOptions) => {
+		setAlertState({ open: true, title, message, severity, display });
 	};
 
 	/**
@@ -75,7 +80,7 @@ export const AlertProvider = ({ children }: { children: React.ReactNode }) => {
 	};
 
 	const clearAlert = () => {
-		setAlertState({ open: false, title: '', message: '' });
+		setAlertState({ open: false, title: '', message: '', severity: 'error', display: 'snackbar' });
 	};
 
 	// Memoize the context value to prevent unnecessary re-renders of consumers.
@@ -89,6 +94,7 @@ export const AlertProvider = ({ children }: { children: React.ReactNode }) => {
 				title={alertState.title}
 				message={alertState.message}
 				severity={alertState.severity}
+				display={alertState.display}
 				onClose={handleClose}
 			/>
 		</AlertContext.Provider>
@@ -98,13 +104,17 @@ export const AlertProvider = ({ children }: { children: React.ReactNode }) => {
 /**
  * A simple AlertDialog implemented using MUI Snackbar + Alert.
  */
-function AlertDialog({ open, title, message, onClose, severity = 'error' }: {
+function AlertDialog({ open, title, message, onClose, severity = 'error', display = 'snackbar' }: {
 	open: boolean;
 	title: string;
 	message: string;
 	onClose: () => void;
 	severity?: 'error' | 'warning' | 'info' | 'success';
+	display?: 'snackbar' | 'inline';
 }) {
+	// If display is set to inline, do not render the global snackbar
+	if (display === 'inline') return null;
+
 	return (
 		<Snackbar open={open} autoHideDuration={6000} onClose={onClose} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
 			<Alert onClose={onClose} severity={severity} sx={{ width: '100%' }}>
@@ -115,23 +125,24 @@ function AlertDialog({ open, title, message, onClose, severity = 'error' }: {
 	);
 }
 
-	/**
+/**
  * AlertSlot renders the current provider alert inline in the document flow.
  * Place <AlertSlot /> under a form or in a layout to show alerts triggered via useAlert().
  */
 export function AlertSlot() {
-    const ctx = React.useContext(AlertContext);
-    if (!ctx) return null;
-    const { alert, clearAlert } = ctx;
-    if (!alert || !alert.open) return null;
+	const ctx = React.useContext(AlertContext);
+	if (!ctx) return null;
+	const { alert, clearAlert } = ctx;
 
-    return (
-        <Box mt={2}>
-            <Alert severity={alert.severity ?? 'error'} onClose={clearAlert}>
-                {alert.title && <AlertTitle>{alert.title}</AlertTitle>}
-                {alert.message}
-            </Alert>
-        </Box>
-    );
+	// Only render if the alert is open AND specifically set to display inline
+	if (!alert || !alert.open || alert.display !== 'inline') return null;
+
+	return (
+		<Box mt={2}>
+			<Alert severity={alert.severity ?? 'error'} onClose={clearAlert}>
+				{alert.title && <AlertTitle>{alert.title}</AlertTitle>}
+				{alert.message}
+			</Alert>
+		</Box>
+	);
 };
-
