@@ -23,7 +23,12 @@ export default function HomePage() {
 	return (
 		<div>
 			<Box bgcolor={"primary.100"} width="100vw" padding={"50px"}>
-				<Typography variant="h3" component="h1" gutterBottom color={"secondary.700"}>
+				<Typography 
+					variant="h3" 
+					component="h1" 
+					gutterBottom 
+					sx={{ color: (theme) => theme.palette.mode === 'dark' ? 'primary.700' : 'secondary.700' }}
+				>
 					Planten verkopen en kopen vanuit één plek
 				</Typography>
 				<Typography mb="20px">
@@ -34,14 +39,19 @@ export default function HomePage() {
 						Inloggen
 					</Button>
 				)}
-				<Button component={NavLink} to="/info" variant="outlined" color="secondary">
+				<Button component={NavLink} to="/info" variant="outlined" sx={{ color: (theme) => theme.palette.mode === 'dark' ? 'primary.700' : 'secondary.700' }}>
 					Meer info
 				</Button>
 			</Box>
 			<Grid container spacing={4} alignItems="center">
 				<Grid size={{ xs: 12, md: 6 }}>
 					<Box padding={{ xs: 2, md: 4 }}>
-						<Typography variant="h4" component="h2" gutterBottom color={"secondary.700"}>
+						<Typography 
+							variant="h4" 
+							component="h2" 
+							gutterBottom 
+							sx={{ color: (theme) => theme.palette.mode === 'dark' ? 'primary.700' : 'secondary.700' }}
+						>
 							Wat is PetalBid?
 						</Typography>
 						<Typography mb="10px">
@@ -52,13 +62,13 @@ export default function HomePage() {
 								key={feature}
 								control={<Checkbox disabled checked sx={{ '&.Mui-disabled': { color: "primary.600" } }} />}
 								label={feature}
-								sx={{
+								sx={(theme) => ({
 									width: '100%',
 									'& .MuiFormControlLabel-label.Mui-disabled': {
 										fontWeight: "bold",
-										color: "secondary.700",
+										color: theme.palette.mode === 'dark' ? 'common.white' : 'secondary.700',
 									}
-								}}
+								})}
 							/>
 						))}
 					</Box>

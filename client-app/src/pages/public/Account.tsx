@@ -13,21 +13,25 @@ import DialogActions from '@mui/material/DialogActions';
 import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import CircularProgress from '@mui/material/CircularProgress';
+import Switch from '@mui/material/Switch';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Link from '@mui/material/Link';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAlert } from '../../components/AlertProvider';
 import { authService } from '../../api/services/authService';
 import { TotpSetupResponse } from '../../types/api';
-import { Link } from '@mui/material';
+import { useColorMode } from '../../contexts/ThemeContext';
 import QRCode from 'qrcode';
 
 /**
- * Account component for managing user account information (name, email, password)
+ * Account component for managing user account information (name, email, password, settings)
  * @returns JSX.Element
  */
 export default function Account() {
 	const { user, updateUser } = useAuth();
 	const { showAlert } = useAlert();
+	const { mode, toggleColorMode } = useColorMode();
 	const location = useLocation();
 	const navigate = useNavigate();
 	const autoOpen2FaRef = useRef(false);
@@ -206,8 +210,26 @@ export default function Account() {
 				Mijn Account
 			</Typography>
 			<Typography variant="body1" color="text.secondary" mb={3}>
-				Beheer uw profielgegevens en wijzig uw wachtwoord.
+				Beheer uw profielgegevens, instellingen en wachtwoord.
 			</Typography>
+
+			<Paper variant="outlined" sx={{ p: 3, mb: 4 }}>
+				<Typography variant="h6" component="h2" gutterBottom>
+					Instellingen
+				</Typography>
+				<FormControlLabel
+					control={
+						<Switch
+							checked={mode === 'dark'}
+							onChange={toggleColorMode}
+							color="primary"
+						/>
+					}
+					label="Donkere modus"
+				/>
+			</Paper>
+
+			<Divider sx={{ mb: 4 }} />
 
 			<Paper variant="outlined" sx={{ p: 3, mb: 4 }}>
 				<Typography variant="h6" component="h2" gutterBottom>
