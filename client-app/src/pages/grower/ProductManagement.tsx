@@ -91,7 +91,7 @@ export default function ProductManagement() {
 		}
 
 		if (response.data) {
-			showAlert({ title: 'Succes', message: `Product succesvol ${editingProduct ? 'bijgewerkt' : 'aangemaakt'}.` });
+			showAlert({ title: 'Succes', message: `Product succesvol ${editingProduct ? 'bijgewerkt' : 'aangemaakt'}.`, severity: "success" });
 			handleCloseDialog();
 			// Force refresh to bypass cache after mutation
 			fetchProducts(true);
