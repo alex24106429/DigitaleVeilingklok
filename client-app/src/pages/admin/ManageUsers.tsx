@@ -2,6 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
+import TextField from '@mui/material/TextField';
+
 import { User, UserRole } from '../../types/user';
 import { userService } from '../../api/services/userService';
 import { useAlert } from '../../components/AlertProvider';
@@ -36,6 +43,14 @@ export default function ManageUsers() {
 	const { user: currentUser } = useAuth();
 	const [users, setUsers] = useState<User[]>([]);
 	const [loading, setLoading] = useState(true);
+
+	// Edit Dialog State
+	const [editOpen, setEditOpen] = useState(false);
+	const [editingUser, setEditingUser] = useState<User | null>(null);
+	const [editForm, setEditForm] = useState({
+		fullName: '',
+		email: '',
+	});
 
 	const fetchUsers = useCallback(async (force = false) => {
 		setLoading(true);
@@ -81,11 +96,38 @@ export default function ManageUsers() {
 				message: `Kon ${failedDeletions.length} van de ${idsToDelete.length} gebruiker(s) niet verwijderen. Eerste fout: ${failedDeletions[0].error}`,
 			});
 		} else {
-			showAlert({ title: 'Succes', message: `${idsToDelete.length} gebruiker(s) succesvol verwijderd.` });
+			showAlert({ title: 'Succes', message: `${idsToDelete.length} gebruiker(s) succesvol verwijderd.`, severity: 'success' });
 		}
 
 		// Force refresh to bypass cache after mutation
 		fetchUsers(true);
+	};
+
+	const handleEdit = (id: string | number) => {
+		const userToEdit = users.find(u => u.id === Number(id));
+		if (userToEdit) {
+			setEditingUser(userToEdit);
+			setEditForm({
+				fullName: userToEdit.fullName,
+				email: userToEdit.email
+			});
+			setEditOpen(true);
+		}
+	};
+
+	const handleEditSave = async () => {
+		if (!editingUser) return;
+
+		const response = await userService.updateUser(editingUser.id, editForm);
+		if (response.data) {
+			showAlert({ title: 'Succes', message: 'Gebruiker bijgewerkt.', severity: 'success' });
+			setEditOpen(false);
+			setEditingUser(null);
+			// Force refresh to update list
+			fetchUsers(true);
+		} else {
+			showAlert({ title: 'Fout', message: response.error || 'Kon gebruiker niet bijwerken.' });
+		}
 	};
 
 	// Memoize the data prepared for the table to avoid re-calculating on every render
@@ -119,7 +161,32 @@ export default function ManageUsers() {
 				idKey="id"
 				tableName="Geregistreerde Gebruikers"
 				onDelete={handleDelete}
+				onEdit={handleEdit}
 			/>
+
+			<Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="sm" fullWidth>
+				<DialogTitle>Gebruiker Bewerken</DialogTitle>
+				<DialogContent>
+					<TextField
+						margin="normal"
+						label="Volledige Naam"
+						fullWidth
+						value={editForm.fullName}
+						onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })}
+					/>
+					<TextField
+						margin="normal"
+						label="E-mail"
+						fullWidth
+						value={editForm.email}
+						onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+					/>
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={() => setEditOpen(false)}>Annuleren</Button>
+					<Button onClick={handleEditSave} variant="contained">Opslaan</Button>
+				</DialogActions>
+			</Dialog>
 		</Box>
 	);
 }

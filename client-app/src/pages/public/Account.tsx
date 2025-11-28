@@ -126,7 +126,7 @@ export default function Account() {
 		}
 
 		updateUser(res.data);
-		showAlert({ title: 'Succes', message: 'Profiel succesvol bijgewerkt.' });
+		showAlert({ title: 'Succes', message: 'Profiel succesvol bijgewerkt.', severity: 'success' });
 	};
 
 	const handleChangePassword = async () => {
@@ -146,7 +146,7 @@ export default function Account() {
 		setCurrentPassword('');
 		setNewPassword('');
 		setConfirmPassword('');
-		showAlert({ title: 'Succes', message: res.data?.message || 'Wachtwoord succesvol gewijzigd.' });
+		showAlert({ title: 'Succes', message: res.data?.message || 'Wachtwoord succesvol gewijzigd.', severity: 'success' });
 	};
 
 	const beginTwoFactorSetup = async () => {
@@ -180,7 +180,7 @@ export default function Account() {
 		}
 
 		updateUser(res.data);
-		showAlert({ title: 'Succes', message: 'Tweestapsverificatie is ingeschakeld.' });
+		showAlert({ title: 'Succes', message: 'Tweestapsverificatie is ingeschakeld.', severity: 'success' });
 		setTwoFactorDialogOpen(false);
 		setSetupPayload(null);
 		setTwoFactorCode('');
@@ -199,7 +199,7 @@ export default function Account() {
 		}
 
 		updateUser(res.data);
-		showAlert({ title: 'Succes', message: 'Tweestapsverificatie is uitgeschakeld.' });
+		showAlert({ title: 'Succes', message: 'Tweestapsverificatie is uitgeschakeld.', severity: 'success' });
 		setDisableDialogOpen(false);
 		setDisableCode('');
 	};

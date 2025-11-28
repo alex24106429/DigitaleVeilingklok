@@ -113,7 +113,7 @@ export default function ProductManagement() {
 				message: `Kon ${failedDeletions.length} van de ${selectedIds.length} product(en) niet verwijderen. Fout: ${failedDeletions[0].error}`,
 			});
 		} else {
-			showAlert({ title: 'Succes', message: `${selectedIds.length} product(en) succesvol verwijderd.` });
+			showAlert({ title: 'Succes', message: `${selectedIds.length} product(en) succesvol verwijderd.`, severity: 'success' });
 		}
 
 		// Force refresh to bypass cache after mutation

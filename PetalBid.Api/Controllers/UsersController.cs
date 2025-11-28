@@ -7,6 +7,7 @@ using PetalBid.Api.Domain.Entities;
 using PetalBid.Api.Domain.Enums;
 using PetalBid.Api.DTOs;
 using PetalBid.Api.Services;
+using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -285,6 +286,37 @@ public class UsersController(
 	}
 
 	/// <summary>
+	/// Updates a specific user (Admin only)
+	/// </summary>
+	[HttpPut("{id:int}")]
+	[Authorize(Roles = "Admin")]
+	public async Task<ActionResult<UserResponseDto>> UpdateUser(int id, AdminUpdateUserDto dto)
+	{
+		var user = await Db.Users.FindAsync(id);
+		if (user is null) return NotFound();
+
+		// Enforce unique email
+		var emailExists = await Db.Users.AnyAsync(u => u.Email == dto.Email && u.Id != id);
+		if (emailExists)
+		{
+			return BadRequest(new { message = "Het e-mailadres is al in gebruik." });
+		}
+
+		// Ensure role isn't changed
+		var currentRole = GetRole(user);
+		if (currentRole != dto.Role)
+		{
+			return BadRequest(new { message = "Het wijzigen van de gebruikersrol is niet mogelijk." });
+		}
+
+		user.FullName = dto.FullName;
+		user.Email = dto.Email;
+
+		await Db.SaveChangesAsync();
+		return Ok(MapUser(user));
+	}
+
+	/// <summary>
 	/// Deletes a user
 	/// </summary>
 	[HttpDelete("{id:int}")]
@@ -353,4 +385,19 @@ public class UsersController(
 
 		return new JwtSecurityTokenHandler().WriteToken(token);
 	}
+}
+
+public class AdminUpdateUserDto
+{
+	[Required]
+	[StringLength(100)]
+	public string FullName { get; set; } = string.Empty;
+
+	[Required]
+	[EmailAddress]
+	[StringLength(255)]
+	public string Email { get; set; } = string.Empty;
+
+	[Required]
+	public UserRole Role { get; set; }
 }

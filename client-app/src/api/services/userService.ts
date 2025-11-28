@@ -62,6 +62,43 @@ export const userService = {
 	},
 
 	/**
+	 * Updates a user by their ID. Requires admin privileges.
+	 * @param {number} id The ID of the user to update.
+	 * @param {Partial<User>} userData The updated user data.
+	 * @returns {Promise<ApiResponse<User>>} A promise that resolves to an ApiResponse containing the updated user.
+	 */
+	async updateUser(id: number, userData: Partial<User>): Promise<ApiResponse<User>> {
+		const token = localStorage.getItem('token');
+		if (!token) {
+			return { error: 'No authentication token found.' };
+		}
+
+		try {
+			const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+				method: 'PUT',
+				headers: {
+					'Authorization': `Bearer ${token}`,
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify(userData),
+			});
+
+			const data = await response.json();
+
+			if (!response.ok) {
+				return { error: data.message || `Failed to update user: ${response.statusText}` };
+			}
+
+			// Invalidate cached user list after mutation
+			invalidateUsersCache();
+
+			return { data };
+		} catch {
+			return { error: 'Network error. Please try again.' };
+		}
+	},
+
+	/**
 	 * Deletes a user by their ID. Requires admin privileges.
 	 * @param {number} id The ID of the user to delete.
 	 * @returns {Promise<ApiResponse<null>>} A promise that resolves to an ApiResponse indicating success or failure.
