@@ -35,7 +35,7 @@ interface LoginPageProps {
  * @returns {JSX.Element} The rendered login or registration form.
  */
 export default function LoginPage({ isRegisterPage }: LoginPageProps) {
-	const { showAlert, clearAlert } = useAlert();
+	const { showAlert } = useAlert();
 	const navigate = useNavigate();
 	const { login } = useAuth();
 	const [isLoading, setIsLoading] = useState(false);

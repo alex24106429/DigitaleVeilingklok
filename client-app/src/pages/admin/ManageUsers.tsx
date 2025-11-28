@@ -58,7 +58,7 @@ export default function ManageUsers() {
 		if (response.data) {
 			setUsers(response.data);
 		} else {
-			showAlert({ title: "Fout", message: response.error || 'Kon gebruikers niet ophalen.' });
+			showAlert({ title: "Fout", message: response.error || 'Kon gebruikers niet ophalen.', severity: 'error' });
 		}
 		setLoading(false);
 	}, [showAlert]);
@@ -75,7 +75,7 @@ export default function ManageUsers() {
 		const idsToDelete = selectedIds.filter(id => id !== currentUser.id);
 
 		if (idsToDelete.length < selectedIds.length) {
-			showAlert({ title: "Actie niet toegestaan", message: "U kunt uw eigen account niet verwijderen." });
+			showAlert({ title: "Actie niet toegestaan", message: "U kunt uw eigen account niet verwijderen.", severity: 'error' });
 		}
 
 		if (idsToDelete.length === 0) return;
@@ -94,6 +94,7 @@ export default function ManageUsers() {
 			showAlert({
 				title: 'Fout bij verwijderen',
 				message: `Kon ${failedDeletions.length} van de ${idsToDelete.length} gebruiker(s) niet verwijderen. Eerste fout: ${failedDeletions[0].error}`,
+				severity: 'error'
 			});
 		} else {
 			showAlert({ title: 'Succes', message: `${idsToDelete.length} gebruiker(s) succesvol verwijderd.`, severity: 'success' });
@@ -126,7 +127,7 @@ export default function ManageUsers() {
 			// Force refresh to update list
 			fetchUsers(true);
 		} else {
-			showAlert({ title: 'Fout', message: response.error || 'Kon gebruiker niet bijwerken.' });
+			showAlert({ title: 'Fout', message: response.error || 'Kon gebruiker niet bijwerken.', severity: 'error' });
 		}
 	};
 

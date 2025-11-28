@@ -13,7 +13,7 @@ export interface AlertOptions {
 	/** The main content message of the alert dialog. */
 	message: string;
 	/** The severity level of the alert. */
-	severity?: 'error' | 'warning' | 'info' | 'success';
+	severity: 'error' | 'warning' | 'info' | 'success';
 	/** Where to display the alert: 'snackbar' (default) or 'inline' (requires AlertSlot). */
 	display?: 'snackbar' | 'inline';
 }

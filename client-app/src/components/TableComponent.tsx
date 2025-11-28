@@ -180,6 +180,7 @@ interface DynamicTableProps<T> {
 	onEdit?: (selectedId: string | number) => void;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function TableComponent<T extends Record<string, any>>({
 	rows,
 	headCells,
