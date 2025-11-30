@@ -8,7 +8,8 @@ const mockUser: User = {
 	fullName: 'Admin User',
 	email: 'admin@example.com',
 	role: UserRole.Admin,
-	isTotpEnabled: true
+	isTotpEnabled: true,
+	isDisabled: false
 };
 
 const mockUserList: User[] = [mockUser];

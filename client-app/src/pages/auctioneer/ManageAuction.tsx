@@ -236,7 +236,7 @@ export default function ManageAuction() {
 					{auctions.length > 0 ? (
 						<Grid container spacing={2}>
 							{auctions.map((auction) => (
-								<Grid item key={auction.id} xs={12} sm={6} md={4}>
+								<Grid key={auction.id} size={{ xs: 12, sm: 6, md: 4 }}>
 									<Button
 										variant="outlined"
 										sx={{
@@ -288,4 +288,3 @@ export default function ManageAuction() {
 		</Box>
 	);
 }
-
