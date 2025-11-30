@@ -99,6 +99,39 @@ export const userService = {
 	},
 
 	/**
+	 * Forcefully resets a user's password. Requires admin privileges.
+	 * @param {number} id The ID of the user.
+	 * @param {string} newPassword The new password.
+	 */
+	async adminChangePassword(id: number, newPassword: string): Promise<ApiResponse<{ message: string }>> {
+		const token = localStorage.getItem('token');
+		if (!token) {
+			return { error: 'No authentication token found.' };
+		}
+
+		try {
+			const response = await fetch(`${API_BASE_URL}/users/${id}/password`, {
+				method: 'PUT',
+				headers: {
+					'Authorization': `Bearer ${token}`,
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({ newPassword }),
+			});
+
+			const data = await response.json();
+
+			if (!response.ok) {
+				return { error: data.message || 'Failed to reset password.' };
+			}
+
+			return { data };
+		} catch {
+			return { error: 'Network error. Please try again.' };
+		}
+	},
+
+	/**
 	 * Deletes a user by their ID. Requires admin privileges.
 	 * @param {number} id The ID of the user to delete.
 	 * @returns {Promise<ApiResponse<null>>} A promise that resolves to an ApiResponse indicating success or failure.

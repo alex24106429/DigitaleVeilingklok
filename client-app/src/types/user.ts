@@ -26,4 +26,6 @@ export interface User {
 	role: UserRole;
 	/** Indicates whether the user has enabled TOTP 2FA. */
 	isTotpEnabled: boolean;
+	/** Indicates if the user account is disabled. */
+	isDisabled: boolean;
 }

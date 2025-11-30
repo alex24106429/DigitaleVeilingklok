@@ -8,6 +8,8 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import TextField from '@mui/material/TextField';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Switch from '@mui/material/Switch';
 
 import { User, UserRole } from '../../types/user';
 import { userService } from '../../api/services/userService';
@@ -24,7 +26,7 @@ const roleNames: { [key in UserRole]: string } = {
 };
 
 // Define a new type for display purposes where role is a string
-type DisplayUser = Omit<User, 'role'> & { role: string };
+type DisplayUser = Omit<User, 'role' | 'isDisabled'> & { role: string; isDisabled: string };
 
 // Define table headers for the DisplayUser type
 const headCells: readonly HeadCell<DisplayUser>[] = [
@@ -32,6 +34,7 @@ const headCells: readonly HeadCell<DisplayUser>[] = [
 	{ id: 'fullName', numeric: false, disablePadding: false, label: 'Volledige Naam' },
 	{ id: 'email', numeric: false, disablePadding: false, label: 'E-mail' },
 	{ id: 'role', numeric: false, disablePadding: false, label: 'Rol' },
+	{ id: 'isDisabled', numeric: false, disablePadding: false, label: 'Status' },
 ];
 
 /**
@@ -50,6 +53,15 @@ export default function ManageUsers() {
 	const [editForm, setEditForm] = useState({
 		fullName: '',
 		email: '',
+		isDisabled: false,
+	});
+
+	// Password Dialog State
+	const [passwordOpen, setPasswordOpen] = useState(false);
+	const [passwordUser, setPasswordUser] = useState<User | null>(null);
+	const [passwordForm, setPasswordForm] = useState({
+		newPassword: '',
+		confirmPassword: '',
 	});
 
 	const fetchUsers = useCallback(async (force = false) => {
@@ -110,7 +122,8 @@ export default function ManageUsers() {
 			setEditingUser(userToEdit);
 			setEditForm({
 				fullName: userToEdit.fullName,
-				email: userToEdit.email
+				email: userToEdit.email,
+				isDisabled: userToEdit.isDisabled,
 			});
 			setEditOpen(true);
 		}
@@ -131,11 +144,37 @@ export default function ManageUsers() {
 		}
 	};
 
+	const handlePasswordReset = () => {
+		if (editingUser) {
+			setPasswordUser(editingUser);
+			setPasswordForm({ newPassword: '', confirmPassword: '' });
+			setPasswordOpen(true);
+		}
+	};
+
+	const handlePasswordSave = async () => {
+		if (!passwordUser) return;
+		if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+			showAlert({ title: 'Fout', message: 'Wachtwoorden komen niet overeen.', severity: 'error' });
+			return;
+		}
+
+		const response = await userService.adminChangePassword(passwordUser.id, passwordForm.newPassword);
+		if (response.data) {
+			showAlert({ title: 'Succes', message: 'Wachtwoord succesvol gewijzigd.', severity: 'success' });
+			setPasswordOpen(false);
+			setPasswordUser(null);
+		} else {
+			showAlert({ title: 'Fout', message: response.error || 'Kon wachtwoord niet wijzigen.', severity: 'error' });
+		}
+	};
+
 	// Memoize the data prepared for the table to avoid re-calculating on every render
 	const displayUsers = useMemo(() => {
 		return users.map(user => ({
 			...user,
 			role: roleNames[user.role] || 'Onbekend',
+			isDisabled: user.isDisabled ? 'Uitgeschakeld' : 'Actief',
 		}));
 	}, [users]);
 
@@ -154,7 +193,7 @@ export default function ManageUsers() {
 				Gebruikersbeheer
 			</Typography>
 			<Typography variant="body1" color="text.secondary" mb={2}>
-				Beheer alle geregistreerde gebruikers. Selecteer rijen om acties uit te voeren, zoals verwijderen.
+				Beheer alle geregistreerde gebruikers. Selecteer rijen om acties uit te voeren, zoals verwijderen of bewerken.
 			</Typography>
 			<TableComponent
 				rows={displayUsers}
@@ -165,6 +204,7 @@ export default function ManageUsers() {
 				onEdit={handleEdit}
 			/>
 
+			{/* Edit User Dialog */}
 			<Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="sm" fullWidth>
 				<DialogTitle>Gebruiker Bewerken</DialogTitle>
 				<DialogContent>
@@ -182,10 +222,55 @@ export default function ManageUsers() {
 						value={editForm.email}
 						onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
 					/>
+					<FormControlLabel
+						control={
+							<Switch
+								checked={editForm.isDisabled}
+								onChange={(e) => setEditForm({ ...editForm, isDisabled: e.target.checked })}
+							/>
+						}
+						label="Account uitgeschakeld?"
+						sx={{ mt: 2 }}
+					/>
+					<Box mt={2}>
+						<Button variant="outlined" color="error" onClick={handlePasswordReset}>
+							Wachtwoord Resetten
+						</Button>
+					</Box>
 				</DialogContent>
 				<DialogActions>
 					<Button onClick={() => setEditOpen(false)}>Annuleren</Button>
 					<Button onClick={handleEditSave} variant="contained">Opslaan</Button>
+				</DialogActions>
+			</Dialog>
+
+			{/* Password Reset Dialog */}
+			<Dialog open={passwordOpen} onClose={() => setPasswordOpen(false)} maxWidth="xs" fullWidth>
+				<DialogTitle>Wachtwoord Resetten</DialogTitle>
+				<DialogContent>
+					<Typography variant="body2" gutterBottom>
+						Stel een nieuw wachtwoord in voor <strong>{passwordUser?.fullName}</strong>.
+					</Typography>
+					<TextField
+						margin="normal"
+						label="Nieuw Wachtwoord"
+						type="password"
+						fullWidth
+						value={passwordForm.newPassword}
+						onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+					/>
+					<TextField
+						margin="normal"
+						label="Bevestig Wachtwoord"
+						type="password"
+						fullWidth
+						value={passwordForm.confirmPassword}
+						onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+					/>
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={() => setPasswordOpen(false)}>Annuleren</Button>
+					<Button onClick={handlePasswordSave} variant="contained" color="warning">Wachtwoord Opslaan</Button>
 				</DialogActions>
 			</Dialog>
 		</Box>

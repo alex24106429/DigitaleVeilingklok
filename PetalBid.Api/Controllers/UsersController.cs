@@ -51,6 +51,9 @@ public class UsersController(
 		var user = await Db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id);
 		if (user is null) return NotFound();
 
+		// Optional: Prevent disabled users from retrieving data if they still have a token
+		if (user.IsDisabled) return Unauthorized("Account is disabled.");
+
 		return Ok(MapUser(user));
 	}
 
@@ -94,6 +97,7 @@ public class UsersController(
 		user.Email = registerDto.Email;
 		user.PasswordHash = passwordHash;
 		user.IsTotpEnabled = false;
+		user.IsDisabled = false;
 
 		Db.Users.Add(user);
 		await Db.SaveChangesAsync();
@@ -112,6 +116,11 @@ public class UsersController(
 		if (user == null)
 		{
 			return Unauthorized(new { message = "Ongeldig e-mailadres of wachtwoord." });
+		}
+
+		if (user.IsDisabled)
+		{
+			return Unauthorized(new { message = "Uw account is uitgeschakeld. Neem contact op met de beheerder." });
 		}
 
 		// Verify password
@@ -156,6 +165,8 @@ public class UsersController(
 		var userId = int.Parse(userIdString);
 		var existing = await Db.Users.FindAsync(userId);
 		if (existing is null) return NotFound();
+		
+		if (existing.IsDisabled) return Unauthorized("Account is disabled.");
 
 		// Enforce unique email across users (except current)
 		var emailExists = await Db.Users.AnyAsync(u => u.Email == dto.Email && u.Id != userId);
@@ -184,6 +195,8 @@ public class UsersController(
 		var userId = int.Parse(userIdString);
 		var existing = await Db.Users.FindAsync(userId);
 		if (existing is null) return NotFound();
+		
+		if (existing.IsDisabled) return Unauthorized("Account is disabled.");
 
 		if (!PasswordService.VerifyPassword(existing.PasswordHash, dto.CurrentPassword))
 		{
@@ -217,6 +230,7 @@ public class UsersController(
 	{
 		var user = await GetCurrentUserAsync();
 		if (user is null) return Unauthorized();
+		if (user.IsDisabled) return Unauthorized("Account is disabled.");
 
 		if (user.IsTotpEnabled)
 		{
@@ -241,6 +255,7 @@ public class UsersController(
 	{
 		var user = await GetCurrentUserAsync();
 		if (user is null) return Unauthorized();
+		if (user.IsDisabled) return Unauthorized("Account is disabled.");
 
 		if (string.IsNullOrEmpty(user.TotpSecret))
 		{
@@ -267,6 +282,7 @@ public class UsersController(
 	{
 		var user = await GetCurrentUserAsync();
 		if (user is null) return Unauthorized();
+		if (user.IsDisabled) return Unauthorized("Account is disabled.");
 
 		if (!user.IsTotpEnabled || string.IsNullOrEmpty(user.TotpSecret))
 		{
@@ -311,9 +327,34 @@ public class UsersController(
 
 		user.FullName = dto.FullName;
 		user.Email = dto.Email;
+		user.IsDisabled = dto.IsDisabled;
 
 		await Db.SaveChangesAsync();
 		return Ok(MapUser(user));
+	}
+
+	/// <summary>
+	/// Forcefully resets a user's password (Admin only)
+	/// </summary>
+	[HttpPut("{id:int}/password")]
+	[Authorize(Roles = "Admin")]
+	public async Task<ActionResult> AdminResetPassword(int id, AdminResetPasswordDto dto)
+	{
+		var user = await Db.Users.FindAsync(id);
+		if (user is null) return NotFound();
+
+		var (isValid, errorMessage) = PasswordService.ValidatePasswordRequirements(dto.NewPassword);
+		if (!isValid)
+		{
+			return BadRequest(new { message = errorMessage });
+		}
+
+		user.PasswordHash = PasswordService.HashPassword(dto.NewPassword);
+		
+		// Optionally clear TOTP/Sessions if security is critical, but requirement is just password reset.
+		await Db.SaveChangesAsync();
+
+		return Ok(new { message = "Wachtwoord succesvol gewijzigd." });
 	}
 
 	/// <summary>
@@ -348,7 +389,8 @@ public class UsersController(
 			FullName = user.FullName,
 			Email = user.Email,
 			Role = GetRole(user),
-			IsTotpEnabled = user.IsTotpEnabled
+			IsTotpEnabled = user.IsTotpEnabled,
+			IsDisabled = user.IsDisabled
 		};
 	}
 
@@ -400,4 +442,12 @@ public class AdminUpdateUserDto
 
 	[Required]
 	public UserRole Role { get; set; }
+
+	public bool IsDisabled { get; set; }
+}
+
+public class AdminResetPasswordDto
+{
+	[Required]
+	public string NewPassword { get; set; } = string.Empty;
 }
