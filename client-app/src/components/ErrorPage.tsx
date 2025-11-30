@@ -6,7 +6,7 @@ import { NavLink } from "react-router-dom";
 /**
  * Props for the ErrorPage component.
  */
-interface ErrorPageProps {
+export interface ErrorPageProps {
 	/** The HTTP status code of the error. */
 	statusCode: number;
 }

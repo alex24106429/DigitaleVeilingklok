@@ -29,7 +29,7 @@ const getAuthHeaders = (): HeadersInit => {
 /**
  * DTO for updating profile (name + email)
  */
-interface UpdateProfileRequest {
+export interface UpdateProfileRequest {
 	fullName: string;
 	email: string;
 }
@@ -37,7 +37,7 @@ interface UpdateProfileRequest {
 /**
  * DTO for changing password
  */
-interface ChangePasswordRequest {
+export interface ChangePasswordRequest {
 	currentPassword: string;
 	newPassword: string;
 }

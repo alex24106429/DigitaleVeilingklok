@@ -8,7 +8,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 /**
  * Props for the AlertDialog component.
  */
-interface AlertDialogProps {
+export interface AlertDialogProps {
 	/** If `true`, the dialog is open. */
 	open: boolean;
 	/** The title of the dialog. */

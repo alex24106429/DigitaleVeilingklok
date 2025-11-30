@@ -21,7 +21,7 @@ export interface AlertOptions {
 /**
  * Defines the shape of the context provided by AlertProvider.
  */
-interface AlertContextType {
+export interface AlertContextType {
 	/**
 	 * Function to display an alert dialog.
 	 * @param {AlertOptions} options - The title and message for the alert.

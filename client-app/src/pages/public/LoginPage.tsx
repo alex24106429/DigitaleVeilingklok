@@ -21,7 +21,7 @@ import { useAlert, AlertSlot } from '../../components/AlertProvider';
 /**
  * Props for the LoginPage component.
  */
-interface LoginPageProps {
+export interface LoginPageProps {
 	/** Determines if the component should render the registration form (`true`) or the login form (`false`). */
 	isRegisterPage: boolean;
 }

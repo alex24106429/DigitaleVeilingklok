@@ -17,7 +17,7 @@ import { CreateAuctionDto, Auction } from '../types/auction';
 import { auctionService } from '../api/services/auctionService';
 import { useAuth } from '../contexts/AuthContext';
 
-interface AddAuctionModalProps {
+export interface AddAuctionModalProps {
 	open: boolean;
 	onClose: () => void;
 	onSubmit: (auction: Auction) => void;

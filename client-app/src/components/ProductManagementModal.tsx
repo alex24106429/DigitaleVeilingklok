@@ -3,7 +3,7 @@ import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, 
 import { Auction } from '../types/auction';
 import { Product } from '../types/product';
 
-interface ProductManagementModalProps {
+export interface ProductManagementModalProps {
 	open: boolean;
 	onClose: () => void;
 	auction: Auction | null;
