@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { User } from '../types/user';
 import { authService } from '../api/services/authService';
 
-interface LoginResult {
+export interface LoginResult {
 	success: boolean;
 	error?: string;
 }
