@@ -1,6 +1,13 @@
 {
-	"references": [{ "path": "./tsconfig.node.json" }],
+	"references": [
+		{
+			"path": "./tsconfig.node.json"
+		}
+	],
 	"compilerOptions": {
+		"types": [
+			"vite/client"
+		],
 		"target": "ESNext",
 		"lib": [
 			"dom",

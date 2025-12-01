@@ -1,7 +1,7 @@
 import { ApiResponse } from '../../types/api';
 import { Product } from '../../types/product';
 
-const API_BASE_URL = 'http://localhost:5048/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5048/api';
 
 /**
  * Data Transfer Object for creating or updating a product.

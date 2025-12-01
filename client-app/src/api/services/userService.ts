@@ -1,7 +1,7 @@
 import { ApiResponse } from '../../types/api';
 import { User } from '../../types/user';
 
-const API_BASE_URL = 'http://localhost:5048/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5048/api';
 
 // In-flight + result cache for GET /users (admin only)
 let usersCache: User[] | null = null;
