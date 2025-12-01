@@ -51,6 +51,31 @@ export interface LoginResponse {
 }
 
 /**
+ * Helper interface to handle inconsistent casing from the backend during login 
+ * (e.g. PascalCase vs camelCase serialization).
+ */
+export interface BackendLoginResponse {
+	token?: string;
+	user?: User;
+}
+
+/**
+ * DTO for updating user profile information.
+ */
+export interface UpdateProfileRequest {
+	fullName: string;
+	email: string;
+}
+
+/**
+ * DTO for changing the user's password.
+ */
+export interface ChangePasswordRequest {
+	currentPassword: string;
+	newPassword: string;
+}
+
+/**
  * Payload returned when initiating a TOTP setup.
  */
 export interface TotpSetupResponse {
