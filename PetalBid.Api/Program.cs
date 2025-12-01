@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Npgsql;
 using PetalBid.Api.Data;
 using PetalBid.Api.Services;
 using System.Text;
@@ -14,13 +15,41 @@ public class Program
 	{
 		var builder = WebApplication.CreateBuilder(args);
 
-		builder.WebHost.ConfigureKestrel(options =>
-		{
-			options.ListenAnyIP(5048);
-		});
+		// -------------------------------------------------------------------------
+		// Database Configuration: SQLite (Local) vs PostgreSQL (Production)
+		// -------------------------------------------------------------------------
+		// Render and other cloud providers set 'DATABASE_URL' automatically.
+		var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
 
 		builder.Services.AddDbContext<AppDbContext>(options =>
-			options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+		{
+			if (!string.IsNullOrEmpty(databaseUrl))
+			{
+				// PRODUCTION: Use PostgreSQL
+				// We must parse the connection URL (postgres://user:pass@host/db) 
+				// into a format .NET accepts.
+				var databaseUri = new Uri(databaseUrl);
+				var userInfo = databaseUri.UserInfo.Split(':');
+
+				var connectionStringBuilder = new NpgsqlConnectionStringBuilder
+				{
+					Host = databaseUri.Host,
+					Port = databaseUri.Port,
+					Username = userInfo[0],
+					Password = userInfo[1],
+					Database = databaseUri.LocalPath.TrimStart('/'),
+					SslMode = SslMode.Prefer // Usually required by cloud providers
+				};
+
+				options.UseNpgsql(connectionStringBuilder.ToString());
+			}
+			else
+			{
+				// LOCAL DEVELOPMENT: Use SQLite
+				options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
+			}
+		});
+		// -------------------------------------------------------------------------
 
 		builder.Services.AddControllers();
 
@@ -51,7 +80,9 @@ public class Program
 		{
 			options.AddPolicy("AllowFrontend", policy =>
 			{
-				policy.WithOrigins("http://localhost:5173") // Vite default port
+				// Note: When you deploy your frontend, you might need to add that URL here too
+				// e.g., .WithOrigins("http://localhost:5173", "https://your-frontend.onrender.com")
+				policy.WithOrigins("http://localhost:5173") 
 					.AllowAnyHeader()
 					.AllowAnyMethod();
 			});
@@ -89,6 +120,21 @@ public class Program
 		});
 
 		var app = builder.Build();
+
+		// -------------------------------------------------------------------------
+		// Database Initialization
+		// -------------------------------------------------------------------------
+		// This block ensures the database tables are created automatically when the app starts.
+		// This is critical for the cloud deployment to create the Postgres schema.
+		using (var scope = app.Services.CreateScope())
+		{
+			var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+			
+			// This creates tables if they don't exist.
+			// It bypasses migration history, which is fine for this hybrid setup.
+			db.Database.EnsureCreated();
+		}
+		// -------------------------------------------------------------------------
 
 		if (app.Environment.IsDevelopment())
 		{
