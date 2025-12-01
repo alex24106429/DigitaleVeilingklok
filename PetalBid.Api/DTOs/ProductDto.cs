@@ -8,7 +8,7 @@ public class ProductDto
 	[StringLength(100)]
 	public string Name { get; set; } = string.Empty;
 
-    private const double MaxWeight=100;
+	private const double MaxWeight = 100;
 	[Range(0, MaxWeight)]
 	public double Weight { get; set; }
 
@@ -19,11 +19,11 @@ public class ProductDto
 	[StringLength(100)]
 	public string Species { get; set; } = string.Empty;
 
-    private const double MaxPotSize=70;
+	private const double MaxPotSize = 70;
 	[Range(0, MaxPotSize)]
 	public double PotSize { get; set; }
 
-    private const double MaxStemLength=100;
+	private const double MaxStemLength = 100;
 	[Range(0, MaxStemLength)]
 	public double StemLength { get; set; }
 

@@ -5,30 +5,30 @@ namespace PetalBid.Api.Tests.Controllers.ApiController;
 
 public class ApiControllerTests
 {
-    [Fact]
+	[Fact]
 
-    public void ApiControllerBase_ConnectsSuccessfullyToDatabase()
-    {
-        // Arrange
-        var dbContextType = typeof(PetalBid.Api.Data.AppDbContext);
+	public void ApiControllerBase_ConnectsSuccessfullyToDatabase()
+	{
+		// Arrange
+		var dbContextType = typeof(PetalBid.Api.Data.AppDbContext);
 
-        // Act
-        var hasDbContextField = typeof(ApiControllerBase).GetField("Db", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.FieldType == dbContextType;
+		// Act
+		var hasDbContextField = typeof(ApiControllerBase).GetField("Db", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.FieldType == dbContextType;
 
-        // Assert
-        Assert.True(hasDbContextField);
-    }
-    [Fact]
+		// Assert
+		Assert.True(hasDbContextField);
+	}
+	[Fact]
 
-    public void ApiControllerBase_ControlsDatabaseAsExpected()
-    {
-        // Arrange
-        var dbField = typeof(ApiControllerBase).GetField("Db", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+	public void ApiControllerBase_ControlsDatabaseAsExpected()
+	{
+		// Arrange
+		var dbField = typeof(ApiControllerBase).GetField("Db", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
 
-        // Act
-        var isReadonly = dbField?.IsInitOnly ?? false;
+		// Act
+		var isReadonly = dbField?.IsInitOnly ?? false;
 
-        // Assert
-        Assert.True(isReadonly);
-    }
+		// Assert
+		Assert.True(isReadonly);
+	}
 }

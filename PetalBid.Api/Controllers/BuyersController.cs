@@ -18,14 +18,14 @@ public class BuyersController(AppDbContext db) : ApiControllerBase(db)
 	/// <summary>
 	/// Retrieves all "Buyers"
 	/// </summary>
-	
+
 	[HttpGet]
 	public async Task<ActionResult<List<Buyer>>> GetAll()
 	{
 		var buyers = await Db.Buyers.AsNoTracking().ToListAsync();
 		return Ok(buyers);
 	}
-    /// <summary>
+	/// <summary>
 	/// Retrieves a specific "buyer"
 	/// </summary>
 
@@ -35,7 +35,7 @@ public class BuyersController(AppDbContext db) : ApiControllerBase(db)
 		var buyer = await Db.Buyers.AsNoTracking().FirstOrDefaultAsync(b => b.Id == id);
 		return buyer is null ? NotFound() : Ok(buyer);
 	}
-    /// <summary>
+	/// <summary>
 	/// Updates a "buyer"
 	/// </summary>
 	[HttpPut("{id:int}")]
@@ -51,9 +51,9 @@ public class BuyersController(AppDbContext db) : ApiControllerBase(db)
 		await Db.SaveChangesAsync();
 		return Ok(existing);
 	}
-     /// <summary>
-     /// Deletes a "buyer"
-     /// </summary>
+	/// <summary>
+	/// Deletes a "buyer"
+	/// </summary>
 
 	[HttpDelete("{id:int}")]
 	public async Task<ActionResult> Delete(int id)

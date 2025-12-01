@@ -25,7 +25,7 @@ public class AdminsController(AppDbContext db) : ApiControllerBase(db)
 		var admins = await Db.Admins.AsNoTracking().ToListAsync();
 		return Ok(admins);
 	}
-    /// <summary>
+	/// <summary>
 	/// Retrieves a specific "Admin"
 	/// </summary>
 	[HttpGet("{id:int}")]
@@ -59,7 +59,7 @@ public class AdminsController(AppDbContext db) : ApiControllerBase(db)
 		await Db.SaveChangesAsync();
 		return Ok(existing);
 	}
-    /// <summary>
+	/// <summary>
 	/// Deletes an "Admin" record
 	/// </summary>
 	[HttpDelete("{id:int}")]

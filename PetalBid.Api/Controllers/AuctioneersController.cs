@@ -15,29 +15,29 @@ namespace PetalBid.Api.Controllers;
 [Authorize(Roles = "Admin")]
 public class AuctioneersController(AppDbContext db) : ApiControllerBase(db)
 {
-	
+
 	/// <summary>
 	/// Retrieves all "Auctioneer" records
 	/// </summary>
-	
+
 	[HttpGet]
 	public async Task<ActionResult<List<Auctioneer>>> GetAll()
 	{
 		var auctioneers = await Db.Auctioneers.AsNoTracking().ToListAsync();
 		return Ok(auctioneers);
 	}
-    /// <summary>
-    /// Retrieves a specific "Auctioneer" by ID.
-    /// </summary>
+	/// <summary>
+	/// Retrieves a specific "Auctioneer" by ID.
+	/// </summary>
 	[HttpGet("{id:int}")]
 	public async Task<ActionResult<Auctioneer>> GetById(int id)
 	{
 		var auctioneer = await Db.Auctioneers.AsNoTracking().FirstOrDefaultAsync(a => a.Id == id);
 		return auctioneer is null ? NotFound() : Ok(auctioneer);
 	}
-    /// <summary>
-    /// Creates a new "Auctioneer".
-    /// </summary>
+	/// <summary>
+	/// Creates a new "Auctioneer".
+	/// </summary>
 	[HttpPost]
 	public async Task<ActionResult<Auctioneer>> Create(Auctioneer auctioneer)
 	{
@@ -45,9 +45,9 @@ public class AuctioneersController(AppDbContext db) : ApiControllerBase(db)
 		await Db.SaveChangesAsync();
 		return CreatedAtAction(nameof(GetById), new { id = auctioneer.Id }, auctioneer);
 	}
-    /// <summary>
-    /// Updates an existing "Auctioneer".
-    /// </summary>
+	/// <summary>
+	/// Updates an existing "Auctioneer".
+	/// </summary>
 	[HttpPut("{id:int}")]
 	public async Task<ActionResult<Auctioneer>> Update(int id, Auctioneer updated)
 	{
@@ -60,10 +60,10 @@ public class AuctioneersController(AppDbContext db) : ApiControllerBase(db)
 		await Db.SaveChangesAsync();
 		return Ok(existing);
 	}
-    
-    /// <summary>
-    /// Deletes an existing "Auctioneer"
-    /// </summary>
+
+	/// <summary>
+	/// Deletes an existing "Auctioneer"
+	/// </summary>
 	[HttpDelete("{id:int}")]
 	public async Task<ActionResult> Delete(int id)
 	{

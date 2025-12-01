@@ -17,14 +17,14 @@ public class SuppliersController(AppDbContext db) : ApiControllerBase(db)
 	/// <summary>
 	/// Retrieves all "Suppliers"
 	/// </summary>
-	
+
 	[HttpGet]
 	public async Task<ActionResult<List<Supplier>>> GetAll()
 	{
 		var suppliers = await Db.Suppliers.AsNoTracking().ToListAsync();
 		return Ok(suppliers);
 	}
-    /// <summary>
+	/// <summary>
 	/// Retrieves a specific "Supplier"
 	/// </summary>
 
@@ -34,10 +34,10 @@ public class SuppliersController(AppDbContext db) : ApiControllerBase(db)
 		var supplier = await Db.Suppliers.AsNoTracking().FirstOrDefaultAsync(s => s.Id == id);
 		return supplier is null ? NotFound() : Ok(supplier);
 	}
-     /// <summary>
-	 /// Creates a new "Supplier"	
-	 /// </summary>
-	
+	/// <summary>
+	/// Creates a new "Supplier"	
+	/// </summary>
+
 	[HttpPost]
 	public async Task<ActionResult<Supplier>> Create(Supplier supplier)
 	{
@@ -45,9 +45,9 @@ public class SuppliersController(AppDbContext db) : ApiControllerBase(db)
 		await Db.SaveChangesAsync();
 		return CreatedAtAction(nameof(GetById), new { id = supplier.Id }, supplier);
 	}
-     /// <summary>
-	 /// Updates an existing "Supplier"
-	 /// </summary>
+	/// <summary>
+	/// Updates an existing "Supplier"
+	/// </summary>
 
 	[HttpPut("{id:int}")]
 	public async Task<ActionResult<Supplier>> Update(int id, Supplier updated)
@@ -62,9 +62,9 @@ public class SuppliersController(AppDbContext db) : ApiControllerBase(db)
 		await Db.SaveChangesAsync();
 		return Ok(existing);
 	}
-     /// <summary>
-	 /// Deletes an existing "Supplier"
-	 /// </summary>
+	/// <summary>
+	/// Deletes an existing "Supplier"
+	/// </summary>
 	[HttpDelete("{id:int}")]
 	public async Task<ActionResult> Delete(int id)
 	{

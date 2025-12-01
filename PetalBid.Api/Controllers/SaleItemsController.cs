@@ -17,24 +17,24 @@ public class SaleItemsController(AppDbContext db) : ApiControllerBase(db)
 	/// <summary>
 	/// Retrieves all "SaleItem" 
 	/// </summary>
-	
+
 	[HttpGet]
 	public async Task<ActionResult<List<SaleItem>>> GetAll()
 	{
 		var items = await Db.SaleItems.AsNoTracking().ToListAsync();
 		return Ok(items);
 	}
-    /// <summary>
+	/// <summary>
 	/// Retrieves a specific "SaleItem"
 	/// </summary>
-	
+
 	[HttpGet("{id:int}")]
 	public async Task<ActionResult<SaleItem>> GetById(int id)
 	{
 		var item = await Db.SaleItems.AsNoTracking().FirstOrDefaultAsync(i => i.Id == id);
 		return item is null ? NotFound() : Ok(item);
 	}
-    /// <summary>
+	/// <summary>
 	/// Creates a new "SaleItem"
 	/// </summary>
 	[HttpPost]
@@ -44,7 +44,7 @@ public class SaleItemsController(AppDbContext db) : ApiControllerBase(db)
 		await Db.SaveChangesAsync();
 		return CreatedAtAction(nameof(GetById), new { id = item.Id }, item);
 	}
-    /// <summary>
+	/// <summary>
 	/// Updates an existing "SaleItem"
 	/// </summary>
 
@@ -62,7 +62,7 @@ public class SaleItemsController(AppDbContext db) : ApiControllerBase(db)
 		await Db.SaveChangesAsync();
 		return Ok(existing);
 	}
-    /// <summary>
+	/// <summary>
 	/// Deletes a "SaleItem"
 	/// </summary>
 
