@@ -39,12 +39,12 @@
 		"eslint-plugin-react": "^7.37.5",
 		"eslint-plugin-react-hooks": "^7.0.1",
 		"jsdom": "^27.2.0",
-		"typedoc": "^0.28.14",
+		"typedoc": "^0.28.15",
 		"typescript-eslint": "^8.48.0",
-		"vite": "npm:rolldown-vite@7.2.8",
+		"vite": "npm:rolldown-vite@7.2.9",
 		"vitest": "^4.0.14"
 	},
 	"overrides": {
-		"vite": "npm:rolldown-vite@7.2.8"
+		"vite": "npm:rolldown-vite@7.2.9"
 	}
 }
