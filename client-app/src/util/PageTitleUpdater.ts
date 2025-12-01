@@ -4,7 +4,7 @@ import { useEffect } from "react";
 /**
  * Props for the PageTitleUpdater component.
  */
-interface PageTitleUpdaterProps {
+export interface PageTitleUpdaterProps {
 	/**
 	 * An object that maps URL paths to their corresponding page titles.
 	 * e.g., `{ "/login": "Login", "/auctions": "Auctions" }`

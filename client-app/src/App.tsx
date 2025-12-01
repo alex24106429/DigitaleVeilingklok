@@ -3,6 +3,7 @@ import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
+import { useTheme } from '@mui/material/styles';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import AppRoutes from './AppRoutes';
 import { UserRole } from './types/user';
@@ -34,8 +35,11 @@ const activeButtonSx = {
 
 function AppBarContent() {
 	const { user, logout } = useAuth();
-
+	const theme = useTheme();
 	const userRole = user?.role;
+
+	const logoSrc = theme.palette.mode === 'dark' ? "/images/logo-petalbid-dark.svg" : "/images/logo-petalbid.svg";
+	const logoSmallSrc = "/images/logo-petalbid-small.svg";
 
 	const renderRoleSpecificLinks = () => {
 		switch (userRole) {
@@ -99,6 +103,7 @@ function AppBarContent() {
 	return (
 		<AppBar
 			position="static"
+			elevation={0}
 			sx={{
 				backgroundColor: (theme) => theme.palette.background.default,
 				color: (theme) => theme.palette.text.primary,
@@ -110,7 +115,7 @@ function AppBarContent() {
 					<NavLink to="/">
 						<Box
 							component="img"
-							src="/images/logo-petalbid.svg"
+							src={logoSrc}
 							alt="PetalBid logo"
 							sx={{
 								height: 50,
@@ -120,7 +125,7 @@ function AppBarContent() {
 
 						<Box
 							component="img"
-							src="/images/logo-petalbid-small.svg"
+							src={logoSmallSrc}
 							alt="PetalBid logo"
 							sx={{
 								height: 50,
@@ -167,6 +172,7 @@ function AppBarContent() {
 }
 
 export default function App() {
+	const theme = useTheme();
 	return (
 		<AuthProvider>
 			<AlertProvider>
@@ -175,7 +181,7 @@ export default function App() {
 					<AppRoutes></AppRoutes>
 
 					<div style={{ marginTop: 'auto' }}>
-						<Box textAlign="center" padding="20px" bgcolor="primary.100" color="Black">
+						<Box textAlign="center" padding="20px" bgcolor={theme.palette.mode === 'dark' ? "grey.900" : "primary.100"} color="text.primary">
 							&copy; {new Date().getFullYear()} PetalBid. Alle rechten voorbehouden.
 							<Button color="inherit" component={NavLink} to="/privacy" sx={activeButtonSx}>
 								Privacybeleid

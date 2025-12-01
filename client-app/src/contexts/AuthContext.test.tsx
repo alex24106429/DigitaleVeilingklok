@@ -19,7 +19,8 @@ const mockUser: User = {
 	fullName: 'Test User',
 	email: 'test@example.com',
 	role: UserRole.Buyer,
-	isTotpEnabled: false
+	isTotpEnabled: false,
+	isDisabled: false
 };
 
 const mockToken = 'fake-jwt-token';

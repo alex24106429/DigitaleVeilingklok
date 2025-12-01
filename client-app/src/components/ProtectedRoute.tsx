@@ -7,7 +7,7 @@ import ErrorPage from './ErrorPage';
 /**
  * Props for the ProtectedRoute component.
  */
-interface ProtectedRouteProps {
+export interface ProtectedRouteProps {
 	/** The component or elements to render if the user is authorized. */
 	children: ReactNode;
 	/** An optional array of user roles allowed to access this route. If not provided, any authenticated user can access it. */

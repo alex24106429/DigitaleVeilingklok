@@ -1,13 +1,13 @@
 import { ApiResponse } from '../../types/api';
 import { Product } from '../../types/product';
 
-const API_BASE_URL = 'http://localhost:5048/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5048/api';
 
 /**
  * Data Transfer Object for creating or updating a product.
  * It omits fields that are managed by the server, such as `id`, `supplierId`, and `auctionId`.
  */
-export type ProductDto = Omit<Product, 'id' | 'supplierId' | 'auctionId' | 'supplier' | 'auction'>;
+export type ProductDto = Omit<Product, 'id' | 'supplierId' | 'supplier' | 'auction'>;
 
 /**
  * Retrieves the authorization headers from local storage.

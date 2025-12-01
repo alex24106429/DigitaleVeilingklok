@@ -8,7 +8,7 @@ import {
 	VerifyTotpRequest,
 } from '../../types/api';
 
-const API_BASE_URL = 'http://localhost:5048/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5048/api';
 
 /**
  * Retrieves the authorization headers from local storage.
@@ -29,7 +29,7 @@ const getAuthHeaders = (): HeadersInit => {
 /**
  * DTO for updating profile (name + email)
  */
-interface UpdateProfileRequest {
+export interface UpdateProfileRequest {
 	fullName: string;
 	email: string;
 }
@@ -37,7 +37,7 @@ interface UpdateProfileRequest {
 /**
  * DTO for changing password
  */
-interface ChangePasswordRequest {
+export interface ChangePasswordRequest {
 	currentPassword: string;
 	newPassword: string;
 }

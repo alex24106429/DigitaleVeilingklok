@@ -4,7 +4,7 @@ import Box from '@mui/material/Box';
 /**
  * Props for the DocumentRenderer component.
  */
-interface DocumentRendererProps {
+export interface DocumentRendererProps {
 	/** The Markdown content to be rendered as a string. */
 	content: string;
 }

@@ -8,7 +8,8 @@ const mockUser: User = {
 	fullName: 'Admin User',
 	email: 'admin@example.com',
 	role: UserRole.Admin,
-	isTotpEnabled: true
+	isTotpEnabled: true,
+	isDisabled: false
 };
 
 const mockUserList: User[] = [mockUser];
@@ -129,7 +130,7 @@ describe('userService', () => {
 
 			const result = await userService.deleteUser(1);
 
-			expect(result.message).toBe('User deleted successfully');
+			expect(result.message).toBe('User deleted successfully.');
 			expect(deleteFetch).toHaveBeenCalledWith(
 				expect.stringContaining('/users/1'),
 				expect.objectContaining({ method: 'DELETE' })

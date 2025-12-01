@@ -13,7 +13,7 @@ namespace PetalBid.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin,Supplier")]
+[Authorize(Roles = "Admin,Supplier,Auctioneer")]
 public class ProductsController(AppDbContext db) : ApiControllerBase(db)
 {
 	/// <summary>
@@ -36,10 +36,10 @@ public class ProductsController(AppDbContext db) : ApiControllerBase(db)
 		var products = await query.ToListAsync();
 		return Ok(products);
 	}
-    /// <summary>
+	/// <summary>
 	///  Retrieves a specific "product"
 	/// </summary>
-	
+
 	[HttpGet("{id:int}")]
 	public async Task<ActionResult<Product>> GetById(int id)
 	{
@@ -56,10 +56,10 @@ public class ProductsController(AppDbContext db) : ApiControllerBase(db)
 
 		return Ok(product);
 	}
-     /// <summary>
-	 /// Creates a new "product"
-	 /// </summary>
-	
+	/// <summary>
+	/// Creates a new "product"
+	/// </summary>
+
 	[HttpPost]
 	public async Task<ActionResult<Product>> Create(ProductDto productDto)
 	{
@@ -90,9 +90,9 @@ public class ProductsController(AppDbContext db) : ApiControllerBase(db)
 		await Db.SaveChangesAsync();
 		return CreatedAtAction(nameof(GetById), new { id = product.Id }, product);
 	}
-     /// <summary>
-	 /// Updates an existing "product"
-	 /// </summary>
+	/// <summary>
+	/// Updates an existing "product"
+	/// </summary>
 	[HttpPut("{id:int}")]
 	public async Task<ActionResult<Product>> Update(int id, ProductDto updatedDto)
 	{
@@ -123,9 +123,9 @@ public class ProductsController(AppDbContext db) : ApiControllerBase(db)
 		await Db.SaveChangesAsync();
 		return Ok(existing);
 	}
-     /// <summary>
-     /// Deletes a "product"
-     /// </summary>
+	/// <summary>
+	/// Deletes a "product"
+	/// </summary>
 
 	[HttpDelete("{id:int}")]
 	public async Task<ActionResult> Delete(int id)

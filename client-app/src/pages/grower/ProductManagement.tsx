@@ -46,7 +46,7 @@ export default function ProductManagement() {
 		if (response.data) {
 			setProducts(response.data);
 		} else {
-			showAlert({ title: "Fout", message: response.error || 'Kon producten niet ophalen.' });
+			showAlert({ title: "Fout", message: response.error || 'Kon producten niet ophalen.', severity: 'error' });
 		}
 		setLoading(false);
 	}, [showAlert]);
@@ -91,12 +91,12 @@ export default function ProductManagement() {
 		}
 
 		if (response.data) {
-			showAlert({ title: 'Succes', message: `Product succesvol ${editingProduct ? 'bijgewerkt' : 'aangemaakt'}.` });
+			showAlert({ title: 'Succes', message: `Product succesvol ${editingProduct ? 'bijgewerkt' : 'aangemaakt'}.`, severity: "success" });
 			handleCloseDialog();
 			// Force refresh to bypass cache after mutation
 			fetchProducts(true);
 		} else {
-			showAlert({ title: 'Fout', message: response.error || 'Opslaan mislukt.' });
+			showAlert({ title: 'Fout', message: response.error || 'Opslaan mislukt.', severity: 'error' });
 		}
 	};
 
@@ -110,10 +110,11 @@ export default function ProductManagement() {
 		if (failedDeletions.length > 0) {
 			showAlert({
 				title: 'Fout bij verwijderen',
+				severity: 'error',
 				message: `Kon ${failedDeletions.length} van de ${selectedIds.length} product(en) niet verwijderen. Fout: ${failedDeletions[0].error}`,
 			});
 		} else {
-			showAlert({ title: 'Succes', message: `${selectedIds.length} product(en) succesvol verwijderd.` });
+			showAlert({ title: 'Succes', message: `${selectedIds.length} product(en) succesvol verwijderd.`, severity: 'success' });
 		}
 
 		// Force refresh to bypass cache after mutation

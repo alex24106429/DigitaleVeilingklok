@@ -21,7 +21,7 @@ import { useAlert, AlertSlot } from '../../components/AlertProvider';
 /**
  * Props for the LoginPage component.
  */
-interface LoginPageProps {
+export interface LoginPageProps {
 	/** Determines if the component should render the registration form (`true`) or the login form (`false`). */
 	isRegisterPage: boolean;
 }
@@ -35,7 +35,7 @@ interface LoginPageProps {
  * @returns {JSX.Element} The rendered login or registration form.
  */
 export default function LoginPage({ isRegisterPage }: LoginPageProps) {
-	const { showAlert, clearAlert } = useAlert();
+	const { showAlert } = useAlert();
 	const navigate = useNavigate();
 	const { login } = useAuth();
 	const [isLoading, setIsLoading] = useState(false);
@@ -77,7 +77,7 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 				setTwoFactorCode("");
 			}
 
-			showAlert({ title: "Fout", message: errorMessage });
+			showAlert({ title: "Fout", message: errorMessage, display: "inline", severity: "error" });
 		} finally {
 			setIsLoading(false);
 		}
@@ -98,7 +98,7 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 		}
 
 		if (password !== confirmPassword) {
-			showAlert({ title: "Ongeldige informatie", message: "Wachtwoorden komen niet overeen!" });
+			showAlert({ title: "Ongeldige informatie", message: "Wachtwoorden komen niet overeen!", display: "inline", severity: "warning" });
 			return;
 		}
 
@@ -130,11 +130,16 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 			});
 
 			if (response.error) {
-				showAlert({ title: "Serverfout", message: response.error });
+				showAlert({ title: "Serverfout", message: response.error, display: "inline", severity: "error" });
 				return;
 			}
 
-			showAlert({ title: "Succes", message: "Registratie voltooid! U kunt nu inloggen." });
+			showAlert({
+				title: "Succes",
+				message: "Registratie voltooid! U kunt nu inloggen.",
+				severity: "success",
+				display: "inline"
+			});
 
 			if (enableTwoFactorAfterRegister) {
 				const autoLogin = await login(email, password);
@@ -146,13 +151,15 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 
 				showAlert({
 					title: "Let op",
-					message: "Registratie gelukt, maar automatisch inloggen mislukte. Log handmatig in en schakel 2FA via Mijn Account in."
+					message: "Registratie gelukt, maar automatisch inloggen mislukte. Log handmatig in en schakel 2FA via Mijn Account in.",
+					severity: "warning",
+					display: "inline"
 				});
 			}
 
 			navigate("/login");
 		} catch {
-			showAlert({ title: "Fout", message: "Er is een onverwachte fout opgetreden. Probeer het opnieuw." });
+			showAlert({ title: "Fout", message: "Er is een onverwachte fout opgetreden. Probeer het opnieuw.", display: "inline", severity: "error" });
 		} finally {
 			setIsLoading(false);
 		}

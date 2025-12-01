@@ -8,4 +8,5 @@ public abstract class User
 	public string PasswordHash { get; set; } = string.Empty;
 	public bool IsTotpEnabled { get; set; }
 	public string? TotpSecret { get; set; }
+	public bool IsDisabled { get; set; }
 }

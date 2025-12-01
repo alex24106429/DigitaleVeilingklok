@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { User } from '../types/user';
 import { authService } from '../api/services/authService';
 
-interface LoginResult {
+export interface LoginResult {
 	success: boolean;
 	error?: string;
 }
@@ -10,7 +10,7 @@ interface LoginResult {
 /**
  * Defines the shape of the authentication context provided to consumers.
  */
-interface AuthContextType {
+export interface AuthContextType {
 	/** The currently authenticated user object, or `null` if no user is logged in. */
 	user: User | null;
 	/** The authentication token (JWT), or `null` if not authenticated. */
@@ -56,7 +56,7 @@ export const useAuth = () => {
 /**
  * Props for the AuthProvider component.
  */
-interface AuthProviderProps {
+export interface AuthProviderProps {
 	/** The child components that will have access to the auth context. */
 	children: ReactNode;
 }

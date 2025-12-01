@@ -13,21 +13,25 @@ import DialogActions from '@mui/material/DialogActions';
 import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import CircularProgress from '@mui/material/CircularProgress';
+import Switch from '@mui/material/Switch';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Link from '@mui/material/Link';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAlert } from '../../components/AlertProvider';
 import { authService } from '../../api/services/authService';
 import { TotpSetupResponse } from '../../types/api';
-import { Link } from '@mui/material';
+import { useColorMode } from '../../contexts/ThemeContext';
 import QRCode from 'qrcode';
 
 /**
- * Account component for managing user account information (name, email, password)
+ * Account component for managing user account information (name, email, password, settings)
  * @returns JSX.Element
  */
 export default function Account() {
 	const { user, updateUser } = useAuth();
 	const { showAlert } = useAlert();
+	const { mode, toggleColorMode } = useColorMode();
 	const location = useLocation();
 	const navigate = useNavigate();
 	const autoOpen2FaRef = useRef(false);
@@ -74,6 +78,7 @@ export default function Account() {
 			navigate({ pathname: location.pathname, search: nextSearch ? `?${nextSearch}` : '' }, { replace: true });
 			void beginTwoFactorSetup();
 		}
+	// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [location.search, location.pathname, navigate, user]);
 
 	useEffect(() => {
@@ -84,7 +89,7 @@ export default function Account() {
 			}, (err, url) => {
 				if (err) {
 					console.error('QR Code generation error:', err);
-					showAlert({ title: 'Fout', message: 'Kon de QR-code niet genereren.' });
+					showAlert({ title: 'Fout', message: 'Kon de QR-code niet genereren.', severity: 'error' });
 					setQrCodeDataUrl('');
 				} else {
 					setQrCodeDataUrl(url);
@@ -104,11 +109,11 @@ export default function Account() {
 		if (!profileChanged) return;
 		// Basic validation
 		if (fullName.trim().length === 0) {
-			showAlert({ title: 'Ongeldige invoer', message: 'Naam mag niet leeg zijn.' });
+			showAlert({ title: 'Ongeldige invoer', message: 'Naam mag niet leeg zijn.', severity: 'error' });
 			return;
 		}
 		if (email.length < 3 || !email.includes("@")) {
-			showAlert({ title: 'Ongeldige invoer', message: 'Voer een geldig e-mailadres in.' });
+			showAlert({ title: 'Ongeldige invoer', message: 'Voer een geldig e-mailadres in.', severity: 'error' });
 			return;
 		}
 
@@ -117,17 +122,17 @@ export default function Account() {
 		setSavingProfile(false);
 
 		if (res.error || !res.data) {
-			showAlert({ title: 'Fout', message: res.error || 'Profiel bijwerken mislukt.' });
+			showAlert({ title: 'Fout', message: res.error || 'Profiel bijwerken mislukt.', severity: 'error' });
 			return;
 		}
 
 		updateUser(res.data);
-		showAlert({ title: 'Succes', message: 'Profiel succesvol bijgewerkt.' });
+		showAlert({ title: 'Succes', message: 'Profiel succesvol bijgewerkt.', severity: 'success' });
 	};
 
 	const handleChangePassword = async () => {
 		if (newPassword !== confirmPassword) {
-			showAlert({ title: 'Ongeldige invoer', message: 'Nieuw wachtwoord en bevestiging komen niet overeen.' });
+			showAlert({ title: 'Ongeldige invoer', message: 'Nieuw wachtwoord en bevestiging komen niet overeen.', severity: 'error' });
 			return;
 		}
 		setSavingPassword(true);
@@ -135,14 +140,14 @@ export default function Account() {
 		setSavingPassword(false);
 
 		if (res.error) {
-			showAlert({ title: 'Fout', message: res.error });
+			showAlert({ title: 'Fout', message: res.error, severity: 'error' });
 			return;
 		}
 
 		setCurrentPassword('');
 		setNewPassword('');
 		setConfirmPassword('');
-		showAlert({ title: 'Succes', message: res.data?.message || 'Wachtwoord succesvol gewijzigd.' });
+		showAlert({ title: 'Succes', message: res.data?.message || 'Wachtwoord succesvol gewijzigd.', severity: 'success' });
 	};
 
 	const beginTwoFactorSetup = async () => {
@@ -150,14 +155,14 @@ export default function Account() {
 			setIsRequestingTotp(true);
 			const response = await authService.beginTotpSetup();
 			if (!response.data) {
-				showAlert({ title: 'Fout', message: response.error || 'Kon 2FA niet voorbereiden.' });
+				showAlert({ title: 'Fout', message: response.error || 'Kon 2FA niet voorbereiden.', severity: 'error' });
 				return;
 			}
 			setSetupPayload(response.data);
 			setTwoFactorCode('');
 			setTwoFactorDialogOpen(true);
 		} catch {
-			showAlert({ title: 'Fout', message: 'Kon 2FA-setup niet starten.' });
+			showAlert({ title: 'Fout', message: 'Kon 2FA-setup niet starten.', severity: 'error' });
 		} finally {
 			setIsRequestingTotp(false);
 		}
@@ -171,12 +176,12 @@ export default function Account() {
 		setIsVerifyingTotp(false);
 
 		if (res.error || !res.data) {
-			showAlert({ title: 'Fout', message: res.error || 'Ongeldige 2FA-code.' });
+			showAlert({ title: 'Fout', message: res.error || 'Ongeldige 2FA-code.', severity: 'error' });
 			return;
 		}
 
 		updateUser(res.data);
-		showAlert({ title: 'Succes', message: 'Tweestapsverificatie is ingeschakeld.' });
+		showAlert({ title: 'Succes', message: 'Tweestapsverificatie is ingeschakeld.', severity: 'success' });
 		setTwoFactorDialogOpen(false);
 		setSetupPayload(null);
 		setTwoFactorCode('');
@@ -190,12 +195,12 @@ export default function Account() {
 		setIsDisablingTotp(false);
 
 		if (res.error || !res.data) {
-			showAlert({ title: 'Fout', message: res.error || 'Kon 2FA niet uitschakelen.' });
+			showAlert({ title: 'Fout', message: res.error || 'Kon 2FA niet uitschakelen.', severity: 'error' });
 			return;
 		}
 
 		updateUser(res.data);
-		showAlert({ title: 'Succes', message: 'Tweestapsverificatie is uitgeschakeld.' });
+		showAlert({ title: 'Succes', message: 'Tweestapsverificatie is uitgeschakeld.', severity: 'success' });
 		setDisableDialogOpen(false);
 		setDisableCode('');
 	};
@@ -206,8 +211,26 @@ export default function Account() {
 				Mijn Account
 			</Typography>
 			<Typography variant="body1" color="text.secondary" mb={3}>
-				Beheer uw profielgegevens en wijzig uw wachtwoord.
+				Beheer uw profielgegevens, instellingen en wachtwoord.
 			</Typography>
+
+			<Paper variant="outlined" sx={{ p: 3, mb: 4 }}>
+				<Typography variant="h6" component="h2" gutterBottom>
+					Instellingen
+				</Typography>
+				<FormControlLabel
+					control={
+						<Switch
+							checked={mode === 'dark'}
+							onChange={toggleColorMode}
+							color="primary"
+						/>
+					}
+					label="Donkere modus"
+				/>
+			</Paper>
+
+			<Divider sx={{ mb: 4 }} />
 
 			<Paper variant="outlined" sx={{ p: 3, mb: 4 }}>
 				<Typography variant="h6" component="h2" gutterBottom>

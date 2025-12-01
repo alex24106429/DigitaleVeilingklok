@@ -1,7 +1,7 @@
 import { ApiResponse } from '../../types/api';
 import { User } from '../../types/user';
 
-const API_BASE_URL = 'http://localhost:5048/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5048/api';
 
 // In-flight + result cache for GET /users (admin only)
 let usersCache: User[] | null = null;
@@ -59,6 +59,76 @@ export const userService = {
 
 		usersInFlight = promise;
 		return promise;
+	},
+
+	/**
+	 * Updates a user by their ID. Requires admin privileges.
+	 * @param {number} id The ID of the user to update.
+	 * @param {Partial<User>} userData The updated user data.
+	 * @returns {Promise<ApiResponse<User>>} A promise that resolves to an ApiResponse containing the updated user.
+	 */
+	async updateUser(id: number, userData: Partial<User>): Promise<ApiResponse<User>> {
+		const token = localStorage.getItem('token');
+		if (!token) {
+			return { error: 'No authentication token found.' };
+		}
+
+		try {
+			const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+				method: 'PUT',
+				headers: {
+					'Authorization': `Bearer ${token}`,
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify(userData),
+			});
+
+			const data = await response.json();
+
+			if (!response.ok) {
+				return { error: data.message || `Failed to update user: ${response.statusText}` };
+			}
+
+			// Invalidate cached user list after mutation
+			invalidateUsersCache();
+
+			return { data };
+		} catch {
+			return { error: 'Network error. Please try again.' };
+		}
+	},
+
+	/**
+	 * Forcefully resets a user's password. Requires admin privileges.
+	 * @param {number} id The ID of the user.
+	 * @param {string} newPassword The new password.
+	 */
+	async adminChangePassword(id: number, newPassword: string): Promise<ApiResponse<{ message: string }>> {
+		const token = localStorage.getItem('token');
+		if (!token) {
+			return { error: 'No authentication token found.' };
+		}
+
+		try {
+			const response = await fetch(`${API_BASE_URL}/users/${id}/password`, {
+				method: 'PUT',
+				headers: {
+					'Authorization': `Bearer ${token}`,
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({ newPassword }),
+			});
+
+			const data = await response.json();
+
+			if (!response.ok) {
+				return { error: data.message || 'Failed to reset password.' };
+			}
+
+			return { data };
+		} catch {
+			return { error: 'Network error. Please try again.' };
+		}
 	},
 
 	/**
