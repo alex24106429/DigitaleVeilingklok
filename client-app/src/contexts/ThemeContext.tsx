@@ -16,10 +16,21 @@ const ThemeContext = createContext<ThemeContextType>({
 export const useColorMode = () => useContext(ThemeContext);
 
 export const ThemeContextProvider = ({ children }: { children: ReactNode }) => {
-	// Initialize state from localStorage or default to 'light'
+	// Initialize state from localStorage, then System Preference, then default to 'light'
 	const [mode, setMode] = useState<'light' | 'dark'>(() => {
 		const savedMode = localStorage.getItem('themeMode');
-		return (savedMode === 'dark' || savedMode === 'light') ? savedMode : 'light';
+
+		// 1. Check if user has previously explicitly saved a preference
+		if (savedMode === 'dark' || savedMode === 'light') {
+			return savedMode;
+		}
+
+		// 2. If no saved preference, check the OS/System preference
+		if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+			return 'dark';
+		}
+
+		return 'light';
 	});
 
 	useEffect(() => {
