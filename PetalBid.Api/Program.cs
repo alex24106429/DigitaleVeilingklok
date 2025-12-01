@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Npgsql;
+using Npgsql; 
 using PetalBid.Api.Data;
 using PetalBid.Api.Services;
 using System.Text;
@@ -34,7 +34,8 @@ public class Program
 				var connectionStringBuilder = new NpgsqlConnectionStringBuilder
 				{
 					Host = databaseUri.Host,
-					Port = databaseUri.Port,
+					// If port is -1 (unknown), default to standard Postgres port 5432
+					Port = databaseUri.Port > 0 ? databaseUri.Port : 5432,
 					Username = userInfo[0],
 					Password = userInfo[1],
 					Database = databaseUri.LocalPath.TrimStart('/'),
@@ -49,7 +50,6 @@ public class Program
 				options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection"));
 			}
 		});
-		// -------------------------------------------------------------------------
 
 		builder.Services.AddControllers();
 
@@ -80,9 +80,7 @@ public class Program
 		{
 			options.AddPolicy("AllowFrontend", policy =>
 			{
-				// Note: When you deploy your frontend, you might need to add that URL here too
-				// e.g., .WithOrigins("http://localhost:5173", "https://your-frontend.onrender.com")
-				policy.WithOrigins("http://localhost:5173") 
+				policy.WithOrigins("http://localhost:5173", "https://petalbid.bid")
 					.AllowAnyHeader()
 					.AllowAnyMethod();
 			});
@@ -134,7 +132,6 @@ public class Program
 			// It bypasses migration history, which is fine for this hybrid setup.
 			db.Database.EnsureCreated();
 		}
-		// -------------------------------------------------------------------------
 
 		if (app.Environment.IsDevelopment())
 		{
