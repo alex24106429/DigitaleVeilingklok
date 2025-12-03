@@ -66,25 +66,32 @@ export const AlertProvider = ({ children }: { children: React.ReactNode }) => {
 
 	/**
 	 * Shows the alert dialog with the given title and message.
+	 * Wrapped in useCallback to maintain a stable reference and prevent infinite loops in consumers.
 	 * @param {AlertOptions} options - The content of the alert.
 	 */
-	const showAlert = ({ title, message, severity = 'error', display = 'snackbar' }: AlertOptions) => {
+	const showAlert = React.useCallback(({ title, message, severity = 'error', display = 'snackbar' }: AlertOptions) => {
 		setAlertState({ open: true, title, message, severity, display });
-	};
+	}, []);
 
 	/**
 	 * Closes the alert dialog.
+	 * Wrapped in useCallback for stability.
 	 */
-	const handleClose = () => {
-		setAlertState({ ...alertState, open: false });
-	};
+	const handleClose = React.useCallback(() => {
+		setAlertState(prev => ({ ...prev, open: false }));
+	}, []);
 
-	const clearAlert = () => {
+	const clearAlert = React.useCallback(() => {
 		setAlertState({ open: false, title: '', message: '', severity: 'error', display: 'snackbar' });
-	};
+	}, []);
 
-	// Memoize the context value to prevent unnecessary re-renders of consumers.
-	const contextValue = React.useMemo(() => ({ showAlert, clearAlert, alert: alertState }), [alertState]);
+	// Memoize the context value. 
+	// Although 'alert' (state) changes, 'showAlert' and 'clearAlert' remain stable references.
+	const contextValue = React.useMemo(() => ({ 
+		showAlert, 
+		clearAlert, 
+		alert: alertState 
+	}), [showAlert, clearAlert, alertState]);
 
 	return (
 		<AlertContext.Provider value={contextValue}>

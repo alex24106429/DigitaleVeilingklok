@@ -26,20 +26,17 @@ public class Program
 			if (!string.IsNullOrEmpty(databaseUrl))
 			{
 				// PRODUCTION: Use PostgreSQL
-				// We must parse the connection URL (postgres://user:pass@host/db) 
-				// into a format .NET accepts.
 				var databaseUri = new Uri(databaseUrl);
 				var userInfo = databaseUri.UserInfo.Split(':');
 
 				var connectionStringBuilder = new NpgsqlConnectionStringBuilder
 				{
 					Host = databaseUri.Host,
-					// If port is -1 (unknown), default to standard Postgres port 5432
 					Port = databaseUri.Port > 0 ? databaseUri.Port : 5432,
 					Username = userInfo[0],
 					Password = userInfo[1],
 					Database = databaseUri.LocalPath.TrimStart('/'),
-					SslMode = SslMode.Prefer // Usually required by cloud providers
+					SslMode = SslMode.Prefer
 				};
 
 				options.UseNpgsql(connectionStringBuilder.ToString());
@@ -71,6 +68,19 @@ public class Program
 					ValidAudience = builder.Configuration["Jwt:Audience"],
 					IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
 				};
+
+				// Extract token from HttpOnly cookie
+				options.Events = new JwtBearerEvents
+				{
+					OnMessageReceived = context =>
+					{
+						if (context.Request.Cookies.ContainsKey("jwt"))
+						{
+							context.Token = context.Request.Cookies["jwt"];
+						}
+						return Task.CompletedTask;
+					}
+				};
 			});
 
 		builder.Services.AddAuthorization();
@@ -82,7 +92,8 @@ public class Program
 			{
 				policy.WithOrigins("http://localhost:5173", "https://petalbid.bid")
 					.AllowAnyHeader()
-					.AllowAnyMethod();
+					.AllowAnyMethod()
+					.AllowCredentials(); // Required for cookies
 			});
 		});
 
@@ -91,7 +102,7 @@ public class Program
 		{
 			c.SwaggerDoc("v1", new OpenApiInfo { Title = "PetalBid API", Version = "v1" });
 
-			// Add JWT Authentication to Swagger
+			// Add JWT Authentication to Swagger (still useful if manually testing with Bearer, though cookie is preferred)
 			c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
 			{
 				In = ParameterLocation.Header,
@@ -122,14 +133,9 @@ public class Program
 		// -------------------------------------------------------------------------
 		// Database Initialization
 		// -------------------------------------------------------------------------
-		// This block ensures the database tables are created automatically when the app starts.
-		// This is critical for the cloud deployment to create the Postgres schema.
 		using (var scope = app.Services.CreateScope())
 		{
 			var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-			
-			// This creates tables if they don't exist.
-			// It bypasses migration history, which is fine for this hybrid setup.
 			db.Database.EnsureCreated();
 		}
 

@@ -42,10 +42,9 @@ export interface LoginRequest {
 
 /**
  * Defines the shape of the data returned upon a successful login.
+ * The token is now handled via HttpOnly cookie, so we only receive the User.
  */
 export interface LoginResponse {
-	/** The authentication token (JWT) for the user's session. */
-	token: string;
 	/** The authenticated user's data. */
 	user: User;
 }
@@ -55,7 +54,6 @@ export interface LoginResponse {
  * (e.g. PascalCase vs camelCase serialization).
  */
 export interface BackendLoginResponse {
-	token?: string;
 	user?: User;
 }
 

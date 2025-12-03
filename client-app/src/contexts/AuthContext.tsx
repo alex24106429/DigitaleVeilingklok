@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import { User } from '../types/user';
 import { authService } from '../api/services/authService';
 
@@ -13,8 +13,6 @@ export interface LoginResult {
 export interface AuthContextType {
 	/** The currently authenticated user object, or `null` if no user is logged in. */
 	user: User | null;
-	/** The authentication token (JWT), or `null` if not authenticated. */
-	token: string | null;
 	/**
 	 * Logs in a user with the given credentials.
 	 * @param {string} email - The user's email address.
@@ -41,7 +39,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 /**
  * Custom hook for accessing the authentication context.
- * Provides an easy way to get the current user, token, and auth functions.
+ * Provides an easy way to get the current user and auth functions.
  * @returns {AuthContextType} The authentication context value.
  * @throws {Error} If used outside of an `AuthProvider`.
  */
@@ -64,61 +62,52 @@ export interface AuthProviderProps {
 /**
  * Module-scoped de-duplication for session validation to avoid double fetches in React.StrictMode.
  */
-type ValidationResult = { user: User | null; token: string | null };
+type ValidationResult = { user: User | null };
 let sessionValidationInFlight: Promise<ValidationResult> | null = null;
 
 /**
- * Validates the stored session once (de-duplicated). It checks:
- * - token existence
- * - user existence on the server
- * - user data matches stored data
- *
- * If invalid, it clears localStorage.
+ * Validates the stored session once (de-duplicated). 
+ * It checks localStorage for the user object, but verifies authorization via an API call
+ * which relies on the HttpOnly cookie.
  */
 async function validateStoredSessionOnce(): Promise<ValidationResult> {
 	if (sessionValidationInFlight) return sessionValidationInFlight;
 
 	sessionValidationInFlight = (async () => {
 		const storedUserRaw = localStorage.getItem('user');
-		const storedToken = localStorage.getItem('token');
 
-		if (!storedUserRaw || !storedToken) {
-			// Nothing to validate; ensure clean storage
-			localStorage.removeItem('user');
-			localStorage.removeItem('token');
-			return { user: null, token: null };
+		if (!storedUserRaw) {
+			return { user: null };
 		}
 
 		const storedUser: User = JSON.parse(storedUserRaw);
 
-		// Validate token + user by fetching from server
+		// Validate token (cookie) + user by fetching from server
+		// If the cookie is missing or invalid, this will return 401
 		const res = await authService.getUserById(storedUser.id);
 
 		if (!res.data) {
-			// Invalid token or user; clear storage
+			// Invalid session; clear storage
 			localStorage.removeItem('user');
-			localStorage.removeItem('token');
-			return { user: null, token: null };
+			return { user: null };
 		}
 
 		const serverUser = res.data;
 
+		// Optional: Ensure the server user matches what we have locally
 		const matches =
 			serverUser.id === storedUser.id &&
 			serverUser.email === storedUser.email &&
 			serverUser.fullName === storedUser.fullName &&
-			serverUser.role === storedUser.role &&
-			serverUser.isTotpEnabled === storedUser.isTotpEnabled;
+			serverUser.role === storedUser.role;
 
 		if (!matches) {
-			// Mismatch; clear storage
 			localStorage.removeItem('user');
-			localStorage.removeItem('token');
-			return { user: null, token: null };
+			return { user: null };
 		}
 
 		// Valid session; return stored values
-		return { user: storedUser, token: storedToken };
+		return { user: storedUser };
 	})().finally(() => {
 		// Keep the in-flight promise only during the request lifecycle
 		sessionValidationInFlight = null;
@@ -129,10 +118,7 @@ async function validateStoredSessionOnce(): Promise<ValidationResult> {
 
 /**
  * Provider component that makes authentication state and functions available to its children.
- * It manages user data and tokens, persisting them to `localStorage`.
- *
- * On initial load it validates the stored token and user against the server.
- * If validation fails, the user is logged out.
+ * It manages user data, persisting the user profile to `localStorage` (but not the token).
  *
  * @param {AuthProviderProps} props - The component props.
  * @returns {JSX.Element} The provider component wrapping its children.
@@ -141,10 +127,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	const [user, setUser] = useState<User | null>(() => {
 		const storedUser = localStorage.getItem('user');
 		return storedUser ? JSON.parse(storedUser) : null;
-	});
-
-	const [token, setToken] = useState<string | null>(() => {
-		return localStorage.getItem('token');
 	});
 
 	const [isLoading, setIsLoading] = useState(true);
@@ -158,7 +140,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 				if (cancelled) return;
 
 				setUser(result.user);
-				setToken(result.token);
 			} finally {
 				if (!cancelled) setIsLoading(false);
 			}
@@ -174,8 +155,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	/**
 	 * Handles the user login process.
 	 * Calls the auth service, and on success, updates the state and localStorage.
+	 * Wrapped in useCallback for stability.
 	 */
-	const login = async (
+	const login = useCallback(async (
 		email: string,
 		password: string,
 		options?: { twoFactorCode?: string }
@@ -187,47 +169,48 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		});
 
 		if (response.data) {
-			const { user: userData, token: userToken } = response.data;
+			const { user: userData } = response.data;
 			setUser(userData);
-			setToken(userToken);
+			// We only store profile info, token is in cookie
 			localStorage.setItem('user', JSON.stringify(userData));
-			localStorage.setItem('token', userToken);
 			return { success: true };
 		}
 
 		return { success: false, error: response.error };
-	};
+	}, []);
 
 	/**
 	 * Handles the user logout process.
-	 * Clears the user state and removes authentication data from localStorage.
+	 * Calls the logout endpoint to clear the cookie and removes local user data.
+	 * Wrapped in useCallback for stability.
 	 */
-	const logout = () => {
+	const logout = useCallback(async () => {
+		await authService.logout();
 		setUser(null);
-		setToken(null);
 		localStorage.removeItem('user');
-		localStorage.removeItem('token');
-	};
+	}, []);
 
 	/**
 	 * Updates the user object in state and localStorage.
+	 * Wrapped in useCallback for stability.
 	 */
-	const updateUser = (updatedUser: User) => {
+	const updateUser = useCallback((updatedUser: User) => {
 		setUser(updatedUser);
 		localStorage.setItem('user', JSON.stringify(updatedUser));
-	};
+	}, []);
 
 	/**
 	 * The value provided to the consumers of the AuthContext.
+	 * Memoized to prevent consumers from re-rendering or triggering effects unnecessarily.
 	 */
-	const value = {
+	const value = useMemo(() => ({
 		user,
-		token,
+		token: null, // Token is no longer accessible via JS
 		login,
 		logout,
 		isLoading,
 		updateUser,
-	};
+	}), [user, login, logout, isLoading, updateUser]);
 
 	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

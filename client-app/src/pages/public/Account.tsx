@@ -348,13 +348,6 @@ export default function Account() {
 				</Box>
 			</Paper>
 
-			<Typography mt={3}>
-				Token:
-			</Typography>
-			<Typography variant="subtitle2" color="text.secondary" mb={3} sx={{ overflow: 'auto', userSelect: 'all', fontFamily: 'monospace' }}>
-				{localStorage.getItem("token")}
-			</Typography>
-
 			<Dialog open={twoFactorDialogOpen} onClose={() => setTwoFactorDialogOpen(false)} maxWidth="sm" fullWidth>
 				<DialogTitle>Scan de QR-code</DialogTitle>
 				<DialogContent dividers>

@@ -11,7 +11,7 @@ import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 import Checkbox from '@mui/material/Checkbox';
 
-import { useState, FormEvent } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { authService } from "../../api/services/authService";
 import { UserRole } from "../../types/user";
@@ -35,7 +35,7 @@ export interface LoginPageProps {
  * @returns {JSX.Element} The rendered login or registration form.
  */
 export default function LoginPage({ isRegisterPage }: LoginPageProps) {
-	const { showAlert } = useAlert();
+	const { showAlert, clearAlert } = useAlert();
 	const navigate = useNavigate();
 	const { login } = useAuth();
 	const [isLoading, setIsLoading] = useState(false);
@@ -48,6 +48,10 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 	const [needsTwoFactor, setNeedsTwoFactor] = useState(false);
 	const [twoFactorCode, setTwoFactorCode] = useState("");
 	const [enableTwoFactorAfterRegister, setEnableTwoFactorAfterRegister] = useState(false);
+
+	useEffect(() => {
+		clearAlert?.();
+	}, [isRegisterPage, clearAlert]);
 
 	const sanitizeCode = (value: string) => value.replace(/\D/g, "").slice(0, 6);
 

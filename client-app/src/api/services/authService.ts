@@ -19,7 +19,7 @@ export const authService = {
 	/** Registers a new user with the provided user data. */
 	register: (data: RegisterUserRequest) => api.post<User>('/users/register', data),
 
-	/** Logs in a user. Handles the case-insensitivity of the returned token object. */
+	/** Logs in a user. Handles the case-insensitivity of the returned user object. */
 	async login(creds: LoginRequest): Promise<ApiResponse<LoginResponse>> {
 		// Use BackendLoginResponse to avoid 'any'
 		const res = await api.post<BackendLoginResponse>('/users/login', creds);
@@ -29,17 +29,17 @@ export const authService = {
 		}
 
 		const { data } = res;
-
-		// We ensure we return the strict LoginResponse shape here
-		const token = data.token;
 		const user = data.user;
 
-		if (!token || !user) {
+		if (!user) {
 			return { error: "Ongeldig antwoord van server." };
 		}
 
-		return { data: { token, user } };
+		return { data: { user } };
 	},
+
+	/** Logs out the user by telling the server to clear the cookie. */
+	logout: () => api.post<{ message: string }>('/users/logout'),
 
 	/** Fetch a user by ID. */
 	getUserById: (id: number) => api.get<User>(`/users/${id}`),

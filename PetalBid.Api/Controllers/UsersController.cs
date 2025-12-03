@@ -106,7 +106,7 @@ public class UsersController(
 	}
 
 	/// <summary>
-	/// Logs in a user
+	/// Logs in a user and sets an HttpOnly cookie
 	/// </summary>
 	[HttpPost("login")]
 	public async Task<ActionResult<object>> Login(LoginDto loginDto)
@@ -149,7 +149,35 @@ public class UsersController(
 		}
 
 		var token = GenerateJwtToken(user, GetRole(user));
-		return Ok(new { Token = token, User = MapUser(user) });
+
+		// Set HttpOnly Cookie
+		var cookieOptions = new CookieOptions
+		{
+			HttpOnly = true,
+			Secure = true, // Set to true in production/HTTPS
+			SameSite = SameSiteMode.None, // Strict or Lax if FE and BE share domain, None if Cross-Origin
+			Expires = DateTime.UtcNow.AddHours(2)
+		};
+
+		Response.Cookies.Append("jwt", token, cookieOptions);
+
+		// Do not return token in body
+		return Ok(new { User = MapUser(user) });
+	}
+
+	/// <summary>
+	/// Logs out the user by clearing the cookie
+	/// </summary>
+	[HttpPost("logout")]
+	public ActionResult Logout()
+	{
+		Response.Cookies.Delete("jwt", new CookieOptions
+		{
+			HttpOnly = true,
+			Secure = true,
+			SameSite = SameSiteMode.None
+		});
+		return Ok(new { message = "Logged out successfully" });
 	}
 
 	/// <summary>
@@ -351,7 +379,6 @@ public class UsersController(
 
 		user.PasswordHash = PasswordService.HashPassword(dto.NewPassword);
 		
-		// Optionally clear TOTP/Sessions if security is critical, but requirement is just password reset.
 		await Db.SaveChangesAsync();
 
 		return Ok(new { message = "Wachtwoord succesvol gewijzigd." });
@@ -422,7 +449,7 @@ public class UsersController(
 			issuer: _config["Jwt:Issuer"],
 			audience: _config["Jwt:Audience"],
 			claims: claims,
-			expires: DateTime.Now.AddHours(2),
+			expires: DateTime.UtcNow.AddHours(2),
 			signingCredentials: credentials);
 
 		return new JwtSecurityTokenHandler().WriteToken(token);
