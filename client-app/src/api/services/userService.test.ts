@@ -27,8 +27,6 @@ describe('userService', () => {
 	beforeEach(() => {
 		vi.restoreAllMocks();
 		localStorage.clear();
-		// Default to having a token
-		localStorage.setItem('token', 'test-token');
 	});
 
 	afterEach(() => {

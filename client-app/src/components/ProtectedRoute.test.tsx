@@ -39,7 +39,6 @@ describe('ProtectedRoute Component', () => {
 	it('shows loading state when isLoading is true', () => {
 		vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
 			user: null,
-			token: null,
 			isLoading: true,
 			login: vi.fn(),
 			logout: vi.fn(),
@@ -58,7 +57,6 @@ describe('ProtectedRoute Component', () => {
 	it('redirects to login when user is not authenticated', () => {
 		vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
 			user: null,
-			token: null,
 			isLoading: false,
 			login: vi.fn(),
 			logout: vi.fn(),
@@ -77,7 +75,6 @@ describe('ProtectedRoute Component', () => {
 	it('renders children when user is authenticated and authorized', () => {
 		vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
 			user: { id: 1, email: 'test@example.com', fullName: 'Test User', role: UserRole.Admin, isTotpEnabled: false, isDisabled: false },
-			token: 'test-token',
 			isLoading: false,
 			login: vi.fn(),
 			logout: vi.fn(),
@@ -96,7 +93,6 @@ describe('ProtectedRoute Component', () => {
 	it('shows 403 page when user lacks required role', () => {
 		vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
 			user: { id: 2, email: 'buyer@example.com', fullName: 'Buyer User', role: UserRole.Buyer, isTotpEnabled: false, isDisabled: false },
-			token: 'test-token',
 			isLoading: false,
 			login: vi.fn(),
 			logout: vi.fn(),
@@ -115,7 +111,6 @@ describe('ProtectedRoute Component', () => {
 	it('renders children when user has one of the allowed roles', () => {
 		vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
 			user: { id: 1, email: 'test@example.com', fullName: 'Test User', role: UserRole.Admin, isTotpEnabled: false, isDisabled: false },
-			token: 'test-token',
 			isLoading: false,
 			login: vi.fn(),
 			logout: vi.fn(),

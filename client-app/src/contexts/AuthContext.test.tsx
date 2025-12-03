@@ -23,18 +23,16 @@ const mockUser: User = {
 	isDisabled: false
 };
 
-const mockToken = 'fake-jwt-token';
 
 // A consumer component to test the hook
 const TestConsumer = () => {
-	const { user, token, isLoading, login, logout, updateUser } = useAuth();
+	const { user, isLoading, login, logout, updateUser } = useAuth();
 
 	if (isLoading) return <div>Loading...</div>;
 
 	return (
 		<div>
 			<div data-testid="user-name">{user ? user.fullName : 'No User'}</div>
-			<div data-testid="token-value">{token ?? 'No Token'}</div>
 			<button onClick={async () => {
 				const result = await login('test@example.com', 'password');
 				if (!result.success) {
@@ -76,13 +74,12 @@ describe('AuthContext', () => {
 		});
 
 		expect(screen.getByTestId('user-name')).toHaveTextContent('No User');
-		expect(screen.getByTestId('token-value')).toHaveTextContent('No Token');
 	});
 
 	it('logs in successfully and updates state and localStorage', async () => {
 		// Setup mock response
 		vi.mocked(authService.login).mockResolvedValue({
-			data: { user: mockUser, token: mockToken }
+			data: { user: mockUser }
 		});
 
 		render(
@@ -101,10 +98,6 @@ describe('AuthContext', () => {
 			expect(screen.getByTestId('user-name')).toHaveTextContent(mockUser.fullName);
 		});
 
-		expect(screen.getByTestId('token-value')).toHaveTextContent(mockToken);
-
-		// Check localStorage
-		expect(localStorage.getItem('token')).toBe(mockToken);
 		expect(JSON.parse(localStorage.getItem('user')!)).toEqual(mockUser);
 	});
 
@@ -129,13 +122,11 @@ describe('AuthContext', () => {
 		});
 
 		expect(screen.getByTestId('user-name')).toHaveTextContent('No User');
-		expect(localStorage.getItem('token')).toBeNull();
 	});
 
 	it('logs out successfully and clears storage', async () => {
 		// Pre-set storage to simulate logged-in state
 		localStorage.setItem('user', JSON.stringify(mockUser));
-		localStorage.setItem('token', mockToken);
 
 		// Mock validation check to succeed so we stay logged in on mount
 		vi.mocked(authService.getUserById).mockResolvedValue({ data: mockUser });
@@ -155,13 +146,11 @@ describe('AuthContext', () => {
 			expect(screen.getByTestId('user-name')).toHaveTextContent('No User');
 		});
 
-		expect(localStorage.getItem('token')).toBeNull();
 		expect(localStorage.getItem('user')).toBeNull();
 	});
 
 	it('validates session on load: keeps user if server confirms', async () => {
 		localStorage.setItem('user', JSON.stringify(mockUser));
-		localStorage.setItem('token', mockToken);
 
 		// Server confirms user data matches
 		vi.mocked(authService.getUserById).mockResolvedValue({ data: mockUser });
@@ -182,7 +171,6 @@ describe('AuthContext', () => {
 
 	it('validates session on load: logs out if server data mismatch or error', async () => {
 		localStorage.setItem('user', JSON.stringify(mockUser));
-		localStorage.setItem('token', mockToken);
 
 		// Scenario 1: Server returns 404/Error (data is undefined)
 		vi.mocked(authService.getUserById).mockResolvedValue({ error: 'User not found' });
@@ -197,13 +185,11 @@ describe('AuthContext', () => {
 			expect(screen.getByTestId('user-name')).toHaveTextContent('No User');
 		});
 
-		expect(localStorage.getItem('token')).toBeNull();
 	});
 
 	it('updates user profile data', async () => {
 		// Start logged in
 		localStorage.setItem('user', JSON.stringify(mockUser));
-		localStorage.setItem('token', mockToken);
 		vi.mocked(authService.getUserById).mockResolvedValue({ data: mockUser });
 
 		render(
