@@ -12,8 +12,7 @@ public class ProductDto
 	[Range(0, MaxWeight)]
 	public double Weight { get; set; }
 
-	[Url]
-	public string ImageUrl { get; set; } = string.Empty;
+	public string ImageBase64 { get; set; } = string.Empty;
 
 	[Required]
 	[StringLength(100)]

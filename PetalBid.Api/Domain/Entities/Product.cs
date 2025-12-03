@@ -5,7 +5,7 @@ public class Product
 	public int Id { get; set; }
 	public string Name { get; set; } = string.Empty;
 	public double Weight { get; set; }
-	public string ImageUrl { get; set; } = string.Empty;
+	public string ImageBase64 { get; set; } = string.Empty;	
 	public string Species { get; set; } = string.Empty;
 	public double? PotSize { get; set; }
 	public double? StemLength { get; set; }

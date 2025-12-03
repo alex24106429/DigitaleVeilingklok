@@ -8,8 +8,8 @@ export interface Product {
 	name: string;
 	/** The weight of the product, typically in kilograms. */
 	weight: number;
-	/** A URL to an image of the product. */
-	imageUrl: string;
+	/** A Base64 string of the processed AVIF image. */
+	imageBase64: string;
 	/** The scientific or common species name (e.g., 'Rosa'). */
 	species: string;
 	/** The diameter of the pot in centimeters, if applicable. */

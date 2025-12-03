@@ -9,325 +9,357 @@ using PetalBid.Api.Data;
 
 namespace PetalBid.Api.Migrations
 {
-	[DbContext(typeof(AppDbContext))]
-	partial class AppDbContextModelSnapshot : ModelSnapshot
-	{
-		protected override void BuildModel(ModelBuilder modelBuilder)
-		{
+    [DbContext(typeof(AppDbContext))]
+    partial class AppDbContextModelSnapshot : ModelSnapshot
+    {
+        protected override void BuildModel(ModelBuilder modelBuilder)
+        {
 #pragma warning disable 612, 618
-			modelBuilder.HasAnnotation("ProductVersion", "9.0.8");
+            modelBuilder.HasAnnotation("ProductVersion", "9.0.8");
 
-			modelBuilder.Entity("PetalBid.Api.Domain.Entities.Auction", b =>
-				{
-					b.Property<int>("Id")
-						.ValueGeneratedOnAdd()
-						.HasColumnType("INTEGER");
+            modelBuilder.Entity("PetalBid.Api.Domain.Entities.Auction", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
 
-					b.Property<int>("AuctioneerId")
-						.HasColumnType("INTEGER");
+                    b.Property<int>("AuctioneerId")
+                        .HasColumnType("INTEGER");
 
-					b.Property<int>("ClockLocation")
-						.HasColumnType("INTEGER");
+                    b.Property<int>("ClockLocation")
+                        .HasColumnType("INTEGER");
 
-					b.Property<string>("Description")
-						.IsRequired()
-						.HasColumnType("TEXT");
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
-					b.Property<int?>("Quantity")
-						.HasColumnType("INTEGER");
+                    b.Property<int?>("Quantity")
+                        .HasColumnType("INTEGER");
 
-					b.Property<decimal?>("ReservePrice")
-						.HasColumnType("TEXT");
+                    b.Property<decimal?>("ReservePrice")
+                        .HasColumnType("TEXT");
 
-					b.Property<DateTime>("StartsAt")
-						.HasColumnType("TEXT");
+                    b.Property<DateTime>("StartsAt")
+                        .HasColumnType("TEXT");
 
-					b.Property<int>("Status")
-						.HasColumnType("INTEGER");
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
 
-					b.HasKey("Id");
+                    b.HasKey("Id");
 
-					b.HasIndex("AuctioneerId");
+                    b.HasIndex("AuctioneerId");
 
-					b.ToTable("Auctions");
-				});
+                    b.ToTable("Auctions");
+                });
 
-			modelBuilder.Entity("PetalBid.Api.Domain.Entities.Product", b =>
-				{
-					b.Property<int>("Id")
-						.ValueGeneratedOnAdd()
-						.HasColumnType("INTEGER");
+            modelBuilder.Entity("PetalBid.Api.Domain.Entities.AuditLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
 
-					b.Property<int?>("AuctionId")
-						.HasColumnType("INTEGER");
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
-					b.Property<string>("ImageUrl")
-						.IsRequired()
-						.HasColumnType("TEXT");
+                    b.Property<string>("KeyValues")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
-					b.Property<double>("MinimumPrice")
-						.HasColumnType("REAL");
+                    b.Property<string>("NewValues")
+                        .HasColumnType("TEXT");
 
-					b.Property<string>("Name")
-						.IsRequired()
-						.HasColumnType("TEXT");
+                    b.Property<string>("OldValues")
+                        .HasColumnType("TEXT");
 
-					b.Property<double?>("PotSize")
-						.HasColumnType("REAL");
+                    b.Property<string>("TableName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
-					b.Property<string>("Species")
-						.IsRequired()
-						.HasColumnType("TEXT");
+                    b.Property<DateTime>("TimestampUtc")
+                        .HasColumnType("TEXT");
 
-					b.Property<double?>("StemLength")
-						.HasColumnType("REAL");
+                    b.HasKey("Id");
 
-					b.Property<int>("Stock")
-						.HasColumnType("INTEGER");
+                    b.ToTable("AuditLogs");
+                });
 
-					b.Property<int>("SupplierId")
-						.HasColumnType("INTEGER");
+            modelBuilder.Entity("PetalBid.Api.Domain.Entities.Product", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
 
-					b.Property<double>("Weight")
-						.HasColumnType("REAL");
+                    b.Property<int?>("AuctionId")
+                        .HasColumnType("INTEGER");
 
-					b.HasKey("Id");
+                    b.Property<string>("ImageBase64")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
-					b.HasIndex("AuctionId");
+                    b.Property<double>("MinimumPrice")
+                        .HasColumnType("REAL");
 
-					b.HasIndex("SupplierId");
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
-					b.ToTable("Products");
-				});
+                    b.Property<double?>("PotSize")
+                        .HasColumnType("REAL");
 
-			modelBuilder.Entity("PetalBid.Api.Domain.Entities.Sale", b =>
-				{
-					b.Property<int>("Id")
-						.ValueGeneratedOnAdd()
-						.HasColumnType("INTEGER");
+                    b.Property<string>("Species")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
-					b.Property<int>("AuctionId")
-						.HasColumnType("INTEGER");
+                    b.Property<double?>("StemLength")
+                        .HasColumnType("REAL");
 
-					b.Property<int>("BuyerId")
-						.HasColumnType("INTEGER");
+                    b.Property<int>("Stock")
+                        .HasColumnType("INTEGER");
 
-					b.Property<DateTime>("OccurredAt")
-						.HasColumnType("TEXT");
+                    b.Property<int>("SupplierId")
+                        .HasColumnType("INTEGER");
 
-					b.Property<string>("PaymentReference")
-						.IsRequired()
-						.HasColumnType("TEXT");
+                    b.Property<double>("Weight")
+                        .HasColumnType("REAL");
 
-					b.HasKey("Id");
+                    b.HasKey("Id");
 
-					b.HasIndex("AuctionId");
+                    b.HasIndex("AuctionId");
 
-					b.HasIndex("BuyerId");
+                    b.HasIndex("SupplierId");
 
-					b.ToTable("Sales");
-				});
+                    b.ToTable("Products");
+                });
 
-			modelBuilder.Entity("PetalBid.Api.Domain.Entities.SaleItem", b =>
-				{
-					b.Property<int>("Id")
-						.ValueGeneratedOnAdd()
-						.HasColumnType("INTEGER");
+            modelBuilder.Entity("PetalBid.Api.Domain.Entities.Sale", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
 
-					b.Property<int>("ProductId")
-						.HasColumnType("INTEGER");
+                    b.Property<int>("AuctionId")
+                        .HasColumnType("INTEGER");
 
-					b.Property<int>("Quantity")
-						.HasColumnType("INTEGER");
+                    b.Property<int>("BuyerId")
+                        .HasColumnType("INTEGER");
 
-					b.Property<int>("SaleId")
-						.HasColumnType("INTEGER");
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("TEXT");
 
-					b.Property<int>("UnitPrice")
-						.HasColumnType("INTEGER");
+                    b.Property<string>("PaymentReference")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
-					b.HasKey("Id");
+                    b.HasKey("Id");
 
-					b.HasIndex("ProductId");
+                    b.HasIndex("AuctionId");
 
-					b.HasIndex("SaleId");
+                    b.HasIndex("BuyerId");
 
-					b.ToTable("SaleItems");
-				});
+                    b.ToTable("Sales");
+                });
 
-			modelBuilder.Entity("PetalBid.Api.Domain.Entities.User", b =>
-				{
-					b.Property<int>("Id")
-						.ValueGeneratedOnAdd()
-						.HasColumnType("INTEGER");
+            modelBuilder.Entity("PetalBid.Api.Domain.Entities.SaleItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
 
-					b.Property<string>("Email")
-						.IsRequired()
-						.HasColumnType("TEXT");
+                    b.Property<int>("ProductId")
+                        .HasColumnType("INTEGER");
 
-					b.Property<string>("FullName")
-						.IsRequired()
-						.HasColumnType("TEXT");
+                    b.Property<int>("Quantity")
+                        .HasColumnType("INTEGER");
 
-					b.Property<bool>("IsDisabled")
-						.HasColumnType("INTEGER");
+                    b.Property<int>("SaleId")
+                        .HasColumnType("INTEGER");
 
-					b.Property<bool>("IsTotpEnabled")
-						.HasColumnType("INTEGER");
+                    b.Property<int>("UnitPrice")
+                        .HasColumnType("INTEGER");
 
-					b.Property<string>("PasswordHash")
-						.IsRequired()
-						.HasColumnType("TEXT");
+                    b.HasKey("Id");
 
-					b.Property<string>("TotpSecret")
-						.HasColumnType("TEXT");
+                    b.HasIndex("ProductId");
 
-					b.HasKey("Id");
+                    b.HasIndex("SaleId");
 
-					b.ToTable("Users");
+                    b.ToTable("SaleItems");
+                });
 
-					b.UseTptMappingStrategy();
-				});
+            modelBuilder.Entity("PetalBid.Api.Domain.Entities.User", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
 
-			modelBuilder.Entity("PetalBid.Api.Domain.Entities.Admin", b =>
-				{
-					b.HasBaseType("PetalBid.Api.Domain.Entities.User");
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
-					b.ToTable("Admins");
-				});
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
-			modelBuilder.Entity("PetalBid.Api.Domain.Entities.Auctioneer", b =>
-				{
-					b.HasBaseType("PetalBid.Api.Domain.Entities.User");
+                    b.Property<bool>("IsDisabled")
+                        .HasColumnType("INTEGER");
 
-					b.ToTable("Auctioneers");
-				});
+                    b.Property<bool>("IsTotpEnabled")
+                        .HasColumnType("INTEGER");
 
-			modelBuilder.Entity("PetalBid.Api.Domain.Entities.Buyer", b =>
-				{
-					b.HasBaseType("PetalBid.Api.Domain.Entities.User");
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
-					b.Property<string>("CompanyName")
-						.IsRequired()
-						.HasColumnType("TEXT");
+                    b.Property<string>("TotpSecret")
+                        .HasColumnType("TEXT");
 
-					b.ToTable("Buyers");
-				});
+                    b.HasKey("Id");
 
-			modelBuilder.Entity("PetalBid.Api.Domain.Entities.Supplier", b =>
-				{
-					b.HasBaseType("PetalBid.Api.Domain.Entities.User");
-
-					b.Property<string>("CompanyName")
-						.IsRequired()
-						.HasColumnType("TEXT");
-
-					b.ToTable("Suppliers");
-				});
-
-			modelBuilder.Entity("PetalBid.Api.Domain.Entities.Auction", b =>
-				{
-					b.HasOne("PetalBid.Api.Domain.Entities.Auctioneer", "Auctioneer")
-						.WithMany()
-						.HasForeignKey("AuctioneerId")
-						.OnDelete(DeleteBehavior.Cascade)
-						.IsRequired();
-
-					b.Navigation("Auctioneer");
-				});
-
-			modelBuilder.Entity("PetalBid.Api.Domain.Entities.Product", b =>
-				{
-					b.HasOne("PetalBid.Api.Domain.Entities.Auction", "Auction")
-						.WithMany()
-						.HasForeignKey("AuctionId")
-						.OnDelete(DeleteBehavior.SetNull);
-
-					b.HasOne("PetalBid.Api.Domain.Entities.Supplier", "Supplier")
-						.WithMany()
-						.HasForeignKey("SupplierId")
-						.OnDelete(DeleteBehavior.Cascade)
-						.IsRequired();
-
-					b.Navigation("Auction");
-
-					b.Navigation("Supplier");
-				});
-
-			modelBuilder.Entity("PetalBid.Api.Domain.Entities.Sale", b =>
-				{
-					b.HasOne("PetalBid.Api.Domain.Entities.Auction", "Auction")
-						.WithMany()
-						.HasForeignKey("AuctionId")
-						.OnDelete(DeleteBehavior.Restrict)
-						.IsRequired();
-
-					b.HasOne("PetalBid.Api.Domain.Entities.Buyer", "Buyer")
-						.WithMany()
-						.HasForeignKey("BuyerId")
-						.OnDelete(DeleteBehavior.Restrict)
-						.IsRequired();
-
-					b.Navigation("Auction");
-
-					b.Navigation("Buyer");
-				});
-
-			modelBuilder.Entity("PetalBid.Api.Domain.Entities.SaleItem", b =>
-				{
-					b.HasOne("PetalBid.Api.Domain.Entities.Product", "Product")
-						.WithMany()
-						.HasForeignKey("ProductId")
-						.OnDelete(DeleteBehavior.Cascade)
-						.IsRequired();
-
-					b.HasOne("PetalBid.Api.Domain.Entities.Sale", "Sale")
-						.WithMany()
-						.HasForeignKey("SaleId")
-						.OnDelete(DeleteBehavior.Cascade)
-						.IsRequired();
-
-					b.Navigation("Product");
-
-					b.Navigation("Sale");
-				});
-
-			modelBuilder.Entity("PetalBid.Api.Domain.Entities.Admin", b =>
-				{
-					b.HasOne("PetalBid.Api.Domain.Entities.User", null)
-						.WithOne()
-						.HasForeignKey("PetalBid.Api.Domain.Entities.Admin", "Id")
-						.OnDelete(DeleteBehavior.Cascade)
-						.IsRequired();
-				});
-
-			modelBuilder.Entity("PetalBid.Api.Domain.Entities.Auctioneer", b =>
-				{
-					b.HasOne("PetalBid.Api.Domain.Entities.User", null)
-						.WithOne()
-						.HasForeignKey("PetalBid.Api.Domain.Entities.Auctioneer", "Id")
-						.OnDelete(DeleteBehavior.Cascade)
-						.IsRequired();
-				});
-
-			modelBuilder.Entity("PetalBid.Api.Domain.Entities.Buyer", b =>
-				{
-					b.HasOne("PetalBid.Api.Domain.Entities.User", null)
-						.WithOne()
-						.HasForeignKey("PetalBid.Api.Domain.Entities.Buyer", "Id")
-						.OnDelete(DeleteBehavior.Cascade)
-						.IsRequired();
-				});
-
-			modelBuilder.Entity("PetalBid.Api.Domain.Entities.Supplier", b =>
-				{
-					b.HasOne("PetalBid.Api.Domain.Entities.User", null)
-						.WithOne()
-						.HasForeignKey("PetalBid.Api.Domain.Entities.Supplier", "Id")
-						.OnDelete(DeleteBehavior.Cascade)
-						.IsRequired();
-				});
+                    b.ToTable("Users");
+
+                    b.UseTptMappingStrategy();
+                });
+
+            modelBuilder.Entity("PetalBid.Api.Domain.Entities.Admin", b =>
+                {
+                    b.HasBaseType("PetalBid.Api.Domain.Entities.User");
+
+                    b.ToTable("Admins");
+                });
+
+            modelBuilder.Entity("PetalBid.Api.Domain.Entities.Auctioneer", b =>
+                {
+                    b.HasBaseType("PetalBid.Api.Domain.Entities.User");
+
+                    b.ToTable("Auctioneers");
+                });
+
+            modelBuilder.Entity("PetalBid.Api.Domain.Entities.Buyer", b =>
+                {
+                    b.HasBaseType("PetalBid.Api.Domain.Entities.User");
+
+                    b.Property<string>("CompanyName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.ToTable("Buyers");
+                });
+
+            modelBuilder.Entity("PetalBid.Api.Domain.Entities.Supplier", b =>
+                {
+                    b.HasBaseType("PetalBid.Api.Domain.Entities.User");
+
+                    b.Property<string>("CompanyName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.ToTable("Suppliers");
+                });
+
+            modelBuilder.Entity("PetalBid.Api.Domain.Entities.Auction", b =>
+                {
+                    b.HasOne("PetalBid.Api.Domain.Entities.Auctioneer", "Auctioneer")
+                        .WithMany()
+                        .HasForeignKey("AuctioneerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Auctioneer");
+                });
+
+            modelBuilder.Entity("PetalBid.Api.Domain.Entities.Product", b =>
+                {
+                    b.HasOne("PetalBid.Api.Domain.Entities.Auction", "Auction")
+                        .WithMany()
+                        .HasForeignKey("AuctionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("PetalBid.Api.Domain.Entities.Supplier", "Supplier")
+                        .WithMany()
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Auction");
+
+                    b.Navigation("Supplier");
+                });
+
+            modelBuilder.Entity("PetalBid.Api.Domain.Entities.Sale", b =>
+                {
+                    b.HasOne("PetalBid.Api.Domain.Entities.Auction", "Auction")
+                        .WithMany()
+                        .HasForeignKey("AuctionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("PetalBid.Api.Domain.Entities.Buyer", "Buyer")
+                        .WithMany()
+                        .HasForeignKey("BuyerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Auction");
+
+                    b.Navigation("Buyer");
+                });
+
+            modelBuilder.Entity("PetalBid.Api.Domain.Entities.SaleItem", b =>
+                {
+                    b.HasOne("PetalBid.Api.Domain.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PetalBid.Api.Domain.Entities.Sale", "Sale")
+                        .WithMany()
+                        .HasForeignKey("SaleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("Sale");
+                });
+
+            modelBuilder.Entity("PetalBid.Api.Domain.Entities.Admin", b =>
+                {
+                    b.HasOne("PetalBid.Api.Domain.Entities.User", null)
+                        .WithOne()
+                        .HasForeignKey("PetalBid.Api.Domain.Entities.Admin", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PetalBid.Api.Domain.Entities.Auctioneer", b =>
+                {
+                    b.HasOne("PetalBid.Api.Domain.Entities.User", null)
+                        .WithOne()
+                        .HasForeignKey("PetalBid.Api.Domain.Entities.Auctioneer", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PetalBid.Api.Domain.Entities.Buyer", b =>
+                {
+                    b.HasOne("PetalBid.Api.Domain.Entities.User", null)
+                        .WithOne()
+                        .HasForeignKey("PetalBid.Api.Domain.Entities.Buyer", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PetalBid.Api.Domain.Entities.Supplier", b =>
+                {
+                    b.HasOne("PetalBid.Api.Domain.Entities.User", null)
+                        .WithOne()
+                        .HasForeignKey("PetalBid.Api.Domain.Entities.Supplier", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
 #pragma warning restore 612, 618
-		}
-	}
+        }
+    }
 }

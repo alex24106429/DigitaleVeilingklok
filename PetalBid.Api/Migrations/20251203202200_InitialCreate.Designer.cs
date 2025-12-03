@@ -11,8 +11,8 @@ using PetalBid.Api.Data;
 namespace PetalBid.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251113093852_AddProduct")]
-    partial class AddProduct
+    [Migration("20251203202200_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -36,20 +36,55 @@ namespace PetalBid.Api.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("Quantity")
+                    b.Property<int?>("Quantity")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("ReservePrice")
-                        .HasColumnType("INTEGER");
+                    b.Property<decimal?>("ReservePrice")
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("StartsAt")
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
                     b.HasIndex("AuctioneerId");
 
                     b.ToTable("Auctions");
+                });
+
+            modelBuilder.Entity("PetalBid.Api.Domain.Entities.AuditLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("KeyValues")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NewValues")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OldValues")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TableName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("TimestampUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AuditLogs");
                 });
 
             modelBuilder.Entity("PetalBid.Api.Domain.Entities.Product", b =>
@@ -61,7 +96,7 @@ namespace PetalBid.Api.Migrations
                     b.Property<int?>("AuctionId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("ImageUrl")
+                    b.Property<string>("ImageBase64")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -169,8 +204,17 @@ namespace PetalBid.Api.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("IsDisabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsTotpEnabled")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TotpSecret")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");

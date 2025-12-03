@@ -50,6 +50,9 @@ Zorg ervoor dat de volgende software op je systeem is geïnstalleerd:
     # Installeer de benodigde NuGet-package voor JWT-authenticatie
     dotnet add package Microsoft.AspNetCore.Authentication.JwtBearer
 
+	# Installeer Magick.NET voor image processing
+	dotnet add package Magick.NET-Q8-AnyCPU
+
     # Installeer de NuGet-packages
     dotnet restore
 

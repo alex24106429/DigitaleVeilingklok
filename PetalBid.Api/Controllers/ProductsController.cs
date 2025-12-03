@@ -1,3 +1,4 @@
+using ImageMagick;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -72,11 +73,13 @@ public class ProductsController(AppDbContext db) : ApiControllerBase(db)
 		// Only Suppliers can create products through this endpoint
 		if (userRole != "Supplier") return Forbid();
 
+		var processedImage = ProcessAndEncodeImage(productDto.ImageBase64);
+
 		var product = new Product
 		{
 			Name = productDto.Name,
 			Weight = productDto.Weight,
-			ImageUrl = productDto.ImageUrl,
+			ImageBase64 = processedImage,
 			Species = productDto.Species,
 			PotSize = productDto.PotSize,
 			StemLength = productDto.StemLength,
@@ -111,9 +114,14 @@ public class ProductsController(AppDbContext db) : ApiControllerBase(db)
 			return Forbid();
 		}
 
+		// Only process image if a new one is provided (simple check if string is not empty)
+		if (!string.IsNullOrWhiteSpace(updatedDto.ImageBase64) && updatedDto.ImageBase64 != existing.ImageBase64)
+		{
+			existing.ImageBase64 = ProcessAndEncodeImage(updatedDto.ImageBase64);
+		}
+
 		existing.Name = updatedDto.Name;
 		existing.Weight = updatedDto.Weight;
-		existing.ImageUrl = updatedDto.ImageUrl;
 		existing.Species = updatedDto.Species;
 		existing.PotSize = updatedDto.PotSize;
 		existing.StemLength = updatedDto.StemLength;
@@ -150,5 +158,62 @@ public class ProductsController(AppDbContext db) : ApiControllerBase(db)
 		Db.Products.Remove(product);
 		await Db.SaveChangesAsync();
 		return NoContent();
+	}
+
+	/// <summary>
+	/// Processes the input base64 string:
+	/// 1. Decodes base64
+	/// 2. Crops to square (center)
+	/// 3. Resizes to max 1024x1024
+	/// 4. Converts to AVIF at 30% quality
+	/// 5. Returns base64 string
+	/// </summary>
+	private static string ProcessAndEncodeImage(string inputBase64)
+	{
+		if (string.IsNullOrWhiteSpace(inputBase64)) return string.Empty;
+
+		try
+		{
+			// Remove data URI prefix if present (e.g. "data:image/png;base64,")
+			var commaIndex = inputBase64.IndexOf(',');
+			var cleanBase64 = commaIndex != -1 ? inputBase64[(commaIndex + 1)..] : inputBase64;
+
+			var imageBytes = Convert.FromBase64String(cleanBase64);
+
+			using var image = new MagickImage(imageBytes);
+
+			// 1. Crop to square (Center)
+			// Explicitly cast to int to avoid long/uint mismatch errors during calculation
+			var width = (int)image.Width;
+			var height = (int)image.Height;
+			var size = Math.Min(width, height);
+
+			if (width != height)
+			{
+				var x = (width - size) / 2;
+				var y = (height - size) / 2;
+
+				// MagickGeometry expects (int x, int y, uint width, uint height)
+				image.Crop(new MagickGeometry(x, y, (uint)size, (uint)size));
+			}
+
+			// 2. Downscale to max 1024x
+			if (size > 1024)
+			{
+				image.Resize(1024, 1024);
+			}
+
+			// 3. Convert to AVIF with 30% quality
+			image.Format = MagickFormat.Avif;
+			image.Quality = 30;
+
+			// 4. Return as Base64 Data URI
+			return "data:image/avif;base64," + image.ToBase64();
+		}
+		catch (Exception)
+		{
+			// Fallback or error handling: return empty to indicate failure to process
+			return string.Empty;
+		}
 	}
 }

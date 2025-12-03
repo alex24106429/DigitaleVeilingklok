@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useState, ChangeEvent } from 'react';
 import {
 	Typography, Box, CircularProgress, Button, Dialog, DialogActions,
-	DialogContent, DialogTitle, TextField, Grid, InputAdornment
+	DialogContent, DialogTitle, TextField, Grid, InputAdornment,
+	IconButton
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import PhotoCamera from '@mui/icons-material/PhotoCamera';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useAlert } from '../../components/AlertProvider';
 import TableComponent, { HeadCell } from '../../components/TableComponent';
 import { Product } from '../../types/product';
@@ -22,7 +25,7 @@ const initialFormData: ProductDto = {
 	name: '',
 	species: '',
 	weight: 0,
-	imageUrl: '',
+	imageBase64: '',
 	stock: 1,
 	minimumPrice: 0.01,
 	potSize: undefined,
@@ -52,7 +55,7 @@ export default function ProductManagement() {
 	}, [showAlert]);
 
 	useEffect(() => {
-		// Initial load (deduped by service to avoid duplicate fetch in StrictMode)
+		// Initial load
 		// eslint-disable-next-line react-hooks/set-state-in-effect
 		fetchProducts(false);
 	}, [fetchProducts]);
@@ -80,6 +83,22 @@ export default function ProductManagement() {
 			...prev,
 			[name]: type === 'number' ? Number(value) : value,
 		}));
+	};
+
+	const handleImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
+		const file = event.target.files?.[0];
+		if (file) {
+			const reader = new FileReader();
+			reader.onloadend = () => {
+				const base64String = reader.result as string;
+				setFormData(prev => ({ ...prev, imageBase64: base64String }));
+			};
+			reader.readAsDataURL(file);
+		}
+	};
+
+	const handleRemoveImage = () => {
+		setFormData(prev => ({ ...prev, imageBase64: '' }));
 	};
 
 	const handleSave = async () => {
@@ -169,9 +188,43 @@ export default function ProductManagement() {
 						<Grid size={{ xs: 12, sm: 6 }}>
 							<TextField name="species" label="Soort" value={formData.species} onChange={handleFormChange} fullWidth />
 						</Grid>
+						
+						{/* Image Upload Section */}
 						<Grid size={12}>
-							<TextField name="imageUrl" label="URL van afbeelding" value={formData.imageUrl} onChange={handleFormChange} fullWidth />
+							<Box sx={{ border: '1px dashed grey', p: 2, textAlign: 'center', borderRadius: 2 }}>
+								{formData.imageBase64 ? (
+									<Box position="relative" display="inline-block">
+										<img 
+											src={formData.imageBase64} 
+											alt="Preview" 
+											style={{ maxHeight: '200px', maxWidth: '100%', objectFit: 'contain' }} 
+										/>
+										<IconButton 
+											onClick={handleRemoveImage}
+											color="error"
+											sx={{ position: 'absolute', top: 0, right: 0, bgcolor: 'rgba(255,255,255,0.7)' }}
+										>
+											<DeleteIcon />
+										</IconButton>
+									</Box>
+								) : (
+									<Button
+										variant="outlined"
+										component="label"
+										startIcon={<PhotoCamera />}
+									>
+										Afbeelding kiezen
+										<input
+											type="file"
+											hidden
+											accept="image/*"
+											onChange={handleImageUpload}
+										/>
+									</Button>
+								)}
+							</Box>
 						</Grid>
+
 						<Grid size={{ xs: 6, sm: 3 }}>
 							<TextField name="stock" label="Voorraad (stuks)" type="number" value={formData.stock} onChange={handleFormChange} fullWidth inputProps={{ min: 1 }} />
 						</Grid>
