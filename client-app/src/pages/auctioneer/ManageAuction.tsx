@@ -134,7 +134,7 @@ export default function ManageAuction() {
 				const productDto = {
 					name: productToUpdate.name,
 					weight: productToUpdate.weight,
-					imageUrl: productToUpdate.imageUrl,
+					imageBase64: productToUpdate.imageBase64,
 					species: productToUpdate.species,
 					stock: productToUpdate.stock,
 					minimumPrice: productToUpdate.minimumPrice,
@@ -166,7 +166,7 @@ export default function ManageAuction() {
 			const productDto = {
 				name: productToUpdate.name,
 				weight: productToUpdate.weight,
-				imageUrl: productToUpdate.imageUrl,
+				imageBase64: productToUpdate.imageBase64,
 				species: productToUpdate.species,
 				stock: productToUpdate.stock,
 				minimumPrice: productToUpdate.minimumPrice,
@@ -191,7 +191,7 @@ export default function ManageAuction() {
 			const productDto = {
 				name: productToUpdate.name,
 				weight: productToUpdate.weight,
-				imageUrl: productToUpdate.imageUrl,
+				imageBase64: productToUpdate.imageBase64,
 				species: productToUpdate.species,
 				stock: productToUpdate.stock,
 				minimumPrice: productToUpdate.minimumPrice,

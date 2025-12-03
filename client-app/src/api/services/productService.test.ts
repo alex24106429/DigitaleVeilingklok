@@ -8,7 +8,7 @@ const mockProduct: Product = {
 	name: 'Red Roses',
 	species: 'Rosa',
 	weight: 10,
-	imageUrl: 'http://example.com/rose.jpg',
+	imageBase64: 'data:image/avif;base64,',
 	stock: 100,
 	minimumPrice: 0.5,
 	supplierId: 99,
@@ -19,7 +19,7 @@ const mockProductDto: ProductDto = {
 	name: 'Red Roses',
 	species: 'Rosa',
 	weight: 10,
-	imageUrl: 'http://example.com/rose.jpg',
+	imageBase64: 'data:image/avif;base64,',
 	stock: 100,
 	minimumPrice: 0.5,
 };
