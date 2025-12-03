@@ -154,10 +154,21 @@ public class UsersController(
 		var cookieOptions = new CookieOptions
 		{
 			HttpOnly = true,
-			Secure = true, // Set to true in production/HTTPS
-			SameSite = SameSiteMode.None, // Strict or Lax if FE and BE share domain, None if Cross-Origin
+			Secure = true, // Always true for production/HTTPS
 			Expires = DateTime.UtcNow.AddHours(2)
 		};
+
+		// Determine Domain and SameSite based on environment
+		if (Request.Host.Host.Contains("localhost"))
+		{
+			cookieOptions.SameSite = SameSiteMode.Lax;
+		}
+		else
+		{
+			cookieOptions.SameSite = SameSiteMode.Lax;
+			// Set the domain so the cookie is shared between api.petalbid.bid and petalbid.bid
+			cookieOptions.Domain = ".petalbid.bid";
+		}
 
 		Response.Cookies.Append("jwt", token, cookieOptions);
 
@@ -171,12 +182,24 @@ public class UsersController(
 	[HttpPost("logout")]
 	public ActionResult Logout()
 	{
-		Response.Cookies.Delete("jwt", new CookieOptions
+		var cookieOptions = new CookieOptions
 		{
 			HttpOnly = true,
-			Secure = true,
-			SameSite = SameSiteMode.None
-		});
+			Secure = true
+		};
+
+		// To delete a cookie, the options (Domain/Path) must match exactly how it was created
+		if (Request.Host.Host.Contains("localhost"))
+		{
+			cookieOptions.SameSite = SameSiteMode.Lax;
+		}
+		else
+		{
+			cookieOptions.SameSite = SameSiteMode.Lax;
+			cookieOptions.Domain = ".petalbid.bid";
+		}
+
+		Response.Cookies.Delete("jwt", cookieOptions);
 		return Ok(new { message = "Logged out successfully" });
 	}
 
@@ -193,7 +216,7 @@ public class UsersController(
 		var userId = int.Parse(userIdString);
 		var existing = await Db.Users.FindAsync(userId);
 		if (existing is null) return NotFound();
-		
+
 		if (existing.IsDisabled) return Unauthorized("Account is disabled.");
 
 		// Enforce unique email across users (except current)
@@ -223,7 +246,7 @@ public class UsersController(
 		var userId = int.Parse(userIdString);
 		var existing = await Db.Users.FindAsync(userId);
 		if (existing is null) return NotFound();
-		
+
 		if (existing.IsDisabled) return Unauthorized("Account is disabled.");
 
 		if (!PasswordService.VerifyPassword(existing.PasswordHash, dto.CurrentPassword))
@@ -378,7 +401,7 @@ public class UsersController(
 		}
 
 		user.PasswordHash = PasswordService.HashPassword(dto.NewPassword);
-		
+
 		await Db.SaveChangesAsync();
 
 		return Ok(new { message = "Wachtwoord succesvol gewijzigd." });
