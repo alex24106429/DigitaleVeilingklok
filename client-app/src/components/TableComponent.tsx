@@ -25,6 +25,8 @@ export interface HeadCell<T> {
 	label: string;
 	numeric: boolean;
 	disablePadding?: boolean;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	format?: (value: any, row: T) => React.ReactNode;
 }
 
 type Order = 'asc' | 'desc';
@@ -308,7 +310,7 @@ export default function TableComponent<T extends Record<string, any>>({
 												padding={cell.disablePadding ? 'none' : 'normal'}
 												align={cell.numeric ? 'right' : 'left'}
 											>
-												{row[cell.id]}
+												{cell.format ? cell.format(row[cell.id], row) : row[cell.id]}
 											</TableCell>
 										))}
 									</TableRow>

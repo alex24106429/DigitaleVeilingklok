@@ -14,6 +14,27 @@ import { productService, ProductDto } from '../../api/services/productService';
 
 const headCells: readonly HeadCell<Product>[] = [
 	{ id: 'id', numeric: true, disablePadding: false, label: 'ID' },
+	{ 
+		id: 'imageBase64', 
+		numeric: false, 
+		disablePadding: true, 
+		label: 'Afbeelding',
+		format: (value) => value ? (
+			<Box 
+				component="img" 
+				src={value as string} 
+				alt="product" 
+				sx={{ 
+					height: '64px', 
+					width: '64px', 
+					objectFit: 'cover', 
+					borderRadius: 1 
+				}} 
+			/>
+		) : (
+			<Typography variant="caption" color="text.secondary">Geen</Typography>
+		)
+	},
 	{ id: 'name', numeric: false, disablePadding: false, label: 'Naam' },
 	{ id: 'species', numeric: false, disablePadding: false, label: 'Soort' },
 	{ id: 'stock', numeric: true, disablePadding: false, label: 'Voorraad' },
