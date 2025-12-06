@@ -38,3 +38,10 @@ client-app/docs
 PetalBid.Api/docs
 PetalBid.Api/_site
 PetalBid.Api/api
+
+# build
+client-app/dist
+*.node.tsbuildinfo
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
