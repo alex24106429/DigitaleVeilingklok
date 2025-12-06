@@ -1,12 +1,11 @@
+using Microsoft.AspNetCore.Identity;
+
 namespace PetalBid.Api.Domain.Entities;
 
-public abstract class User
+// Inherit from IdentityUser<int> to use integer Primary Keys
+public abstract class User : IdentityUser<int>
 {
-	public int Id { get; set; }
 	public string FullName { get; set; } = string.Empty;
-	public string Email { get; set; } = string.Empty;
-	public string PasswordHash { get; set; } = string.Empty;
-	public bool IsTotpEnabled { get; set; }
-	public string? TotpSecret { get; set; }
+	
 	public bool IsDisabled { get; set; }
 }

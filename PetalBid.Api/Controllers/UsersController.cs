@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -15,19 +16,21 @@ using System.Text;
 namespace PetalBid.Api.Controllers;
 
 /// <summary>
-/// Controller for all users
+/// Controller for all users management via ASP.NET Core Identity
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class UsersController(
+	UserManager<User> userManager,
+	SignInManager<User> signInManager,
 	AppDbContext db,
 	IConfiguration config,
-	IPwnedPasswordsService pwnedPasswordsService,
-	ITotpService totpService) : ApiControllerBase(db)
+	IPwnedPasswordsService pwnedPasswordsService) : ApiControllerBase(db)
 {
 	private readonly IConfiguration _config = config;
 	private readonly IPwnedPasswordsService _pwnedPasswordsService = pwnedPasswordsService;
-	private readonly ITotpService _totpService = totpService;
+	private readonly UserManager<User> _userManager = userManager;
+	private readonly SignInManager<User> _signInManager = signInManager;
 
 	/// <summary>
 	/// Retrieves all users
@@ -36,9 +39,14 @@ public class UsersController(
 	[Authorize(Roles = "Admin")]
 	public async Task<ActionResult<List<UserResponseDto>>> GetAll()
 	{
-		var users = await Db.Users.AsNoTracking().ToListAsync();
-		var responseDtos = users.Select(MapUser).ToList();
-		return Ok(responseDtos);
+		var users = await _userManager.Users.ToListAsync();
+		var dtos = new List<UserResponseDto>();
+
+		foreach (var user in users)
+		{
+			dtos.Add(await MapUserAsync(user));
+		}
+		return Ok(dtos);
 	}
 
 	/// <summary>
@@ -48,13 +56,19 @@ public class UsersController(
 	[Authorize]
 	public async Task<ActionResult<UserResponseDto>> GetById(int id)
 	{
-		var user = await Db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id);
+		var user = await _userManager.FindByIdAsync(id.ToString());
 		if (user is null) return NotFound();
 
-		// Optional: Prevent disabled users from retrieving data if they still have a token
+		// Check if accessing user is allowed (Self or Admin)
+		var currentUserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+		if (user.Id != currentUserId && !User.IsInRole("Admin"))
+		{
+			return Forbid();
+		}
+
 		if (user.IsDisabled) return Unauthorized("Account is disabled.");
 
-		return Ok(MapUser(user));
+		return Ok(await MapUserAsync(user));
 	}
 
 	/// <summary>
@@ -63,27 +77,18 @@ public class UsersController(
 	[HttpPost("register")]
 	public async Task<ActionResult<UserResponseDto>> Register(RegisterUserDto registerDto)
 	{
-
-		var existingUser = await Db.Users.FirstOrDefaultAsync(u => u.Email == registerDto.Email);
-		if (existingUser != null)
+		if (await _userManager.FindByEmailAsync(registerDto.Email) != null)
 		{
 			return BadRequest(new { message = "Uw e-mailadres is al geregistreerd." });
 		}
 
-		var (isValid, errorMessage) = PasswordService.ValidatePasswordRequirements(registerDto.Password);
-		if (!isValid)
-		{
-			return BadRequest(new { message = errorMessage });
-		}
-
-		// Check if the password has been exposed in a data breach
+		// Check Pwned Passwords
 		if (await _pwnedPasswordsService.IsPasswordPwnedAsync(registerDto.Password))
 		{
 			return BadRequest(new { message = "Dit wachtwoord komt te vaak voor en is uitgelekt bij datalekken. Kies alstublieft een ander wachtwoord." });
 		}
 
-		var passwordHash = PasswordService.HashPassword(registerDto.Password);
-
+		// Create Entity based on Role
 		User user = registerDto.Role switch
 		{
 			UserRole.Buyer => new Buyer { CompanyName = "Default Company" },
@@ -94,15 +99,22 @@ public class UsersController(
 		};
 
 		user.FullName = registerDto.FullName;
+		user.UserName = registerDto.Email; // Identity requires UserName
 		user.Email = registerDto.Email;
-		user.PasswordHash = passwordHash;
-		user.IsTotpEnabled = false;
 		user.IsDisabled = false;
 
-		Db.Users.Add(user);
-		await Db.SaveChangesAsync();
+		// Create User (Identity handles Hashing)
+		var result = await _userManager.CreateAsync(user, registerDto.Password);
+		if (!result.Succeeded)
+		{
+			return BadRequest(new { message = string.Join(", ", result.Errors.Select(e => e.Description)) });
+		}
 
-		return CreatedAtAction(nameof(GetById), new { id = user.Id }, MapUser(user));
+		// Assign Role
+		var roleName = registerDto.Role.ToString();
+		await _userManager.AddToRoleAsync(user, roleName);
+
+		return CreatedAtAction(nameof(GetById), new { id = user.Id }, await MapUserAsync(user));
 	}
 
 	/// <summary>
@@ -111,8 +123,7 @@ public class UsersController(
 	[HttpPost("login")]
 	public async Task<ActionResult<object>> Login(LoginDto loginDto)
 	{
-		// Find user by email
-		var user = await Db.Users.FirstOrDefaultAsync(u => u.Email == loginDto.Email);
+		var user = await _userManager.FindByEmailAsync(loginDto.Email);
 		if (user == null)
 		{
 			return Unauthorized(new { message = "Ongeldig e-mailadres of wachtwoord." });
@@ -123,114 +134,91 @@ public class UsersController(
 			return Unauthorized(new { message = "Uw account is uitgeschakeld. Neem contact op met de beheerder." });
 		}
 
-		// Verify password
-		if (!PasswordService.VerifyPassword(user.PasswordHash, loginDto.Password))
+		// Check Password
+		var result = await _signInManager.CheckPasswordSignInAsync(user, loginDto.Password, lockoutOnFailure: true);
+
+		if (result.IsLockedOut)
+		{
+			return Unauthorized(new { message = "Account is tijdelijk geblokkeerd vanwege te veel inlogpogingen." });
+		}
+
+		if (!result.Succeeded)
 		{
 			return Unauthorized(new { message = "Ongeldig e-mailadres of wachtwoord." });
 		}
 
-		if (user.IsTotpEnabled)
+		// Handle 2FA
+		if (user.TwoFactorEnabled)
 		{
-			if (string.IsNullOrEmpty(user.TotpSecret))
-			{
-				return StatusCode(500, "TOTP-configuratie ontbreekt voor deze gebruiker.");
-			}
-
-			var code = loginDto.TwoFactorCode?.Trim();
+			var code = loginDto.TwoFactorCode?.Trim().Replace(" ", string.Empty);
 			if (string.IsNullOrWhiteSpace(code))
 			{
 				return Unauthorized(new { message = "Tweestapsverificatie vereist." });
 			}
 
-			if (!_totpService.ValidateCode(user.TotpSecret, code))
+			// Verify TOTP code via UserManager
+			var is2faValid = await _userManager.VerifyTwoFactorTokenAsync(user, _userManager.Options.Tokens.AuthenticatorTokenProvider, code);
+			if (!is2faValid)
 			{
 				return Unauthorized(new { message = "Ongeldige 2FA-code." });
 			}
 		}
 
-		var token = GenerateJwtToken(user, GetRole(user));
+		// Generate JWT
+		var token = await GenerateJwtTokenAsync(user);
+		SetJwtCookie(token);
 
-		// Set HttpOnly Cookie
-		var cookieOptions = new CookieOptions
-		{
-			HttpOnly = true,
-			Secure = true, // Always true for production/HTTPS
-			Expires = DateTime.UtcNow.AddHours(2)
-		};
-
-		// Determine Domain and SameSite based on environment
-		if (Request.Host.Host.Contains("localhost"))
-		{
-			cookieOptions.SameSite = SameSiteMode.Lax;
-		}
-		else
-		{
-			cookieOptions.SameSite = SameSiteMode.Lax;
-			// Set the domain so the cookie is shared between api.petalbid.bid and petalbid.bid
-			cookieOptions.Domain = ".petalbid.bid";
-		}
-
-		Response.Cookies.Append("jwt", token, cookieOptions);
-
-		// Do not return token in body
-		return Ok(new { User = MapUser(user) });
+		return Ok(new { User = await MapUserAsync(user) });
 	}
 
 	/// <summary>
 	/// Logs out the user by clearing the cookie
 	/// </summary>
 	[HttpPost("logout")]
-	public ActionResult Logout()
+	public async Task<ActionResult> Logout()
 	{
+		await _signInManager.SignOutAsync();
+		
 		var cookieOptions = new CookieOptions
 		{
 			HttpOnly = true,
-			Secure = true
+			Secure = true,
+			SameSite = Request.Host.Host.Contains("localhost") ? SameSiteMode.Lax : SameSiteMode.Lax,
+			Domain = Request.Host.Host.Contains("localhost") ? null : ".petalbid.bid"
 		};
-
-		// To delete a cookie, the options (Domain/Path) must match exactly how it was created
-		if (Request.Host.Host.Contains("localhost"))
-		{
-			cookieOptions.SameSite = SameSiteMode.Lax;
-		}
-		else
-		{
-			cookieOptions.SameSite = SameSiteMode.Lax;
-			cookieOptions.Domain = ".petalbid.bid";
-		}
 
 		Response.Cookies.Delete("jwt", cookieOptions);
 		return Ok(new { message = "Logged out successfully" });
 	}
 
 	/// <summary>
-	/// Updates the authenticated user's profile (name + email)
+	/// Updates the authenticated user's profile
 	/// </summary>
 	[HttpPut("me")]
 	[Authorize]
 	public async Task<ActionResult<UserResponseDto>> UpdateMe(UpdateProfileDto dto)
 	{
-		var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-		if (userIdString is null) return Unauthorized();
+		var user = await _userManager.GetUserAsync(User);
+		if (user is null) return Unauthorized();
 
-		var userId = int.Parse(userIdString);
-		var existing = await Db.Users.FindAsync(userId);
-		if (existing is null) return NotFound();
+		if (user.IsDisabled) return Unauthorized("Account is disabled.");
 
-		if (existing.IsDisabled) return Unauthorized("Account is disabled.");
-
-		// Enforce unique email across users (except current)
-		var emailExists = await Db.Users.AnyAsync(u => u.Email == dto.Email && u.Id != userId);
-		if (emailExists)
+		if (user.Email != dto.Email)
 		{
-			return BadRequest(new { message = "Uw e-mailadres is al geregistreerd." });
+			var emailExists = await _userManager.FindByEmailAsync(dto.Email);
+			if (emailExists != null && emailExists.Id != user.Id)
+			{
+				return BadRequest(new { message = "Uw e-mailadres is al geregistreerd." });
+			}
+			
+			await _userManager.SetEmailAsync(user, dto.Email);
+			await _userManager.SetUserNameAsync(user, dto.Email);
 		}
 
-		existing.FullName = dto.FullName;
-		existing.Email = dto.Email;
+		user.FullName = dto.FullName;
+		await _userManager.UpdateAsync(user);
 
-		await Db.SaveChangesAsync();
-		return Ok(MapUser(existing));
+		return Ok(await MapUserAsync(user));
 	}
 
 	/// <summary>
@@ -240,34 +228,21 @@ public class UsersController(
 	[Authorize]
 	public async Task<ActionResult<object>> ChangePassword(ChangePasswordDto dto)
 	{
-		var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-		if (userIdString is null) return Unauthorized();
+		var user = await _userManager.GetUserAsync(User);
+		if (user is null) return Unauthorized();
 
-		var userId = int.Parse(userIdString);
-		var existing = await Db.Users.FindAsync(userId);
-		if (existing is null) return NotFound();
-
-		if (existing.IsDisabled) return Unauthorized("Account is disabled.");
-
-		if (!PasswordService.VerifyPassword(existing.PasswordHash, dto.CurrentPassword))
-		{
-			return BadRequest(new { message = "Huidig wachtwoord is onjuist." });
-		}
-
-		var (isValid, errorMessage) = PasswordService.ValidatePasswordRequirements(dto.NewPassword);
-		if (!isValid)
-		{
-			return BadRequest(new { message = errorMessage });
-		}
-
-		// Check if the new password has been exposed in a data breach
+		// Check Pwned Passwords
 		if (await _pwnedPasswordsService.IsPasswordPwnedAsync(dto.NewPassword))
 		{
-			return BadRequest(new { message = "Dit wachtwoord komt te vaak voor en is uitgelekt bij datalekken. Kies alstublieft een ander wachtwoord." });
+			return BadRequest(new { message = "Dit wachtwoord komt te vaak voor en is uitgelekt bij datalekken." });
 		}
 
-		existing.PasswordHash = PasswordService.HashPassword(dto.NewPassword);
-		await Db.SaveChangesAsync();
+		var result = await _userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
+		
+		if (!result.Succeeded)
+		{
+			return BadRequest(new { message = string.Join(", ", result.Errors.Select(e => e.Description)) });
+		}
 
 		return Ok(new { message = "Wachtwoord succesvol gewijzigd." });
 	}
@@ -279,22 +254,16 @@ public class UsersController(
 	[Authorize]
 	public async Task<ActionResult<TotpSetupResponseDto>> BeginTotpSetup()
 	{
-		var user = await GetCurrentUserAsync();
+		var user = await _userManager.GetUserAsync(User);
 		if (user is null) return Unauthorized();
-		if (user.IsDisabled) return Unauthorized("Account is disabled.");
 
-		if (user.IsTotpEnabled)
-		{
-			return BadRequest(new { message = "Tweestapsverificatie is al ingeschakeld. Schakel het eerst uit om opnieuw te configureren." });
-		}
+		// Reset/Generate new key
+		await _userManager.ResetAuthenticatorKeyAsync(user);
+		var unformattedKey = await _userManager.GetAuthenticatorKeyAsync(user);
 
-		var secret = _totpService.GenerateSecret();
-		user.TotpSecret = secret;
-		user.IsTotpEnabled = false;
-		await Db.SaveChangesAsync();
-
-		var otpauthUrl = _totpService.BuildOtpAuthUri(secret, user.Email, "PetalBid");
-		return Ok(new TotpSetupResponseDto { Secret = secret, OtpauthUrl = otpauthUrl });
+		var otpauthUrl = GenerateOtpAuthUri(unformattedKey!, user.Email!, "PetalBid");
+		
+		return Ok(new TotpSetupResponseDto { Secret = unformattedKey!, OtpauthUrl = otpauthUrl });
 	}
 
 	/// <summary>
@@ -304,24 +273,21 @@ public class UsersController(
 	[Authorize]
 	public async Task<ActionResult<UserResponseDto>> VerifyTotp(VerifyTotpDto dto)
 	{
-		var user = await GetCurrentUserAsync();
+		var user = await _userManager.GetUserAsync(User);
 		if (user is null) return Unauthorized();
-		if (user.IsDisabled) return Unauthorized("Account is disabled.");
 
-		if (string.IsNullOrEmpty(user.TotpSecret))
-		{
-			return BadRequest(new { message = "Geen TOTP-configuratie gevonden. Start de setup opnieuw." });
-		}
+		var code = dto.Code.Replace(" ", string.Empty).Replace("-", string.Empty);
 
-		if (!_totpService.ValidateCode(user.TotpSecret, dto.Code))
+		var isTokenValid = await _userManager.VerifyTwoFactorTokenAsync(user, _userManager.Options.Tokens.AuthenticatorTokenProvider, code);
+
+		if (!isTokenValid)
 		{
 			return BadRequest(new { message = "Ongeldige 2FA-code." });
 		}
 
-		user.IsTotpEnabled = true;
-		await Db.SaveChangesAsync();
-
-		return Ok(MapUser(user));
+		await _userManager.SetTwoFactorEnabledAsync(user, true);
+		
+		return Ok(await MapUserAsync(user));
 	}
 
 	/// <summary>
@@ -331,25 +297,27 @@ public class UsersController(
 	[Authorize]
 	public async Task<ActionResult<UserResponseDto>> DisableTotp(DisableTotpDto dto)
 	{
-		var user = await GetCurrentUserAsync();
+		var user = await _userManager.GetUserAsync(User);
 		if (user is null) return Unauthorized();
-		if (user.IsDisabled) return Unauthorized("Account is disabled.");
 
-		if (!user.IsTotpEnabled || string.IsNullOrEmpty(user.TotpSecret))
+		if (!user.TwoFactorEnabled)
 		{
 			return BadRequest(new { message = "Tweestapsverificatie is niet ingeschakeld." });
 		}
 
-		if (!_totpService.ValidateCode(user.TotpSecret, dto.Code))
+		// Verify code before disabling
+		var code = dto.Code.Replace(" ", string.Empty);
+		var isTokenValid = await _userManager.VerifyTwoFactorTokenAsync(user, _userManager.Options.Tokens.AuthenticatorTokenProvider, code);
+
+		if (!isTokenValid)
 		{
 			return BadRequest(new { message = "Ongeldige 2FA-code." });
 		}
 
-		user.IsTotpEnabled = false;
-		user.TotpSecret = null;
-		await Db.SaveChangesAsync();
+		await _userManager.SetTwoFactorEnabledAsync(user, false);
+		await _userManager.ResetAuthenticatorKeyAsync(user); // Optional: Clear the secret
 
-		return Ok(MapUser(user));
+		return Ok(await MapUserAsync(user));
 	}
 
 	/// <summary>
@@ -359,29 +327,26 @@ public class UsersController(
 	[Authorize(Roles = "Admin")]
 	public async Task<ActionResult<UserResponseDto>> UpdateUser(int id, AdminUpdateUserDto dto)
 	{
-		var user = await Db.Users.FindAsync(id);
+		var user = await _userManager.FindByIdAsync(id.ToString());
 		if (user is null) return NotFound();
 
-		// Enforce unique email
-		var emailExists = await Db.Users.AnyAsync(u => u.Email == dto.Email && u.Id != id);
-		if (emailExists)
+		// Update Email
+		if (user.Email != dto.Email)
 		{
-			return BadRequest(new { message = "Het e-mailadres is al in gebruik." });
-		}
-
-		// Ensure role isn't changed
-		var currentRole = GetRole(user);
-		if (currentRole != dto.Role)
-		{
-			return BadRequest(new { message = "Het wijzigen van de gebruikersrol is niet mogelijk." });
+			var conflict = await _userManager.FindByEmailAsync(dto.Email);
+			if (conflict != null && conflict.Id != id)
+			{
+				return BadRequest(new { message = "Het e-mailadres is al in gebruik." });
+			}
+			await _userManager.SetEmailAsync(user, dto.Email);
+			await _userManager.SetUserNameAsync(user, dto.Email);
 		}
 
 		user.FullName = dto.FullName;
-		user.Email = dto.Email;
 		user.IsDisabled = dto.IsDisabled;
 
-		await Db.SaveChangesAsync();
-		return Ok(MapUser(user));
+		await _userManager.UpdateAsync(user);
+		return Ok(await MapUserAsync(user));
 	}
 
 	/// <summary>
@@ -391,18 +356,16 @@ public class UsersController(
 	[Authorize(Roles = "Admin")]
 	public async Task<ActionResult> AdminResetPassword(int id, AdminResetPasswordDto dto)
 	{
-		var user = await Db.Users.FindAsync(id);
+		var user = await _userManager.FindByIdAsync(id.ToString());
 		if (user is null) return NotFound();
 
-		var (isValid, errorMessage) = PasswordService.ValidatePasswordRequirements(dto.NewPassword);
-		if (!isValid)
+		var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+		var result = await _userManager.ResetPasswordAsync(user, token, dto.NewPassword);
+
+		if (!result.Succeeded)
 		{
-			return BadRequest(new { message = errorMessage });
+			return BadRequest(new { message = string.Join(", ", result.Errors.Select(e => e.Description)) });
 		}
-
-		user.PasswordHash = PasswordService.HashPassword(dto.NewPassword);
-
-		await Db.SaveChangesAsync();
 
 		return Ok(new { message = "Wachtwoord succesvol gewijzigd." });
 	}
@@ -414,59 +377,49 @@ public class UsersController(
 	[Authorize(Roles = "Admin")]
 	public async Task<ActionResult> Delete(int id)
 	{
-		var user = await Db.Users.FindAsync(id);
+		var user = await _userManager.FindByIdAsync(id.ToString());
 		if (user is null) return NotFound();
 
-		Db.Users.Remove(user);
-		await Db.SaveChangesAsync();
+		await _userManager.DeleteAsync(user);
 		return NoContent();
 	}
 
-	private async Task<User?> GetCurrentUserAsync()
-	{
-		var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-		if (string.IsNullOrWhiteSpace(userIdString)) return null;
+	// Helpers
 
-		var userId = int.Parse(userIdString);
-		return await Db.Users.FindAsync(userId);
-	}
-
-	private UserResponseDto MapUser(User user)
+	private async Task<UserResponseDto> MapUserAsync(User user)
 	{
+		var roles = await _userManager.GetRolesAsync(user);
+		var roleString = roles.FirstOrDefault() ?? "Buyer"; // Default fallback
+		Enum.TryParse(roleString, out UserRole roleEnum);
+
 		return new UserResponseDto
 		{
 			Id = user.Id,
 			FullName = user.FullName,
-			Email = user.Email,
-			Role = GetRole(user),
-			IsTotpEnabled = user.IsTotpEnabled,
+			Email = user.Email!,
+			Role = roleEnum,
+			IsTotpEnabled = user.TwoFactorEnabled,
 			IsDisabled = user.IsDisabled
 		};
 	}
 
-	private static UserRole GetRole(User user) => user switch
+	private async Task<string> GenerateJwtTokenAsync(User user)
 	{
-		Buyer => UserRole.Buyer,
-		Supplier => UserRole.Supplier,
-		Auctioneer => UserRole.Auctioneer,
-		Admin => UserRole.Admin,
-		_ => throw new InvalidOperationException($"Onbekend gebruikerstype voor gebruiker {user.Id}")
-	};
-
-	/// <summary>
-	/// Generates a JWT token for the authenticated user
-	/// </summary>
-	private string GenerateJwtToken(User user, UserRole role)
-	{
-		var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
-		var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-
-		var claims = new[]
+		var roles = await _userManager.GetRolesAsync(user);
+		var claims = new List<Claim>
 		{
 			new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-			new Claim(JwtRegisteredClaimNames.Email, user.Email),
-			new Claim(ClaimTypes.Role, role.ToString())
+			new Claim(JwtRegisteredClaimNames.Email, user.Email!),
+			new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
 		};
+
+		foreach (var role in roles)
+		{
+			claims.Add(new Claim(ClaimTypes.Role, role));
+		}
+
+		var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
+		var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
 		var token = new JwtSecurityToken(
 			issuer: _config["Jwt:Issuer"],
@@ -476,6 +429,35 @@ public class UsersController(
 			signingCredentials: credentials);
 
 		return new JwtSecurityTokenHandler().WriteToken(token);
+	}
+
+	private void SetJwtCookie(string token)
+	{
+		var cookieOptions = new CookieOptions
+		{
+			HttpOnly = true,
+			Secure = true, // Always true for production/HTTPS
+			Expires = DateTime.UtcNow.AddHours(2)
+		};
+
+		if (Request.Host.Host.Contains("localhost"))
+		{
+			cookieOptions.SameSite = SameSiteMode.Lax;
+		}
+		else
+		{
+			cookieOptions.SameSite = SameSiteMode.Lax;
+			cookieOptions.Domain = ".petalbid.bid";
+		}
+
+		Response.Cookies.Append("jwt", token, cookieOptions);
+	}
+
+	private static string GenerateOtpAuthUri(string secret, string email, string issuer)
+	{
+		var label = Uri.EscapeDataString($"{issuer}:{email}");
+		var issuerEncoded = Uri.EscapeDataString(issuer);
+		return $"otpauth://totp/{label}?secret={secret}&issuer={issuerEncoded}&digits=6";
 	}
 }
 

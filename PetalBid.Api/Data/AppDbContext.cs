@@ -1,19 +1,22 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using PetalBid.Api.Domain.Entities;
 using System.Text.Json;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace PetalBid.Api.Data;
 
-public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
+// Inherit from IdentityDbContext to include User, Role, and Claim tables
+public class AppDbContext(DbContextOptions<AppDbContext> options) 
+	: IdentityDbContext<User, IdentityRole<int>, int>(options)
 {
-	public DbSet<User> Users { get; set; } = null!;
+	// TPT Subclasses
 	public DbSet<Auctioneer> Auctioneers { get; set; } = null!;
 	public DbSet<Buyer> Buyers { get; set; } = null!;
 	public DbSet<Supplier> Suppliers { get; set; } = null!;
 	public DbSet<Admin> Admins { get; set; } = null!;
+
+	// Domain Entities
 	public DbSet<Auction> Auctions { get; set; } = null!;
 	public DbSet<Product> Products { get; set; } = null!;
 	public DbSet<Sale> Sales { get; set; } = null!;
@@ -22,9 +25,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
 	protected override void OnModelCreating(ModelBuilder model)
 	{
-		base.OnModelCreating(model);
+		base.OnModelCreating(model); // Crucial for Identity configuration
 
-		model.Entity<User>().UseTptMappingStrategy();
+		// TPT Mapping for User hierarchy
+		model.Entity<User>().ToTable("AspNetUsers");
+		model.Entity<Auctioneer>().ToTable("Auctioneers");
+		model.Entity<Buyer>().ToTable("Buyers");
+		model.Entity<Supplier>().ToTable("Suppliers");
+		model.Entity<Admin>().ToTable("Admins");
 
 		model.Entity<Sale>()
 			.HasOne(s => s.Buyer)
@@ -76,13 +84,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 			.Where(e => !(e.Entity is AuditLog))
 			.ToList();
 
-		if (!entries.Any())
-			return;
+		if (!entries.Any()) return;
 
 		var now = DateTime.UtcNow;
 
 		foreach (var entry in entries)
 		{
+			// Skip Identity tables if desired, or keep them for full audit
+			
 			var pk = entry.Properties.Where(p => p.Metadata.IsPrimaryKey()).ToDictionary(p => p.Metadata.Name, p => p.CurrentValue);
 
 			var audit = new AuditLog

@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Npgsql; 
 using PetalBid.Api.Data;
+using PetalBid.Api.Domain.Entities;
 using PetalBid.Api.Services;
 using System.Text;
 
@@ -11,14 +13,13 @@ namespace PetalBid.Api;
 
 public class Program
 {
-	public static void Main(string[] args)
+	public static async Task Main(string[] args)
 	{
 		var builder = WebApplication.CreateBuilder(args);
 
 		// -------------------------------------------------------------------------
-		// Database Configuration: SQLite (Local) vs PostgreSQL (Production)
+		// Database Configuration
 		// -------------------------------------------------------------------------
-		// Render and other cloud providers set 'DATABASE_URL' automatically.
 		var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
 
 		builder.Services.AddDbContext<AppDbContext>(options =>
@@ -48,44 +49,72 @@ public class Program
 			}
 		});
 
+		// -------------------------------------------------------------------------
+		// ASP.NET Core Identity Configuration
+		// -------------------------------------------------------------------------
+		builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
+		{
+			// Password settings (matching previous logic)
+			options.Password.RequireDigit = true;
+			options.Password.RequireLowercase = true;
+			options.Password.RequireNonAlphanumeric = true;
+			options.Password.RequireUppercase = true;
+			options.Password.RequiredLength = 8;
+
+			// User settings
+			options.User.RequireUniqueEmail = true;
+
+			// Lockout settings
+			options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+			options.Lockout.MaxFailedAccessAttempts = 5;
+			options.Lockout.AllowedForNewUsers = true;
+		})
+		.AddEntityFrameworkStores<AppDbContext>()
+		.AddDefaultTokenProviders();
+
 		builder.Services.AddControllers();
 
-		// Add Pwned Passwords service with IHttpClientFactory
+		// Add Pwned Passwords service
 		builder.Services.AddHttpClient<IPwnedPasswordsService, PwnedPasswordsService>();
-		builder.Services.AddSingleton<ITotpService, TotpService>();
 
-		// Add Authentication Services
-		builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-			.AddJwtBearer(options =>
+		// -------------------------------------------------------------------------
+		// Authentication & JWT Configuration
+		// -------------------------------------------------------------------------
+		builder.Services.AddAuthentication(options =>
+		{
+			options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+			options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+			options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+		})
+		.AddJwtBearer(options =>
+		{
+			options.TokenValidationParameters = new TokenValidationParameters
 			{
-				options.TokenValidationParameters = new TokenValidationParameters
-				{
-					ValidateIssuer = true,
-					ValidateAudience = true,
-					ValidateLifetime = true,
-					ValidateIssuerSigningKey = true,
-					ValidIssuer = builder.Configuration["Jwt:Issuer"],
-					ValidAudience = builder.Configuration["Jwt:Audience"],
-					IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
-				};
+				ValidateIssuer = true,
+				ValidateAudience = true,
+				ValidateLifetime = true,
+				ValidateIssuerSigningKey = true,
+				ValidIssuer = builder.Configuration["Jwt:Issuer"],
+				ValidAudience = builder.Configuration["Jwt:Audience"],
+				IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+			};
 
-				// Extract token from HttpOnly cookie
-				options.Events = new JwtBearerEvents
+			// Extract token from HttpOnly cookie
+			options.Events = new JwtBearerEvents
+			{
+				OnMessageReceived = context =>
 				{
-					OnMessageReceived = context =>
+					if (context.Request.Cookies.ContainsKey("jwt"))
 					{
-						if (context.Request.Cookies.ContainsKey("jwt"))
-						{
-							context.Token = context.Request.Cookies["jwt"];
-						}
-						return Task.CompletedTask;
+						context.Token = context.Request.Cookies["jwt"];
 					}
-				};
-			});
+					return Task.CompletedTask;
+				}
+			};
+		});
 
 		builder.Services.AddAuthorization();
 
-		// Add CORS
 		builder.Services.AddCors(options =>
 		{
 			options.AddPolicy("AllowFrontend", policy =>
@@ -101,12 +130,10 @@ public class Program
 		builder.Services.AddSwaggerGen(c =>
 		{
 			c.SwaggerDoc("v1", new OpenApiInfo { Title = "PetalBid API", Version = "v1" });
-
-			// Add JWT Authentication to Swagger (still useful if manually testing with Bearer, though cookie is preferred)
 			c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
 			{
 				In = ParameterLocation.Header,
-				Description = "Please enter a valid token",
+				Description = "JWT Authorization using HttpOnly Cookies (handled by browser) or Bearer",
 				Name = "Authorization",
 				Type = SecuritySchemeType.Http,
 				BearerFormat = "JWT",
@@ -117,13 +144,9 @@ public class Program
 				{
 					new OpenApiSecurityScheme
 					{
-						Reference = new OpenApiReference
-						{
-							Type = ReferenceType.SecurityScheme,
-							Id = "Bearer"
-						}
+						Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
 					},
-					new string[]{}
+					Array.Empty<string>()
 				}
 			});
 		});
@@ -131,12 +154,25 @@ public class Program
 		var app = builder.Build();
 
 		// -------------------------------------------------------------------------
-		// Database Initialization
+		// Database Initialization & Seeding
 		// -------------------------------------------------------------------------
 		using (var scope = app.Services.CreateScope())
 		{
-			var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+			var services = scope.ServiceProvider;
+			var db = services.GetRequiredService<AppDbContext>();
+			var roleManager = services.GetRequiredService<RoleManager<IdentityRole<int>>>();
+			
 			db.Database.EnsureCreated();
+
+			// Seed Roles
+			string[] roleNames = { "Admin", "Auctioneer", "Buyer", "Supplier" };
+			foreach (var roleName in roleNames)
+			{
+				if (!await roleManager.RoleExistsAsync(roleName))
+				{
+					await roleManager.CreateAsync(new IdentityRole<int>(roleName));
+				}
+			}
 		}
 
 		if (app.Environment.IsDevelopment())

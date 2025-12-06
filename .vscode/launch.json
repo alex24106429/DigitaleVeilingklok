@@ -39,6 +39,13 @@
 			"cwd": "${workspaceFolder}/client-app"
 		},
 		{
+			"name": ".NET install dependencies",
+			"type": "node-terminal",
+			"request": "launch",
+			"command": "dotnet restore",
+			"cwd": "${workspaceFolder}/PetalBid.Api"
+		},
+		{
 			"name": "Frontend Tests",
 			"type": "node-terminal",
 			"request": "launch",
