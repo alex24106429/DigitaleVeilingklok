@@ -1,0 +1,14 @@
+{
+	"editor.detectIndentation": false,
+	"editor.formatOnPaste": true,
+	"editor.formatOnSave": true,
+	"editor.insertSpaces": false,
+	"files.insertFinalNewline": true,
+	"files.trimTrailingWhitespace": true,
+	"git.autofetch": "all",
+	"git.confirmSync": false,
+	"git.enableSmartCommit": true,
+	"git.ignoreRebaseWarning": true,
+	"git.pruneOnFetch": true,
+	"git.rebaseWhenSync": true,
+}
