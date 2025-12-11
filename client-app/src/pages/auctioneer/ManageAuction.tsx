@@ -255,8 +255,8 @@ export default function ManageAuction() {
 										<Typography variant="h6">{auction.description}</Typography>
 										<Typography>Starttijd: {new Date(auction.startsAt).toLocaleString()}</Typography>
 										<Typography>Status: {AuctionStatus[auction.status]}</Typography>
-										<Typography>Aantal gekoppelde producten: {linkedProducts.filter(p => p.auctionId === auction.id).length}</Typography>
-										<Typography>Minimumprijs: {auction.reservePrice}</Typography>
+										<Typography>Aantal gekoppelde producten: {linkedProducts.length}</Typography>
+
 									</Button>
 								</Grid>
 							))}
