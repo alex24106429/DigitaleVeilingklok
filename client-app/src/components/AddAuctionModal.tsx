@@ -34,17 +34,23 @@ export const AddAuctionModal: React.FC<AddAuctionModalProps> = ({ open, onClose,
 	const [clockLocation, setClockLocation] = useState<ClockLocation>(ClockLocation.Naaldwijk);
 	const [dateError, setDateError] = useState<string | null>(null);
 
+	const validateStartDate = (dateString: string) => {
+		if (new Date(dateString) <= new Date()) {
+			setDateError('De startdatum en -tijd van de veiling moeten in de toekomst liggen.');
+			return false;
+		}
+		setDateError(null);
+		return true;
+	};
+
 	const handleSubmit = async () => {
 		if (!user) {
 			console.error('Auctioneer not logged in.');
 			return;
 		}
 
-		if (new Date(startsAt) <= new Date()) {
-			setDateError('De startdatum en -tijd van de veiling moeten in de toekomst liggen.');
+		if (!validateStartDate(startsAt)) {
 			return;
-		} else {
-			setDateError(null);
 		}
 
 		const newAuction: CreateAuctionDto = {
@@ -85,7 +91,10 @@ export const AddAuctionModal: React.FC<AddAuctionModalProps> = ({ open, onClose,
 					fullWidth
 					variant="standard"
 					value={startsAt}
-					onChange={(e) => setStartsAt(e.target.value)}
+					onChange={(e) => {
+						setStartsAt(e.target.value);
+						validateStartDate(e.target.value);
+					}}
 					InputLabelProps={{
 						shrink: true,
 					}}
