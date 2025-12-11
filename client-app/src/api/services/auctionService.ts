@@ -18,6 +18,12 @@ export const auctionService = {
 		return res.data ? { data: res.data.filter(a => a.auctioneer.id === id) } : res;
 	},
 
+	/** Updates an existing auction. */
+	updateAuction: (id: number, data: Auction) => api.put<Auction>(`/auctions/${id}`, data),
+
+	/** Deletes an auction. */
+	deleteAuction: (id: number) => api.delete(`/auctions/${id}`),
+
 	/** Starts an auction by ID. */
 	startAuction: (id: number) => api.post<null>(`/auctions/${id}/start`),
 

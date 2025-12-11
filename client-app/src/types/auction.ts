@@ -15,6 +15,12 @@ export interface CreateAuctionDto {
 	auctioneer: User;
 }
 
+export interface UpdateAuctionDto {
+	description: string;
+	startsAt: string; // ISO 8601 string
+	clockLocation: ClockLocation;
+}
+
 export interface Auction {
 	id: number;
 	description: string;

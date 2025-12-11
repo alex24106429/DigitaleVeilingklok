@@ -1,7 +1,9 @@
-import React from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Box, Checkbox, FormControlLabel, FormGroup, CircularProgress, Alert, TextField } from '@mui/material';
+import React, { useState } from 'react';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Box, Checkbox, FormControlLabel, FormGroup, CircularProgress, Alert, TextField, IconButton } from '@mui/material';
+import { Edit, Save, Cancel, Delete } from '@mui/icons-material';
 import { Auction } from '../types/auction';
 import { Product } from '../types/product';
+import { auctionService } from '../api/services/auctionService';
 
 export interface ProductManagementModalProps {
 	open: boolean;
@@ -16,6 +18,8 @@ export interface ProductManagementModalProps {
 	onLinkProducts: () => Promise<void>;
 	onUnlinkProduct: (productId: number) => Promise<void>;
 	onMaxPriceChange: (productId: number, newPrice: number) => Promise<void>;
+	onAuctionUpdate?: (updatedAuction: Auction) => void;
+	onAuctionDelete?: (auctionId: number) => void;
 }
 /**
  * Modal component for managing products linked to an auction.
@@ -35,15 +39,161 @@ export const ProductManagementModal: React.FC<ProductManagementModalProps> = ({
 	onLinkProducts,
 	onUnlinkProduct,
 	onMaxPriceChange,
+	onAuctionUpdate,
+	onAuctionDelete,
 }) => {
+	const [isEditingAuction, setIsEditingAuction] = useState(false);
+	const [editedDescription, setEditedDescription] = useState('');
+	const [updatingAuction, setUpdatingAuction] = useState(false);
+	const [deletingAuction, setDeletingAuction] = useState(false);
+	const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+	// Reset edit state when modal opens/closes or auction changes
+	React.useEffect(() => {
+		if (auction) {
+			setEditedDescription(auction.description);
+		}
+		setIsEditingAuction(false);
+		setErrorMessage(null);
+	}, [auction, open]);
+
 	if (!auction) {
 		return null;
 	}
 
+	const handleStartEdit = () => {
+		setEditedDescription(auction.description);
+		setIsEditingAuction(true);
+		setErrorMessage(null);
+	};
+
+	const handleCancelEdit = () => {
+		setEditedDescription(auction.description);
+		setIsEditingAuction(false);
+		setErrorMessage(null);
+	};
+
+	const handleSaveEdit = async () => {
+		if (!editedDescription.trim()) {
+			setErrorMessage('Auction description cannot be empty');
+			return;
+		}
+
+		setUpdatingAuction(true);
+		setErrorMessage(null);
+
+		try {
+			// Send complete auction object with updated description
+			const updatedAuctionData = {
+				...auction,
+				description: editedDescription.trim(),
+			};
+
+			const response = await auctionService.updateAuction(auction.id, updatedAuctionData);
+
+			if (response.data && onAuctionUpdate) {
+				onAuctionUpdate(response.data);
+			}
+			setIsEditingAuction(false);
+		} catch (error) {
+			console.error('Failed to update auction:', error);
+			setErrorMessage('Failed to update auction. Please try again.');
+		} finally {
+			setUpdatingAuction(false);
+		}
+	};
+
+	const handleDeleteAuction = async () => {
+		if (!window.confirm(`Are you sure you want to delete the auction "${auction.description}"? This action cannot be undone.`)) {
+			return;
+		}
+
+		setDeletingAuction(true);
+		setErrorMessage(null);
+
+		try {
+			await auctionService.deleteAuction(auction.id);
+			if (onAuctionDelete) {
+				onAuctionDelete(auction.id);
+			}
+			onClose();
+		} catch (error) {
+			console.error('Failed to delete auction:', error);
+			setErrorMessage('Failed to delete auction. Please try again.');
+		} finally {
+			setDeletingAuction(false);
+		}
+	};
+
 	return (
 		<Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-			<DialogTitle>Producten Beheren voor Veiling: {auction.description}</DialogTitle>
+			<DialogTitle>
+				<Box display="flex" alignItems="center" justifyContent="space-between">
+					<Box display="flex" alignItems="center" gap={1}>
+						{isEditingAuction ? (
+							<TextField
+								value={editedDescription}
+								onChange={(e) => setEditedDescription(e.target.value)}
+								variant="standard"
+								size="small"
+								sx={{ minWidth: 300 }}
+								error={!!errorMessage && !editedDescription.trim()}
+								helperText={errorMessage && !editedDescription.trim() ? 'Description cannot be empty' : ''}
+							/>
+						) : (
+							<Typography variant="h6">Producten Beheren voor Veiling: {auction.description}</Typography>
+						)}
+					</Box>
+					<Box>
+						{isEditingAuction ? (
+							<>
+								<IconButton
+									onClick={handleSaveEdit}
+									disabled={updatingAuction || !editedDescription.trim()}
+									color="primary"
+									size="small"
+								>
+									<Save />
+								</IconButton>
+								<IconButton
+									onClick={handleCancelEdit}
+									disabled={updatingAuction}
+									color="secondary"
+									size="small"
+								>
+									<Cancel />
+								</IconButton>
+							</>
+						) : (
+							<>
+								<IconButton
+									onClick={handleStartEdit}
+									color="primary"
+									size="small"
+									title="Edit auction name"
+								>
+									<Edit />
+								</IconButton>
+								<IconButton
+									onClick={handleDeleteAuction}
+									disabled={deletingAuction}
+									color="error"
+									size="small"
+									title="Delete auction"
+								>
+									<Delete />
+								</IconButton>
+							</>
+						)}
+					</Box>
+				</Box>
+			</DialogTitle>
 			<DialogContent dividers>
+				{errorMessage && (
+					<Alert severity="error" sx={{ mb: 2 }}>
+						{errorMessage}
+					</Alert>
+				)}
 				<Box sx={{ mb: 4 }}>
 					<Typography variant="h6" gutterBottom>Beschikbare Producten</Typography>
 					{loadingProducts ? (
@@ -75,7 +225,7 @@ export const ProductManagementModal: React.FC<ProductManagementModalProps> = ({
 						sx={{ mt: 2 }}
 						disabled={selectedProductIds.length === 0}
 					>
-						Geselecteerde Producten Koppelen
+						Geselecteerde Producten Koppellen
 					</Button>
 				</Box>
 
