@@ -127,6 +127,8 @@ public class ProductsController(AppDbContext db) : ApiControllerBase(db)
 		existing.StemLength = updatedDto.StemLength;
 		existing.Stock = updatedDto.Stock;
 		existing.MinimumPrice = updatedDto.MinimumPrice;
+		existing.AuctionId = updatedDto.AuctionId;
+		existing.MaxPricePerUnit = updatedDto.MaxPricePerUnit;
 
 		await Db.SaveChangesAsync();
 		return Ok(existing);

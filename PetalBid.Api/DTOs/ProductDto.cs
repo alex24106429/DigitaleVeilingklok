@@ -31,4 +31,8 @@ public class ProductDto
 
 	[Range(0.01, double.MaxValue)]
 	public double MinimumPrice { get; set; }
+
+	public int? AuctionId { get; set; }
+
+	public double? MaxPricePerUnit { get; set; }
 }
