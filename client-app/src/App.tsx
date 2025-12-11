@@ -1,9 +1,9 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
-import { useTheme } from '@mui/material/styles';
+import { useTheme, alpha } from '@mui/material/styles';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { PurchaseProvider } from './contexts/PurchaseContext';
 import AppRoutes from './AppRoutes';
@@ -23,7 +23,7 @@ import Inventory from '@mui/icons-material/Inventory';
 import Sell from '@mui/icons-material/Sell';
 import { ManageAccounts } from '@mui/icons-material';
 
-const activeButtonSx = {
+const footerButtonSx = {
 	transition: 'none',
 	'&[aria-current="page"]': {
 		backgroundColor: 'primary.main',
@@ -34,10 +34,29 @@ const activeButtonSx = {
 	},
 };
 
+const appBarButtonSx = {
+	...footerButtonSx,
+	display: 'flex',
+	flexDirection: { xs: 'column', md: 'row' },
+	alignItems: 'center',
+	textAlign: 'center',
+	gap: { xs: 0.2, md: 1 },
+	fontSize: { xs: '10px', md: '14px' },
+	lineHeight: { xs: 1.2, md: 'inherit' },
+	minWidth: 75,
+	padding: { xs: '6px 8px', md: '8px 20px' },
+	letterSpacing: -0.5,
+	borderRadius: { xs: '15px', md: '50px' },
+};
+
 function AppBarContent() {
 	const { user, logout } = useAuth();
 	const theme = useTheme();
+	const location = useLocation();
 	const userRole = user?.role;
+
+	// Check if the current page is Login or Register to adjust styling
+	const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
 
 	const logoSrc = theme.palette.mode === 'dark' ? "/images/logo-petalbid-dark.svg" : "/images/logo-petalbid.svg";
 	const logoSmallSrc = "/images/logo-petalbid-small.svg";
@@ -47,12 +66,12 @@ function AppBarContent() {
 			case UserRole.Buyer:
 				return (
 					<>
-						<Button color="inherit" component={NavLink} to="/buyer/auctionclock" end sx={activeButtonSx}>
-							<AvTimerIcon sx={{ mr: 1 }} />
+						<Button color="inherit" component={NavLink} to="/buyer/auctionclock" end sx={appBarButtonSx}>
+							<AvTimerIcon />
 							Veilingklok
 						</Button>
-						<Button color="inherit" component={NavLink} to="/buyer/purchases" end sx={activeButtonSx}>
-							<ShoppingCart sx={{ mr: 1 }} />
+						<Button color="inherit" component={NavLink} to="/buyer/purchases" end sx={appBarButtonSx}>
+							<ShoppingCart />
 							Mijn Aankopen
 						</Button>
 					</>
@@ -61,12 +80,12 @@ function AppBarContent() {
 			case UserRole.Auctioneer:
 				return (
 					<>
-						<Button color="inherit" component={NavLink} to="/auctioneer/dashboard" end sx={activeButtonSx}>
-							<DashboardIcon sx={{ mr: 1 }} />
+						<Button color="inherit" component={NavLink} to="/auctioneer/dashboard" end sx={appBarButtonSx}>
+							<DashboardIcon />
 							Dashboard
 						</Button>
-						<Button color="inherit" component={NavLink} to="/auctioneer/manageauction" end sx={activeButtonSx}>
-							<Gavel sx={{ mr: 1 }} />
+						<Button color="inherit" component={NavLink} to="/auctioneer/manageauction" end sx={appBarButtonSx}>
+							<Gavel />
 							Veilingbeheer
 						</Button>
 					</>
@@ -75,12 +94,12 @@ function AppBarContent() {
 			case UserRole.Supplier:
 				return (
 					<>
-						<Button color="inherit" component={NavLink} to="/grower/products" end sx={activeButtonSx}>
-							<Inventory sx={{ mr: 1 }} />
+						<Button color="inherit" component={NavLink} to="/grower/products" end sx={appBarButtonSx}>
+							<Inventory />
 							Productbeheer
 						</Button>
-						<Button color="inherit" component={NavLink} to="/grower/sales" end sx={activeButtonSx}>
-							<Sell sx={{ mr: 1 }} />
+						<Button color="inherit" component={NavLink} to="/grower/sales" end sx={appBarButtonSx}>
+							<Sell />
 							Verkoopgeschiedenis
 						</Button>
 					</>
@@ -89,8 +108,8 @@ function AppBarContent() {
 			case UserRole.Admin:
 				return (
 					<>
-						<Button color="inherit" component={NavLink} to="/admin/manageusers" end sx={activeButtonSx}>
-							<ManageAccounts sx={{ mr: 1 }} />
+						<Button color="inherit" component={NavLink} to="/admin/manageusers" end sx={appBarButtonSx}>
+							<ManageAccounts />
 							Gebruikerbeheer
 						</Button>
 
@@ -103,11 +122,16 @@ function AppBarContent() {
 
 	return (
 		<AppBar
-			position="static"
+			position={isAuthPage ? "absolute" : "static"}
 			elevation={0}
 			sx={{
-				backgroundColor: (theme) => theme.palette.background.default,
+				backgroundColor: (theme) => isAuthPage
+					? alpha(theme.palette.background.paper, 0.7)
+					: theme.palette.background.default,
 				color: (theme) => theme.palette.text.primary,
+				backdropFilter: isAuthPage ? "blur(50px)" : "none",
+				width: '100%',
+				zIndex: (theme) => theme.zIndex.drawer + 1,
 			}}
 		>
 			<Toolbar>
@@ -136,8 +160,8 @@ function AppBarContent() {
 					</NavLink>
 				</Box>
 
-				{!user && (<Button color="inherit" component={NavLink} to="/" end sx={activeButtonSx}>
-					<HomeIcon sx={{ mr: 1 }}></HomeIcon>
+				{!user && (<Button color="inherit" component={NavLink} to="/" end sx={appBarButtonSx}>
+					<HomeIcon></HomeIcon>
 					Home
 				</Button>)}
 
@@ -145,24 +169,24 @@ function AppBarContent() {
 
 				{!user ? (
 					<>
-						<Button color="inherit" component={NavLink} to="/login" sx={activeButtonSx}>
-							<LoginIcon sx={{ mr: 1 }}></LoginIcon>
+						<Button color="inherit" component={NavLink} to="/login" sx={appBarButtonSx}>
+							<LoginIcon></LoginIcon>
 							Inloggen
 						</Button>
 
-						<Button color="inherit" component={NavLink} to="/register" sx={activeButtonSx}>
-							<PersonAddIcon sx={{ mr: 1 }}></PersonAddIcon>
+						<Button color="inherit" component={NavLink} to="/register" sx={appBarButtonSx}>
+							<PersonAddIcon></PersonAddIcon>
 							Registreren
 						</Button>
 					</>
 				) : (
 					<>
-						<Button color="inherit" component={NavLink} to="/account" sx={activeButtonSx}>
-							<PersonIcon sx={{ mr: 1 }}></PersonIcon>
+							<Button color="inherit" component={NavLink} to="/account" sx={appBarButtonSx}>
+								<PersonIcon></PersonIcon>
 							{user.fullName}
 						</Button>
-						<Button color="inherit" onClick={logout} sx={activeButtonSx}>
-							<LogoutIcon sx={{ mr: 1 }}></LogoutIcon>
+							<Button color="inherit" onClick={logout} sx={appBarButtonSx}>
+								<LogoutIcon></LogoutIcon>
 							Uitloggen
 						</Button>
 					</>
@@ -185,16 +209,16 @@ export default function App() {
 						<div style={{ marginTop: 'auto' }}>
 							<Box textAlign="center" padding="20px" bgcolor={theme.palette.mode === 'dark' ? "grey.900" : "primary.100"} color="text.primary">
 								&copy; {new Date().getFullYear()} PetalBid. Alle rechten voorbehouden.
-								<Button color="inherit" component={NavLink} to="/privacy" sx={activeButtonSx}>
+								<Button color="inherit" component={NavLink} to="/privacy" sx={footerButtonSx}>
 									Privacybeleid
 								</Button>
-								<Button color="inherit" component={NavLink} to="/terms" sx={activeButtonSx}>
+								<Button color="inherit" component={NavLink} to="/terms" sx={footerButtonSx}>
 									Algemene voorwaarden
 								</Button>
-								<Button color="inherit" component={NavLink} to="/contact" sx={activeButtonSx}>
+								<Button color="inherit" component={NavLink} to="/contact" sx={footerButtonSx}>
 									Contact
 								</Button>
-								<Button color="inherit" component={NavLink} to="/info" sx={activeButtonSx}>
+								<Button color="inherit" component={NavLink} to="/info" sx={footerButtonSx}>
 									Informatie
 								</Button>
 							</Box>

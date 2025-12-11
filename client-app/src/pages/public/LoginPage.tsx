@@ -10,6 +10,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 import Checkbox from '@mui/material/Checkbox';
+import { alpha } from '@mui/material/styles';
 
 import { useState, useEffect, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
@@ -171,145 +172,158 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 
 	return (
 		<div>
-			<Box component="form" onSubmit={handleSubmit} maxWidth="sm" margin="auto" mt="30px" padding="20px">
-				{!isRegisterPage ? (
-					<Typography variant="h4" component="h1" align="center">Inloggen bij PetalBid</Typography>
-				) : (
-					<>
-						<Typography variant="h4" component="h1" align="center">Registreren bij PetalBid</Typography>
-						<TextField
-							label="Naam"
-							margin="normal"
-							fullWidth
-							required
-							value={name}
-							onChange={(e) => setName(e.target.value)}
-						/>
-					</>
-				)}
-
-				<TextField
-					label="E-mail"
-					type="email"
-					margin="normal"
-					fullWidth
-					required
-					value={email}
-					onChange={(e) => setEmail(e.target.value)}
-				/>
-				<TextField
-					label="Wachtwoord"
-					type="password"
-					margin="normal"
-					fullWidth
-					required
-					value={password}
-					onChange={(e) => setPassword(e.target.value)}
-				/>
-				{isRegisterPage && (
-					<>
-						<TextField
-							label="Bevestig Wachtwoord"
-							type="password"
-							margin="normal"
-							fullWidth
-							required
-							value={confirmPassword}
-							onChange={(e) => setConfirmPassword(e.target.value)}
-						/>
-						<FormControl required margin="normal">
-							<FormLabel component="legend" id="user-type-label">Ik ben:</FormLabel>
-							<RadioGroup
-								row
-								aria-labelledby="user-type-label"
-								value={userType}
-								onChange={(e) => setUserType(e.target.value)}
-							>
-								<FormControlLabel value="grower" control={<Radio />} label="Leverancier" />
-								<FormControlLabel value="buyer" control={<Radio />} label="Koper" />
-								<FormControlLabel value="auctioneer" control={<Radio />} label="Veilingmeester" />
-								<FormControlLabel value="admin" control={<Radio />} label="Administrator" />
-							</RadioGroup>
-						</FormControl>
-
-						{(userType === "grower" || userType === "buyer") &&
+			<Box minHeight="100vh" margin="0" padding="0" paddingTop={"100px"} sx={{ backgroundImage: "url(https://i.ibb.co/n8VVSdL8/flowerfield.avif)", backgroundSize: "cover" }}>
+				<Box
+					component="form"
+					onSubmit={handleSubmit}
+					maxWidth="sm"
+					margin="auto"
+					padding="25px"
+					borderRadius={"10px"}
+					sx={(theme) => ({
+						backdropFilter: "blur(50px)",
+						backgroundColor: alpha(theme.palette.background.paper, 0.7)
+					})}
+				>
+					{!isRegisterPage ? (
+						<Typography variant="h4" component="h1" align="center">Inloggen bij PetalBid</Typography>
+					) : (
+						<>
+							<Typography variant="h4" component="h1" align="center">Registreren bij PetalBid</Typography>
 							<TextField
-								label="RFH Nummer"
+								label="Naam"
 								margin="normal"
 								fullWidth
 								required
-								value={RFHnumber}
-								onChange={(e) => setRFHnumber(e.target.value)}
+								value={name}
+								onChange={(e) => setName(e.target.value)}
 							/>
-						}
+						</>
+					)}
 
-						{userType === "grower" &&
-							<Link
-								href="https://portal.royalfloraholland.com/nl-nl/klant-worden/aanvoerder/"
-								target="_blank"
-								rel="noreferrer"
-							>
-								Nog geen RFH nummer? Registreer je hier als leverancier
-							</Link>
-						}
-
-						{userType === "buyer" &&
-							<Link
-								href="https://portal.royalfloraholland.com/nl-NL/klant-worden/koper/"
-								target="_blank"
-								rel="noreferrer"
-							>
-								Nog geen RFH nummer? Registreer je hier als koper
-							</Link>
-						}
-						<br />
-						<FormControlLabel
-							control={
-								<Checkbox
-									checked={enableTwoFactorAfterRegister}
-									onChange={(e) => setEnableTwoFactorAfterRegister(e.target.checked)}
-								/>
-							}
-							label="Direct tweestapsverificatie instellen na registratie"
-						/>
-						<Typography variant="body2" color="text.secondary">
-							We loggen u automatisch in en tonen een QR-code om te scannen na afloop van de registratie.
-						</Typography>
-					</>
-				)}
-
-				{needsTwoFactor && !isRegisterPage && (
 					<TextField
-						label="Authenticator-code"
+						label="E-mail"
+						type="email"
 						margin="normal"
 						fullWidth
 						required
-						value={twoFactorCode}
-						onChange={(e) => setTwoFactorCode(sanitizeCode(e.target.value))}
-						inputProps={{ inputMode: 'numeric', pattern: '[0-9]*', maxLength: 6 }}
-						helperText="Open uw authenticator-app en voer de 6-cijferige code in."
+						value={email}
+						onChange={(e) => setEmail(e.target.value)}
 					/>
-				)}
-
-				{
-					/* AlertSlot renders the current provider alert inline in the document flow. */}
-				<AlertSlot />
-
-				<Box display="flex" justifyContent="space-between" alignItems="center" mt={2}>
-					<Button
-						type="submit"
-						variant="contained"
-						color="primary"
-						size="large"
+					<TextField
+						label="Wachtwoord"
+						type="password"
+						margin="normal"
 						fullWidth
-						disabled={
-							isLoading ||
-							(!isRegisterPage && needsTwoFactor && twoFactorCode.trim().length < 6)
-						}
-						startIcon={isLoading ? <CircularProgress size={20} /> : null}
-					>
-						{isLoading ? "Bezig..." : (isRegisterPage ? "Registreren" : "Inloggen")}
-					</Button>
+						required
+						value={password}
+						onChange={(e) => setPassword(e.target.value)}
+					/>
+					{isRegisterPage && (
+						<>
+							<TextField
+								label="Bevestig Wachtwoord"
+								type="password"
+								margin="normal"
+								fullWidth
+								required
+								value={confirmPassword}
+								onChange={(e) => setConfirmPassword(e.target.value)}
+							/>
+							<FormControl required margin="normal">
+								<FormLabel component="legend" id="user-type-label">Ik ben:</FormLabel>
+								<RadioGroup
+									row
+									aria-labelledby="user-type-label"
+									value={userType}
+									onChange={(e) => setUserType(e.target.value)}
+								>
+									<FormControlLabel value="grower" control={<Radio />} label="Leverancier" />
+									<FormControlLabel value="buyer" control={<Radio />} label="Koper" />
+									<FormControlLabel value="auctioneer" control={<Radio />} label="Veilingmeester" />
+									<FormControlLabel value="admin" control={<Radio />} label="Administrator" />
+								</RadioGroup>
+							</FormControl>
+
+							{(userType === "grower" || userType === "buyer") &&
+								<TextField
+									label="RFH Nummer"
+									margin="normal"
+									fullWidth
+									required
+									value={RFHnumber}
+									onChange={(e) => setRFHnumber(e.target.value)}
+								/>
+							}
+
+							{userType === "grower" &&
+								<Link
+									href="https://portal.royalfloraholland.com/nl-nl/klant-worden/aanvoerder/"
+									target="_blank"
+									rel="noreferrer"
+								>
+									Nog geen RFH nummer? Registreer je hier als leverancier
+								</Link>
+							}
+
+							{userType === "buyer" &&
+								<Link
+									href="https://portal.royalfloraholland.com/nl-NL/klant-worden/koper/"
+									target="_blank"
+									rel="noreferrer"
+								>
+									Nog geen RFH nummer? Registreer je hier als koper
+								</Link>
+							}
+							<br />
+							<FormControlLabel
+								control={
+									<Checkbox
+										checked={enableTwoFactorAfterRegister}
+										onChange={(e) => setEnableTwoFactorAfterRegister(e.target.checked)}
+									/>
+								}
+								label="Direct tweestapsverificatie instellen na registratie"
+							/>
+							<Typography variant="body2" color="text.secondary">
+								We loggen u automatisch in en tonen een QR-code om te scannen na afloop van de registratie.
+							</Typography>
+						</>
+					)}
+
+					{needsTwoFactor && !isRegisterPage && (
+						<TextField
+							label="Authenticator-code"
+							margin="normal"
+							fullWidth
+							required
+							value={twoFactorCode}
+							onChange={(e) => setTwoFactorCode(sanitizeCode(e.target.value))}
+							inputProps={{ inputMode: 'numeric', pattern: '[0-9]*', maxLength: 6 }}
+							helperText="Open uw authenticator-app en voer de 6-cijferige code in."
+						/>
+					)}
+
+					{
+					/* AlertSlot renders the current provider alert inline in the document flow. */}
+					<AlertSlot />
+
+					<Box display="flex" justifyContent="space-between" alignItems="center" mt={2}>
+						<Button
+							type="submit"
+							variant="contained"
+							color="primary"
+							size="large"
+							fullWidth
+							disabled={
+								isLoading ||
+								(!isRegisterPage && needsTwoFactor && twoFactorCode.trim().length < 6)
+							}
+							startIcon={isLoading ? <CircularProgress size={20} /> : null}
+						>
+							{isLoading ? "Bezig..." : (isRegisterPage ? "Registreren" : "Inloggen")}
+						</Button>
+					</Box>
 				</Box>
 			</Box>
 		</div>
