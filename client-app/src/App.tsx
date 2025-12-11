@@ -5,6 +5,7 @@ import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import { useTheme } from '@mui/material/styles';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { PurchaseProvider } from './contexts/PurchaseContext';
 import AppRoutes from './AppRoutes';
 import { UserRole } from './types/user';
 import { AlertProvider } from './components/AlertProvider';
@@ -175,31 +176,32 @@ export default function App() {
 	const theme = useTheme();
 	return (
 		<AuthProvider>
-			<AlertProvider>
-				<Box minHeight="100vh" display="flex" flexDirection="column">
-					<AppBarContent />
-					<AppRoutes></AppRoutes>
+			<PurchaseProvider>
+				<AlertProvider>
+					<Box minHeight="100vh" display="flex" flexDirection="column">
+						<AppBarContent />
+						<AppRoutes></AppRoutes>
 
-					<div style={{ marginTop: 'auto' }}>
-						<Box textAlign="center" padding="20px" bgcolor={theme.palette.mode === 'dark' ? "grey.900" : "primary.100"} color="text.primary">
-							&copy; {new Date().getFullYear()} PetalBid. Alle rechten voorbehouden.
-							<Button color="inherit" component={NavLink} to="/privacy" sx={activeButtonSx}>
-								Privacybeleid
-							</Button>
-							<Button color="inherit" component={NavLink} to="/terms" sx={activeButtonSx}>
-								Algemene voorwaarden
-							</Button>
-							<Button color="inherit" component={NavLink} to="/contact" sx={activeButtonSx}>
-								Contact
-							</Button>
-							<Button color="inherit" component={NavLink} to="/info" sx={activeButtonSx}>
-								Informatie
-							</Button>
-						</Box>
-					</div>
-				</Box>
-			</AlertProvider>
+						<div style={{ marginTop: 'auto' }}>
+							<Box textAlign="center" padding="20px" bgcolor={theme.palette.mode === 'dark' ? "grey.900" : "primary.100"} color="text.primary">
+								&copy; {new Date().getFullYear()} PetalBid. Alle rechten voorbehouden.
+								<Button color="inherit" component={NavLink} to="/privacy" sx={activeButtonSx}>
+									Privacybeleid
+								</Button>
+								<Button color="inherit" component={NavLink} to="/terms" sx={activeButtonSx}>
+									Algemene voorwaarden
+								</Button>
+								<Button color="inherit" component={NavLink} to="/contact" sx={activeButtonSx}>
+									Contact
+								</Button>
+								<Button color="inherit" component={NavLink} to="/info" sx={activeButtonSx}>
+									Informatie
+								</Button>
+							</Box>
+						</div>
+					</Box>
+				</AlertProvider>
+			</PurchaseProvider>
 		</AuthProvider>
 	);
 }
-

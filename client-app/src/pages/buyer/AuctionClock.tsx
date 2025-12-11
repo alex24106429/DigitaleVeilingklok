@@ -20,6 +20,8 @@ import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import AddIcon from '@mui/icons-material/Add';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePurchase } from '../../contexts/PurchaseContext';
+import { Purchase } from '../../types/purchase';
 
 /**
  * Transaction type for auction purchases
@@ -75,6 +77,7 @@ function useInterval(callback: () => void, delayMs: number | null) {
  */
 export default function AuctionClock() {
 	const { user } = useAuth();
+	const { addPurchase } = usePurchase();
 
 	// Lot/product settings
 	const [product, setProduct] = useState('Rozen (A1)');
@@ -189,10 +192,24 @@ export default function AuctionClock() {
 			const price = sideBuyMode?.price ?? currentPrice;
 			const qty = buyQty;
 
-			// TODO: Integrate with purchase system when context is available
-			// For now, just add to local transactions for display
+			// Create Purchase object and add to context
+			const purchase: Purchase = {
+				id: Date.now(),
+				userId: String(user.id) || user.fullName || 'unknown',
+				buyerName: buyer.trim() || 'Onbekend',
+				productName: product,
+				species: species,
+				origin: origin,
+				quantity: qty,
+				purchasePrice: price,
+				purchaseDate: new Date().toISOString(),
+				sideBuy: Boolean(sideBuyMode),
+			};
 
-			// Add to local transactions for display
+			// Add to purchase context for sharing with Purchases component
+			addPurchase(purchase);
+
+			// Also add to local transactions for display
 			const tx: Transaction = {
 				buyer: buyer.trim() || 'Onbekend',
 				qty,
