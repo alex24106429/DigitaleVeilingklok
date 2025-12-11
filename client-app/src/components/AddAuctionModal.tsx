@@ -16,6 +16,7 @@ import { ClockLocation } from '../types/clockLocation';
 import { CreateAuctionDto, Auction } from '../types/auction';
 import { auctionService } from '../api/services/auctionService';
 import { useAuth } from '../contexts/AuthContext';
+import { useAlert } from './AlertProvider';
 
 export interface AddAuctionModalProps {
 	open: boolean;
@@ -29,6 +30,7 @@ export interface AddAuctionModalProps {
  */
 export const AddAuctionModal: React.FC<AddAuctionModalProps> = ({ open, onClose, onSubmit }) => {
 	const { user } = useAuth();
+	const { showAlert } = useAlert();
 	const [description, setDescription] = useState('');
 	const [startsAt, setStartsAt] = useState('');
 	const [clockLocation, setClockLocation] = useState<ClockLocation>(ClockLocation.Naaldwijk);
@@ -45,7 +47,11 @@ export const AddAuctionModal: React.FC<AddAuctionModalProps> = ({ open, onClose,
 
 	const handleSubmit = async () => {
 		if (!user) {
-			console.error('Auctioneer not logged in.');
+			showAlert({
+				title: 'Fout',
+				message: 'Veilingmeester niet ingelogd.',
+				severity: 'error'
+			});
 			return;
 		}
 
@@ -62,11 +68,20 @@ export const AddAuctionModal: React.FC<AddAuctionModalProps> = ({ open, onClose,
 
 		const response = await auctionService.createAuction(newAuction);
 		if (response.data) {
+			showAlert({
+				title: 'Succes',
+				message: 'Veiling succesvol aangemaakt.',
+				severity: 'success'
+			});
 			onSubmit(response.data); // Pass the created auction back
+			onClose();
 		} else {
-			console.error('Error creating auction:', response.error);
+			showAlert({
+				title: 'Fout',
+				message: response.error || 'Er is een fout opgetreden bij het aanmaken van de veiling.',
+				severity: 'error'
+			});
 		}
-		onClose();
 	};
 
 	return (

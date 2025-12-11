@@ -4,6 +4,7 @@ import { Edit, Save, Cancel, Delete } from '@mui/icons-material';
 import { Auction } from '../types/auction';
 import { Product } from '../types/product';
 import { auctionService } from '../api/services/auctionService';
+import { useAlert } from './AlertProvider';
 
 export interface ProductManagementModalProps {
 	open: boolean;
@@ -42,6 +43,7 @@ export const ProductManagementModal: React.FC<ProductManagementModalProps> = ({
 	onAuctionUpdate,
 	onAuctionDelete,
 }) => {
+	const { showAlert } = useAlert();
 	const [isEditingAuction, setIsEditingAuction] = useState(false);
 	const [editedDescription, setEditedDescription] = useState('');
 	const [updatingAuction, setUpdatingAuction] = useState(false);
@@ -93,11 +95,21 @@ export const ProductManagementModal: React.FC<ProductManagementModalProps> = ({
 
 			if (response.data && onAuctionUpdate) {
 				onAuctionUpdate(response.data);
+				showAlert({
+					title: 'Succes',
+					message: 'Veiling succesvol bijgewerkt.',
+					severity: 'success'
+				});
 			}
 			setIsEditingAuction(false);
 		} catch (error) {
 			console.error('Failed to update auction:', error);
 			setErrorMessage('Failed to update auction. Please try again.');
+			showAlert({
+				title: 'Fout',
+				message: 'Er is een fout opgetreden bij het bijwerken van de veiling.',
+				severity: 'error'
+			});
 		} finally {
 			setUpdatingAuction(false);
 		}
@@ -116,10 +128,20 @@ export const ProductManagementModal: React.FC<ProductManagementModalProps> = ({
 			if (onAuctionDelete) {
 				onAuctionDelete(auction.id);
 			}
+			showAlert({
+				title: 'Succes',
+				message: 'Veiling succesvol verwijderd.',
+				severity: 'success'
+			});
 			onClose();
 		} catch (error) {
 			console.error('Failed to delete auction:', error);
 			setErrorMessage('Failed to delete auction. Please try again.');
+			showAlert({
+				title: 'Fout',
+				message: 'Er is een fout opgetreden bij het verwijderen van de veiling.',
+				severity: 'error'
+			});
 		} finally {
 			setDeletingAuction(false);
 		}

@@ -9,6 +9,7 @@ import { Product } from '../../types/product';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
 import { ProductManagementModal } from '../../components/ProductManagementModal';
+import { useAlert } from '../../components/AlertProvider';
 
 /**
  * Enum for auction status
@@ -26,6 +27,7 @@ enum AuctionStatus {
  * @returns JSX.Element
  */
 export default function ManageAuction() {
+	const { showAlert } = useAlert();
 
 	const [isAddAuctionModalOpen, setIsAddAuctionModalOpen] = useState(false);
 	const [isProductManagementModalOpen, setIsProductManagementModalOpen] = useState(false);
@@ -128,6 +130,8 @@ export default function ManageAuction() {
 		if (!selectedAuction) return;
 
 		const successfulLinks: Product[] = [];
+		const failedLinks: string[] = [];
+
 		for (const productId of selectedProductIds) {
 			const productToUpdate = availableProducts.find(p => p.id === productId);
 			if (productToUpdate) {
@@ -148,14 +152,34 @@ export default function ManageAuction() {
 					successfulLinks.push(response.data);
 				} else if (response.error) {
 					console.error(`Error linking product ${productId}:`, response.error);
+					failedLinks.push(productToUpdate.name);
 				}
 			}
 		}
+
+		// Update state
 		setAvailableProducts((prev) =>
 			prev.filter((p) => !selectedProductIds.includes(p.id))
 		);
 		setLinkedProducts((prev) => [...prev, ...successfulLinks]);
 		setSelectedProductIds([]); // Clear selections after linking
+
+		// Show alerts
+		if (successfulLinks.length > 0) {
+			showAlert({
+				title: 'Succes',
+				message: `${successfulLinks.length} product(en) succesvol gekoppeld aan de veiling.`,
+				severity: 'success'
+			});
+		}
+
+		if (failedLinks.length > 0) {
+			showAlert({
+				title: 'Fout',
+				message: `Kon ${failedLinks.length} product(en) niet koppelen: ${failedLinks.join(', ')}`,
+				severity: 'error'
+			});
+		}
 	};
 
 	const handleUnlinkProduct = async (productId: number) => {
@@ -179,8 +203,18 @@ export default function ManageAuction() {
 				console.log(`Product ${productId} unlinked from auction ${selectedAuction.id}`);
 				setLinkedProducts((prev) => prev.filter((p) => p.id !== productId));
 				setAvailableProducts((prev) => [...prev, response.data!]); // Add back to available products
+				showAlert({
+					title: 'Succes',
+					message: `Product "${productToUpdate.name}" succesvol ontkoppeld van de veiling.`,
+					severity: 'success'
+				});
 			} else if (response.error) {
 				console.error(`Error unlinking product ${productId}:`, response.error);
+				showAlert({
+					title: 'Fout',
+					message: `Kon product "${productToUpdate.name}" niet ontkoppelen.`,
+					severity: 'error'
+				});
 			}
 		}
 	};
@@ -206,9 +240,42 @@ export default function ManageAuction() {
 				setLinkedProducts((prev) =>
 					prev.map((p) => (p.id === productId ? { ...p, maxPricePerUnit: newPrice } : p))
 				);
+				showAlert({
+					title: 'Succes',
+					message: `Maximumprijs voor "${productToUpdate.name}" succesvol bijgewerkt naar €${newPrice.toFixed(2)}.`,
+					severity: 'success'
+				});
 			} else if (response.error) {
 				console.error(`Error updating max price for product ${productId}:`, response.error);
+				showAlert({
+					title: 'Fout',
+					message: `Kon maximumprijs voor "${productToUpdate.name}" niet bijwerken.`,
+					severity: 'error'
+				});
 			}
+		}
+	};
+
+	const handleAuctionUpdate = (updatedAuction: Auction) => {
+		// Update the auctions list with the updated auction
+		setAuctions((prev) =>
+			prev.map((auction) =>
+				auction.id === updatedAuction.id ? updatedAuction : auction
+			)
+		);
+		// Update the selected auction if it matches
+		if (selectedAuction && selectedAuction.id === updatedAuction.id) {
+			setSelectedAuction(updatedAuction);
+		}
+	};
+
+	const handleAuctionDelete = (auctionId: number) => {
+		// Remove the auction from the auctions list
+		setAuctions((prev) => prev.filter((auction) => auction.id !== auctionId));
+		// Close the modal if the deleted auction was selected
+		if (selectedAuction && selectedAuction.id === auctionId) {
+			setIsProductManagementModalOpen(false);
+			setSelectedAuction(null);
 		}
 	};
 
@@ -280,6 +347,8 @@ export default function ManageAuction() {
 				onLinkProducts={handleLinkProducts}
 				onUnlinkProduct={handleUnlinkProduct}
 				onMaxPriceChange={handleMaxPriceChange}
+				onAuctionUpdate={handleAuctionUpdate}
+				onAuctionDelete={handleAuctionDelete}
 			/>
 
 			<Typography variant="h5" component="h2" sx={{ mt: 4, mb: 2 }}>
