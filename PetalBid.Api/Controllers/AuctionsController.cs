@@ -87,6 +87,16 @@ public class AuctionsController(AppDbContext db, ILogger<AuctionsController> log
 		// Set default status when creating an auction
 		auction.Status = AuctionStatus.Pending;
 
+		// Ensure StartsAt has Kind=Utc for PostgreSQL
+		if (auction.StartsAt.Kind == DateTimeKind.Unspecified)
+		{
+			auction.StartsAt = DateTime.SpecifyKind(auction.StartsAt, DateTimeKind.Utc);
+		}
+		else if (auction.StartsAt.Kind == DateTimeKind.Local)
+		{
+			auction.StartsAt = auction.StartsAt.ToUniversalTime();
+		}
+
 		// Attach the auctioneer to the context to avoid creating a new one
 		if (auction.Auctioneer != null)
 		{
@@ -108,7 +118,21 @@ public class AuctionsController(AppDbContext db, ILogger<AuctionsController> log
 		if (existing is null) return NotFound();
 
 		existing.Description = updated.Description;
-		existing.StartsAt = updated.StartsAt;
+
+		// Ensure StartsAt has Kind=Utc for PostgreSQL
+		if (updated.StartsAt.Kind == DateTimeKind.Unspecified)
+		{
+			existing.StartsAt = DateTime.SpecifyKind(updated.StartsAt, DateTimeKind.Utc);
+		}
+		else if (updated.StartsAt.Kind == DateTimeKind.Local)
+		{
+			existing.StartsAt = updated.StartsAt.ToUniversalTime();
+		}
+		else
+		{
+			existing.StartsAt = updated.StartsAt;
+		}
+
 		existing.ClockLocation = updated.ClockLocation;
 		existing.AuctioneerId = updated.AuctioneerId;
 		existing.Status = updated.Status; // Update status
