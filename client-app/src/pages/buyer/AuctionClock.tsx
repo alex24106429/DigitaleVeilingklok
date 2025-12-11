@@ -8,9 +8,6 @@ import {
 	Button,
 	IconButton,
 	TextField,
-	InputAdornment,
-	Slider,
-	Divider,
 	Chip,
 	Tooltip,
 	Dialog,
@@ -19,13 +16,10 @@ import {
 	DialogActions,
 	CircularProgress,
 } from '@mui/material';
-import Grid from '@mui/material/Grid';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import PauseIcon from '@mui/icons-material/Pause';
-import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import AddIcon from '@mui/icons-material/Add';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import { useAuth } from '../../contexts/AuthContext';
 
 /**
  * Transaction type for auction purchases
@@ -80,8 +74,11 @@ function useInterval(callback: () => void, delayMs: number | null) {
  * @returns JSX.Element
  */
 export default function AuctionClock() {
+	const { user } = useAuth();
+
 	// Lot/product settings
 	const [product, setProduct] = useState('Rozen (A1)');
+	const [species, setSpecies] = useState('Rosa');
 	const [origin, setOrigin] = useState('Aalsmeer');
 	const [totalQty, setTotalQty] = useState(100);
 	const [minPerBuy, setMinPerBuy] = useState(10); // minimum afname per koop
@@ -91,7 +88,7 @@ export default function AuctionClock() {
 	const [startPrice, setStartPrice] = useState(0.5); // €/stuk
 	const [floorPrice, setFloorPrice] = useState(0.2); // €/stuk
 	const [priceStep, setPriceStep] = useState(0.01); // €/tik
-	const [ticksPerSecond, setTicksPerSecond] = useState(3); // snelheid
+	const [ticksPerSecond] = useState(3); // Fixed speed - removed user control
 
 	// Runtime state
 	const [running, setRunning] = useState(false);
@@ -102,10 +99,11 @@ export default function AuctionClock() {
 
 	// Purchase dialog state
 	const [purchaseOpen, setPurchaseOpen] = useState(false);
-	const [buyer, setBuyer] = useState('Koper A');
+	const [buyer, setBuyer] = useState(user?.fullName || 'Koper A');
 	const [buyQty, setBuyQty] = useState(minPerBuy);
 	const [sideBuyMode, setSideBuyMode] = useState<null | { price: number }>(null); // meekoop prijs
 	const [errors, setErrors] = useState<{ qty?: string }>({});
+	const [submitting, setSubmitting] = useState(false);
 
 	// Derived values
 	const priceRange = Math.max(0.00001, startPrice - floorPrice);
@@ -118,16 +116,9 @@ export default function AuctionClock() {
 		const dropped = startPrice - currentPrice;
 		return clamp((dropped / priceRange) * 100, 0, 100);
 	}, [startPrice, currentPrice, priceRange]);
-	// Can start clock
-	const canStart = useMemo(() => {
-		return (
-			totalQty > 0 &&
-			startPrice > floorPrice &&
-			priceStep > 0 &&
-			ticksPerSecond > 0 &&
-			remainingQty > 0
-		);
-	}, [totalQty, startPrice, floorPrice, priceStep, ticksPerSecond, remainingQty]);
+
+	// Check if sold out
+	const isSoldOut = remainingQty <= 0;
 
 	// Timer
 	useInterval(
@@ -151,6 +142,13 @@ export default function AuctionClock() {
 		setRemainingQty(totalQty);
 	}, [totalQty]);
 
+	// Update buyer name when user changes
+	useEffect(() => {
+		if (user) {
+			setBuyer(user.fullName || 'Koper A');
+		}
+	}, [user]);
+
 	// Validate buy quantity
 	useEffect(() => {
 		setErrors(() => {
@@ -170,27 +168,9 @@ export default function AuctionClock() {
 		});
 	}, [buyQty, remainingQty, minPerBuy, orderStep]);
 
-	const handleStartPause = () => {
-		if (!running) {
-			// If clock is at floor or no quantity, don't start
-			if (!canStart) return;
-			setPausedForSale(false);
-			setRunning(true);
-		} else {
-			setRunning(false);
-		}
-	};
-	// Reset clock and state
-	const handleReset = () => {
-		setRunning(false);
-		setTicks(0);
-		setRemainingQty(totalQty);
-		setTransactions([]);
-		setPausedForSale(false);
-		setSideBuyMode(null);
-	};
 	// Open purchase dialog
 	const openBuyDialog = (sideBuy?: boolean) => {
+		if (isSoldOut) return;
 		setRunning(false);
 		setPausedForSale(true);
 		setSideBuyMode(sideBuy ? { price: currentPrice } : null);
@@ -198,28 +178,44 @@ export default function AuctionClock() {
 		setBuyQty(Math.min(Math.max(minPerBuy, orderStep ? orderStep : minPerBuy), remainingQty));
 		setPurchaseOpen(true);
 	};
+
 	// Commit purchase
-	const commitPurchase = () => {
-		if (errors.qty) return;
-		const price = sideBuyMode?.price ?? currentPrice;
-		const qty = buyQty;
-		const tx: Transaction = {
-			buyer: buyer.trim() || 'Onbekend',
-			qty,
-			price,
-			sideBuy: Boolean(sideBuyMode),
-			id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-		};
-		setTransactions((prev) => [...prev, tx]);
-		setRemainingQty((r) => r - qty);
-		setPurchaseOpen(false);
-		// keep paused after first purchase to allow more side buys
-		setPausedForSale(true);
-		// If no remaining, end
-		if (remainingQty - qty <= 0) {
-			setRunning(false);
+	const commitPurchase = async () => {
+		if (errors.qty || !user) return;
+		if (isSoldOut) return;
+
+		setSubmitting(true);
+		try {
+			const price = sideBuyMode?.price ?? currentPrice;
+			const qty = buyQty;
+
+			// TODO: Integrate with purchase system when context is available
+			// For now, just add to local transactions for display
+
+			// Add to local transactions for display
+			const tx: Transaction = {
+				buyer: buyer.trim() || 'Onbekend',
+				qty,
+				price,
+				sideBuy: Boolean(sideBuyMode),
+				id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+			};
+			setTransactions((prev) => [...prev, tx]);
+			setRemainingQty((r) => r - qty);
+			setPurchaseOpen(false);
+			// keep paused after first purchase to allow more side buys
+			setPausedForSale(true);
+			// If no remaining, end
+			if (remainingQty - qty <= 0) {
+				setRunning(false);
+			}
+		} catch (err) {
+			console.error('Purchase error:', err);
+		} finally {
+			setSubmitting(false);
 		}
 	};
+
 	// Resume clock after sales
 	const resumeAfterSales = () => {
 		setPausedForSale(false);
@@ -228,6 +224,7 @@ export default function AuctionClock() {
 			setRunning(true);
 		}
 	};
+
 	// Finish lot immediately
 	const finishLot = () => {
 		setRunning(false);
@@ -235,31 +232,25 @@ export default function AuctionClock() {
 		setSideBuyMode(null);
 		setRemainingQty(0);
 	};
+
 	// Check if buyer can make a purchase
-	const canBuy = remainingQty > 0 && currentPrice > 0 && !purchaseOpen;
+	const canBuy = remainingQty > 0 && currentPrice > 0 && !purchaseOpen && !!user;
 	const atFloor = currentPrice <= floorPrice + 1e-9;
 
 	return (
 		<>
-			<Chip
-				label={`Resterend: ${remainingQty}`}
-				color={remainingQty > 0 ? 'default' : 'warning'}
-				variant="filled"
-				sx={{ fontWeight: 600 }}
-			/>
-
-			<Container maxWidth="lg" sx={{ py: 3 }}>
-				<Grid container spacing={3}>
-					{/* Clock & Controls */}
-					<Grid size={{ xs: 12, md: 7 }}>
-						<Paper variant="outlined" sx={{ p: 2 }}>
-							<Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
-								<Stack spacing={0.5}>
-									<Typography variant="h6">{product}</Typography>
-									<Typography variant="body2" color="text.secondary">
-										Herkomst: {origin} • Kavel: {totalQty} stuks • Min. afname: {minPerBuy} • Stap: {orderStep}
-									</Typography>
-								</Stack>
+			<Container maxWidth="md" sx={{ py: 4 }}>
+				<Box sx={{ display: 'flex', justifyContent: 'center' }}>
+					<Paper variant="outlined" sx={{ p: 4, maxWidth: 600, width: '100%' }}>
+						<Stack spacing={3} alignItems="center">
+							{/* Product Info */}
+							<Stack spacing={1} alignItems="center" sx={{ textAlign: 'center' }}>
+								<Typography variant="h4" fontWeight={600}>
+									{product}
+								</Typography>
+								<Typography variant="body1" color="text.secondary">
+									Soort: {species} • Herkomst: {origin} • Kavel: {totalQty} stuks • Min. afname: {minPerBuy} • Stap: {orderStep}
+								</Typography>
 								<Chip
 									color="primary"
 									variant="outlined"
@@ -267,309 +258,143 @@ export default function AuctionClock() {
 								/>
 							</Stack>
 
-							<Divider sx={{ my: 2 }} />
-
-							<Grid container spacing={2} alignItems="center">
-								<Grid size={{ xs: 12, md: 6 }}>
-									<Box
+							{/* Price Display */}
+							<Box
+								sx={{
+									position: 'relative',
+									display: 'flex',
+									alignItems: 'center',
+									justifyContent: 'center',
+									height: 320,
+								}}
+							>
+								<CircularProgress
+									variant="determinate"
+									value={progressPct}
+									size={280}
+									thickness={5}
+									color={atFloor ? 'warning' : isSoldOut ? 'error' : 'primary'}
+								/>
+								<CircularProgress
+									variant="determinate"
+									value={100}
+									size={300}
+									thickness={1.5}
+									color="inherit"
+									sx={{ position: 'absolute', opacity: 0.25 }}
+								/>
+								<Stack
+									spacing={1}
+									alignItems="center"
+									sx={{ textAlign: 'center', position: 'absolute' }}
+								>
+									<Typography
+										variant="overline"
+										color="text.secondary"
 										sx={{
-											position: 'relative',
-											display: 'flex',
-											alignItems: 'center',
-											justifyContent: 'center',
-											height: 260,
+											textAlign: 'center',
+											width: '100%',
+											display: 'block'
 										}}
 									>
-										<CircularProgress
-											variant="determinate"
-											value={progressPct}
-											size={220}
-											thickness={5}
-											color={atFloor ? 'warning' : 'primary'}
-										/>
-										<CircularProgress
-											variant="determinate"
-											value={100}
-											size={240}
-											thickness={1.5}
-											color="inherit"
-											sx={{ position: 'absolute', opacity: 0.25 }}
-										/>
-										<Stack
-											spacing={1}
-											alignItems="center"
-											sx={{ position: 'absolute', textAlign: 'center' }}
-										>
-											<Typography variant="overline" color="text.secondary">
-												Huidige prijs
-											</Typography>
-											<Typography variant="h2" sx={{ fontWeight: 700 }}>
-												{euro.format(currentPrice)}
-											</Typography>
-											<Typography variant="caption" color="text.secondary">
-												{ticks} tikken • {ticksPerSecond} t/s • stap {euro.format(priceStep)}
-											</Typography>
-										</Stack>
-									</Box>
-								</Grid>
-
-								<Grid size={{ xs: 12, md: 6 }}>
-									<Stack spacing={2}>
-										<Stack direction="row" spacing={1}>
-											<Tooltip title={running ? 'Pauzeer' : 'Start'}>
-												<span>
-													<IconButton
-														color={running ? 'warning' : 'primary'}
-														onClick={handleStartPause}
-														disabled={!running && !canStart}
-														size="large"
-													>
-														{running ? <PauseIcon /> : <PlayArrowIcon />}
-													</IconButton>
-												</span>
-											</Tooltip>
-											<Tooltip title="Reset kavel">
-												<span>
-													<IconButton color="default" onClick={handleReset} size="large">
-														<RestartAltIcon />
-													</IconButton>
-												</span>
-											</Tooltip>
-											<Tooltip title="Koop op huidige prijs">
-												<span>
-													<IconButton
-														color="success"
-														onClick={() => openBuyDialog(false)}
-														disabled={!canBuy || atFloor}
-														size="large"
-													>
-														<ShoppingCartIcon />
-													</IconButton>
-												</span>
-											</Tooltip>
-										</Stack>
-
-										{pausedForSale && remainingQty > 0 && (
-											<Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'action.hover' }}>
-												<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems="center">
-													<Chip
-														color="success"
-														label={`Laat meekopen op ${euro.format(currentPrice)}`}
-														variant="filled"
-													/>
-													<Stack direction="row" spacing={1}>
-														<Button
-															size="small"
-															startIcon={<AddIcon />}
-															onClick={() => openBuyDialog(true)}
-															variant="contained"
-															color="success"
-														>
-															Meekoop toevoegen
-														</Button>
-														<Button
-															size="small"
-															startIcon={<ArrowForwardIcon />}
-															onClick={resumeAfterSales}
-															variant="outlined"
-														>
-															Doorgaan met afklokken
-														</Button>
-														<Button size="small" color="warning" onClick={finishLot}>
-															Kavel afronden
-														</Button>
-													</Stack>
-												</Stack>
-											</Paper>
-										)}
-
-										<Divider />
-
-										<TextField
-											label="Snelheid (tikken/sec)"
-											type="number"
-											value={ticksPerSecond}
-											onChange={(e) => setTicksPerSecond(clamp(Number(e.target.value), 1, 20))}
-											inputProps={{ min: 1, max: 20, step: 1 }}
-											size="small"
-										/>
-										<Slider
-											value={ticksPerSecond}
-											min={1}
-											max={20}
-											step={1}
-											valueLabelDisplay="auto"
-											onChange={(_, v) => setTicksPerSecond(v as number)}
-										/>
-									</Stack>
-								</Grid>
-							</Grid>
-						</Paper>
-					</Grid>
-
-					{/* Settings & Info */}
-					<Grid size={{ xs: 12, md: 5 }}>
-						<Stack spacing={3}>
-							<Paper variant="outlined" sx={{ p: 2 }}>
-								<Typography variant="subtitle1" gutterBottom>
-									Kavelinstellingen
-								</Typography>
-								<Grid container spacing={2}>
-									<Grid size={12}>
-										<TextField
-											fullWidth
-											label="Product"
-											value={product}
-											onChange={(e) => setProduct(e.target.value)}
-										/>
-									</Grid>
-									<Grid size={{ xs: 12, sm: 6 }}>
-										<TextField
-											fullWidth
-											label="Herkomst"
-											value={origin}
-											onChange={(e) => setOrigin(e.target.value)}
-										/>
-									</Grid>
-									<Grid size={{ xs: 6, sm: 3 }}>
-										<TextField
-											fullWidth
-											type="number"
-											label="Kavelomvang"
-											value={totalQty}
-											onChange={(e) => setTotalQty(Math.max(0, Number(e.target.value)))}
-											inputProps={{ min: 0, step: 1 }}
-										/>
-									</Grid>
-									<Grid size={{ xs: 6, sm: 3 }}>
-										<TextField
-											fullWidth
-											type="number"
-											label="Resterend"
-											value={remainingQty}
-											onChange={(e) =>
-												setRemainingQty(clamp(Number(e.target.value), 0, totalQty))
-											}
-											inputProps={{ min: 0, max: totalQty, step: 1 }}
-										/>
-									</Grid>
-									<Grid size={{ xs: 6, sm: 4 }}>
-										<TextField
-											fullWidth
-											type="number"
-											label="Min. afname"
-											value={minPerBuy}
-											onChange={(e) => setMinPerBuy(Math.max(1, Number(e.target.value)))}
-											inputProps={{ min: 1, step: 1 }}
-										/>
-									</Grid>
-									<Grid size={{ xs: 6, sm: 4 }}>
-										<TextField
-											fullWidth
-											type="number"
-											label="Stapgrootte"
-											value={orderStep}
-											onChange={(e) => setOrderStep(Math.max(1, Number(e.target.value)))}
-											inputProps={{ min: 1, step: 1 }}
-										/>
-									</Grid>
-									<Grid size={{ xs: 6, sm: 4 }}>
-										<TextField
-											fullWidth
-											type="number"
-											label="Prijsstap €/tik"
-											value={priceStep}
-											onChange={(e) => setPriceStep(Math.max(0.001, Number(e.target.value)))}
-											InputProps={{
-												startAdornment: <InputAdornment position="start">€</InputAdornment>,
-											}}
-											inputProps={{ min: 0.001, step: 0.001 }}
-										/>
-									</Grid>
-									<Grid size={{ xs: 6, sm: 6 }}>
-										<TextField
-											fullWidth
-											type="number"
-											label="Startprijs €/stuk"
-											value={startPrice}
-											onChange={(e) => setStartPrice(Math.max(0.01, Number(e.target.value)))}
-											InputProps={{
-												startAdornment: <InputAdornment position="start">€</InputAdornment>,
-											}}
-											inputProps={{ min: 0.01, step: 0.01 }}
-										/>
-									</Grid>
-									<Grid size={{ xs: 6, sm: 6 }}>
-										<TextField
-											fullWidth
-											type="number"
-											label="Bodemprijs €/stuk"
-											value={floorPrice}
-											onChange={(e) => setFloorPrice(Math.max(0, Number(e.target.value)))}
-											InputProps={{
-												startAdornment: <InputAdornment position="start">€</InputAdornment>,
-											}}
-											inputProps={{ min: 0, step: 0.01 }}
-										/>
-									</Grid>
-								</Grid>
-							</Paper>
-
-							<Paper variant="outlined" sx={{ p: 2 }}>
-								<Typography variant="subtitle1" gutterBottom>
-									Transacties
-								</Typography>
-								{transactions.length === 0 ? (
-									<Typography variant="body2" color="text.secondary">
-										Nog geen transacties.
+										{isSoldOut ? 'Uitverkocht' : 'Huidige prijs'}
 									</Typography>
-								) : (
-									<Stack spacing={1.5}>
-										{transactions.map((t) => (
-											<Stack
-												key={t.id}
-												direction="row"
-												alignItems="center"
-												justifyContent="space-between"
+									<Typography
+										variant="h1"
+										sx={{
+											fontWeight: 700,
+											textAlign: 'left',
+											width: '100%',
+											display: 'block'
+										}}
+										color={isSoldOut ? 'error' : 'inherit'}
+									>
+										{isSoldOut ? 'Uitverkocht' : euro.format(currentPrice)}
+									</Typography>
+									<Typography
+										variant="caption"
+										color="text.secondary"
+										sx={{
+											textAlign: 'center',
+											width: '100%',
+											display: 'block'
+										}}
+									>
+										{!isSoldOut && `${ticks} tikken • Stap ${euro.format(priceStep)}`}
+									</Typography>
+								</Stack>
+							</Box>
+
+							{/* Purchase Section */}
+							<Stack spacing={3} alignItems="center">
+								{/* Main Purchase Button */}
+								<Box sx={{ textAlign: 'center' }}>
+									<Tooltip title={isSoldOut ? 'Uitverkocht' : 'Koop op huidige prijs'}>
+										<span>
+											<IconButton
+												color={isSoldOut ? 'error' : 'success'}
+												onClick={() => openBuyDialog(false)}
+												disabled={!canBuy || atFloor || isSoldOut}
+												size="large"
 												sx={{
-													p: 1,
-													borderRadius: 1,
-													border: '1px solid',
-													borderColor: 'divider',
-													bgcolor: t.sideBuy ? 'success.50' : 'background.paper',
+													width: 140,
+													height: 140,
+													border: `4px solid`,
+													borderColor: isSoldOut ? 'error.main' : 'success.main',
+													'&:hover': {
+														backgroundColor: isSoldOut ? 'error.light' : 'success.light',
+														borderColor: isSoldOut ? 'error.dark' : 'success.dark',
+													},
 												}}
 											>
-												<Stack direction="row" spacing={1} alignItems="center">
-													<Chip size="small" label={t.buyer} color={t.sideBuy ? 'success' : 'primary'} />
-													<Typography variant="body2">
-														{t.qty} × {euro.format(t.price)} ={' '}
-														<strong>{euro.format(round2(t.qty * t.price))}</strong>
-													</Typography>
-												</Stack>
-												{t.sideBuy && <Chip size="small" label="Meekoop" color="success" variant="outlined" />}
+												<ShoppingCartIcon sx={{ fontSize: 56 }} />
+											</IconButton>
+										</span>
+									</Tooltip>
+									<Typography variant="h5" color={isSoldOut ? 'error' : 'success.main'} sx={{ mt: 2, fontWeight: 600 }}>
+										{isSoldOut ? 'Uitverkocht' : 'Koop Nu'}
+									</Typography>
+								</Box>
+
+								{/* Side Buy Options */}
+								{pausedForSale && remainingQty > 0 && (
+									<Paper variant="outlined" sx={{ p: 3, bgcolor: 'success.50', borderColor: 'success.main', width: '100%' }}>
+										<Stack spacing={3} alignItems="center">
+											<Chip
+												color="success"
+												label={`Meekopen mogelijk: ${euro.format(currentPrice)}`}
+												variant="filled"
+											/>
+											<Stack direction="row" spacing={2} justifyContent="center">
+												<Button
+													size="large"
+													startIcon={<AddIcon />}
+													onClick={() => openBuyDialog(true)}
+													variant="contained"
+													color="success"
+												>
+													Meekopen
+												</Button>
+												<Button
+													size="large"
+													startIcon={<ArrowForwardIcon />}
+													onClick={resumeAfterSales}
+													variant="outlined"
+													color="success"
+												>
+													Doorgaan
+												</Button>
+												<Button size="large" color="warning" onClick={finishLot} variant="outlined">
+													Afronden
+												</Button>
 											</Stack>
-										))}
-										<Divider />
-										<Stack direction="row" justifyContent="space-between">
-											<Typography variant="body2" color="text.secondary">
-												Verkocht totaal:{' '}
-												{transactions.reduce((s, t) => s + t.qty, 0)} / {totalQty}
-											</Typography>
-											<Typography variant="body2" color="text.secondary">
-												Opbrengst:{' '}
-												<strong>
-													{euro.format(
-														round2(transactions.reduce((s, t) => s + t.qty * t.price, 0))
-													)}
-												</strong>
-											</Typography>
 										</Stack>
-									</Stack>
+									</Paper>
 								)}
-							</Paper>
+							</Stack>
 						</Stack>
-					</Grid>
-				</Grid>
+					</Paper>
+				</Box>
 			</Container>
 
 			{/* Purchase dialog */}
@@ -580,8 +405,10 @@ export default function AuctionClock() {
 						<TextField
 							label="Koper"
 							value={buyer}
-							onChange={(e) => setBuyer(e.target.value)}
 							fullWidth
+							InputProps={{
+								readOnly: true,
+							}}
 						/>
 						<TextField
 							label="Aantal"
@@ -604,14 +431,14 @@ export default function AuctionClock() {
 					</Stack>
 				</DialogContent>
 				<DialogActions>
-					<Button onClick={() => setPurchaseOpen(false)}>Annuleren</Button>
+					<Button onClick={() => setPurchaseOpen(false)} disabled={submitting}>Annuleren</Button>
 					<Button
 						onClick={commitPurchase}
 						variant="contained"
-						disabled={Boolean(errors.qty) || buyQty <= 0}
+						disabled={Boolean(errors.qty) || buyQty <= 0 || submitting}
 						color="success"
 					>
-						Bevestig
+						{submitting ? 'Verwerken...' : 'Bevestig'}
 					</Button>
 				</DialogActions>
 			</Dialog>
