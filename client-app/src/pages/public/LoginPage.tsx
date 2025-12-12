@@ -172,17 +172,17 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 
 	return (
 		<div>
-			<Box minHeight="100vh" margin="0" padding="0" paddingTop={"100px"} sx={{ backgroundImage: "url(https://i.ibb.co/n8VVSdL8/flowerfield.avif)", backgroundSize: "cover" }}>
+			<Box minHeight="100vh" margin="0" padding="100px 0" sx={{ backgroundImage: "url(/images/login-background.avif)", backgroundSize: "cover" }}>
 				<Box
 					component="form"
 					onSubmit={handleSubmit}
 					maxWidth="sm"
 					margin="auto"
 					padding="25px"
-					borderRadius={"10px"}
+					borderRadius="10px"
 					sx={(theme) => ({
 						backdropFilter: "blur(50px)",
-						backgroundColor: alpha(theme.palette.background.paper, 0.7)
+						backgroundColor: alpha(theme.palette.background.paper, 0.5)
 					})}
 				>
 					{!isRegisterPage ? (

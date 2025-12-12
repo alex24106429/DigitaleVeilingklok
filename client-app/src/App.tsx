@@ -126,7 +126,7 @@ function AppBarContent() {
 			elevation={0}
 			sx={{
 				backgroundColor: (theme) => isAuthPage
-					? alpha(theme.palette.background.paper, 0.7)
+					? alpha(theme.palette.background.paper, 0.5)
 					: theme.palette.background.default,
 				color: (theme) => theme.palette.text.primary,
 				backdropFilter: isAuthPage ? "blur(50px)" : "none",
