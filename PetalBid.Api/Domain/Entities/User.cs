@@ -6,6 +6,8 @@ namespace PetalBid.Api.Domain.Entities;
 public abstract class User : IdentityUser<int>
 {
 	public string FullName { get; set; } = string.Empty;
-	
+
 	public bool IsDisabled { get; set; }
+
+	public string ProfileImageBase64 { get; set; } = string.Empty;
 }

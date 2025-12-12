@@ -28,4 +28,6 @@ export interface User {
 	isTotpEnabled: boolean;
 	/** Indicates if the user account is disabled. */
 	isDisabled: boolean;
+	/** The Base64 string of the user's profile image (AVIF). */
+	profileImageBase64?: string;
 }

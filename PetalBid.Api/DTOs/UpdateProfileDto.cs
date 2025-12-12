@@ -12,4 +12,6 @@ public class UpdateProfileDto
 	[EmailAddress]
 	[StringLength(255)]
 	public string Email { get; set; } = string.Empty;
+
+	public string? ImageBase64 { get; set; }
 }

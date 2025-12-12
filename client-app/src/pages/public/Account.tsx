@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, ChangeEvent } from 'react';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
@@ -16,6 +16,10 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Switch from '@mui/material/Switch';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Link from '@mui/material/Link';
+import Avatar from '@mui/material/Avatar';
+import IconButton from '@mui/material/IconButton';
+import PhotoCamera from '@mui/icons-material/PhotoCamera';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAlert } from '../../components/AlertProvider';
@@ -39,6 +43,8 @@ export default function Account() {
 	// Profile form state
 	const [fullName, setFullName] = useState('');
 	const [email, setEmail] = useState('');
+	const [imageBase64, setImageBase64] = useState<string | undefined>(undefined);
+	const [imageChanged, setImageChanged] = useState(false);
 	const [savingProfile, setSavingProfile] = useState(false);
 
 	// Password form state
@@ -62,6 +68,8 @@ export default function Account() {
 		if (user) {
 			setFullName(user.fullName);
 			setEmail(user.email);
+			setImageBase64(user.profileImageBase64 || '');
+			setImageChanged(false);
 		}
 	}, [user]);
 
@@ -78,7 +86,7 @@ export default function Account() {
 			navigate({ pathname: location.pathname, search: nextSearch ? `?${nextSearch}` : '' }, { replace: true });
 			void beginTwoFactorSetup();
 		}
-	// eslint-disable-next-line react-hooks/exhaustive-deps
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [location.search, location.pathname, navigate, user]);
 
 	useEffect(() => {
@@ -102,8 +110,26 @@ export default function Account() {
 	}, [setupPayload, showAlert]);
 
 	const profileChanged = useMemo(() => {
-		return user ? (fullName !== user.fullName || email !== user.email) : false;
-	}, [user, fullName, email]);
+		return user ? (fullName !== user.fullName || email !== user.email || imageChanged) : false;
+	}, [user, fullName, email, imageChanged]);
+
+	const handleImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
+		const file = event.target.files?.[0];
+		if (file) {
+			const reader = new FileReader();
+			reader.onloadend = () => {
+				const base64String = reader.result as string;
+				setImageBase64(base64String);
+				setImageChanged(true);
+			};
+			reader.readAsDataURL(file);
+		}
+	};
+
+	const handleRemoveImage = () => {
+		setImageBase64('');
+		setImageChanged(true);
+	};
 
 	const handleSaveProfile = async () => {
 		if (!profileChanged) return;
@@ -118,7 +144,18 @@ export default function Account() {
 		}
 
 		setSavingProfile(true);
-		const res = await authService.updateProfile({ fullName: fullName.trim(), email: email.trim() });
+
+		const payload: { fullName: string; email: string; imageBase64?: string } = {
+			fullName: fullName.trim(),
+			email: email.trim(),
+		};
+
+		// Only include image if it was changed
+		if (imageChanged) {
+			payload.imageBase64 = imageBase64;
+		}
+
+		const res = await authService.updateProfile(payload);
 		setSavingProfile(false);
 
 		if (res.error || !res.data) {
@@ -127,6 +164,7 @@ export default function Account() {
 		}
 
 		updateUser(res.data);
+		setImageChanged(false);
 		showAlert({ title: 'Succes', message: 'Profiel succesvol bijgewerkt.', severity: 'success' });
 	};
 
@@ -236,23 +274,47 @@ export default function Account() {
 				<Typography variant="h6" component="h2" gutterBottom>
 					Profiel
 				</Typography>
-				<Grid container spacing={2}>
-					<Grid size={{ xs: 12, md: 6 }}>
-						<TextField
-							label="Volledige naam"
-							fullWidth
-							value={fullName}
-							onChange={(e) => setFullName(e.target.value)}
-						/>
+				<Grid container spacing={3} alignItems="center">
+					<Grid size={{ xs: 12, sm: 'auto' }}>
+						<Box display="flex" flexDirection="column" alignItems="center" gap={1}>
+							<Avatar
+								src={imageBase64}
+								alt={fullName}
+								sx={{ width: 100, height: 100, fontSize: '2rem' }}
+							>
+								{fullName.charAt(0).toUpperCase()}
+							</Avatar>
+							<Box>
+								<IconButton color="primary" aria-label="upload picture" component="label">
+									<input hidden accept="image/*" type="file" onChange={handleImageUpload} />
+									<PhotoCamera />
+								</IconButton>
+								<IconButton color="error" aria-label="delete picture" onClick={handleRemoveImage} disabled={!imageBase64}>
+									<DeleteIcon />
+								</IconButton>
+							</Box>
+						</Box>
 					</Grid>
-					<Grid size={{ xs: 12, md: 6 }}>
-						<TextField
-							label="E-mail"
-							type="email"
-							fullWidth
-							value={email}
-							onChange={(e) => setEmail(e.target.value)}
-						/>
+					<Grid size={{ xs: 12, sm: "grow" }}>
+						<Grid container spacing={2}>
+							<Grid size={{ xs: 12, md: 6 }}>
+								<TextField
+									label="Volledige naam"
+									fullWidth
+									value={fullName}
+									onChange={(e) => setFullName(e.target.value)}
+								/>
+							</Grid>
+							<Grid size={{ xs: 12, md: 6 }}>
+								<TextField
+									label="E-mail"
+									type="email"
+									fullWidth
+									value={email}
+									onChange={(e) => setEmail(e.target.value)}
+								/>
+							</Grid>
+						</Grid>
 					</Grid>
 				</Grid>
 				<Box mt={2} display="flex" gap={2}>

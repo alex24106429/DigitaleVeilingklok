@@ -3,6 +3,7 @@ import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
+import Avatar from '@mui/material/Avatar';
 import { useTheme, alpha } from '@mui/material/styles';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { PurchaseProvider } from './contexts/PurchaseContext';
@@ -10,7 +11,6 @@ import AppRoutes from './AppRoutes';
 import { UserRole } from './types/user';
 import { AlertProvider } from './components/AlertProvider';
 
-import PersonIcon from '@mui/icons-material/Person';
 import LogoutIcon from '@mui/icons-material/Logout';
 import AvTimerIcon from '@mui/icons-material/AvTimer';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -181,12 +181,18 @@ function AppBarContent() {
 					</>
 				) : (
 					<>
-							<Button color="inherit" component={NavLink} to="/account" sx={appBarButtonSx}>
-								<PersonIcon></PersonIcon>
+						<Button color="inherit" component={NavLink} to="/account" sx={appBarButtonSx}>
+							<Avatar
+								src={user.profileImageBase64}
+								alt={user.fullName}
+								sx={{ width: 24, height: 24, fontSize: '0.8rem', bgcolor: 'primary.main' }}
+							>
+								{user.fullName.charAt(0).toUpperCase()}
+							</Avatar>
 							{user.fullName}
 						</Button>
-							<Button color="inherit" onClick={logout} sx={appBarButtonSx}>
-								<LogoutIcon></LogoutIcon>
+						<Button color="inherit" onClick={logout} sx={appBarButtonSx}>
+							<LogoutIcon></LogoutIcon>
 							Uitloggen
 						</Button>
 					</>

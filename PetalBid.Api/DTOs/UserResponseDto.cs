@@ -10,4 +10,5 @@ public class UserResponseDto
 	public UserRole Role { get; set; }
 	public bool IsTotpEnabled { get; set; }
 	public bool IsDisabled { get; set; }
+	public string ProfileImageBase64 { get; set; } = string.Empty;
 }

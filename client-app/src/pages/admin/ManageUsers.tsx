@@ -10,6 +10,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import TextField from '@mui/material/TextField';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
+import Avatar from '@mui/material/Avatar';
 
 import { User, UserRole } from '../../types/user';
 import { userService } from '../../api/services/userService';
@@ -31,6 +32,17 @@ type DisplayUser = Omit<User, 'role' | 'isDisabled'> & { role: string; isDisable
 // Define table headers for the DisplayUser type
 const headCells: readonly HeadCell<DisplayUser>[] = [
 	{ id: 'id', numeric: true, disablePadding: false, label: 'ID' },
+	{
+		id: 'profileImageBase64',
+		numeric: false,
+		disablePadding: false,
+		label: 'Avatar',
+		format: (value, row) => (
+			<Avatar src={value as string} alt={row.fullName}>
+				{row.fullName.charAt(0).toUpperCase()}
+			</Avatar>
+		)
+	},
 	{ id: 'fullName', numeric: false, disablePadding: false, label: 'Volledige Naam' },
 	{ id: 'email', numeric: false, disablePadding: false, label: 'E-mail' },
 	{ id: 'role', numeric: false, disablePadding: false, label: 'Rol' },

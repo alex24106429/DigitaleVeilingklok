@@ -50,7 +50,7 @@ export interface LoginResponse {
 }
 
 /**
- * Helper interface to handle inconsistent casing from the backend during login 
+ * Helper interface to handle inconsistent casing from the backend during login
  * (e.g. PascalCase vs camelCase serialization).
  */
 export interface BackendLoginResponse {
@@ -63,6 +63,7 @@ export interface BackendLoginResponse {
 export interface UpdateProfileRequest {
 	fullName: string;
 	email: string;
+	imageBase64?: string;
 }
 
 /**

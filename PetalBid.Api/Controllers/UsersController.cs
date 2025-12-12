@@ -1,3 +1,4 @@
+using ImageMagick;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -178,7 +179,7 @@ public class UsersController(
 	public async Task<ActionResult> Logout()
 	{
 		await _signInManager.SignOutAsync();
-		
+
 		var cookieOptions = new CookieOptions
 		{
 			HttpOnly = true,
@@ -210,9 +211,18 @@ public class UsersController(
 			{
 				return BadRequest(new { message = "Uw e-mailadres is al geregistreerd." });
 			}
-			
+
 			await _userManager.SetEmailAsync(user, dto.Email);
 			await _userManager.SetUserNameAsync(user, dto.Email);
+		}
+
+		// Process image if provided and changed
+		if (dto.ImageBase64 != null)
+		{
+			// If empty string, it means delete image. If content, process it.
+			user.ProfileImageBase64 = string.IsNullOrWhiteSpace(dto.ImageBase64)
+				? string.Empty
+				: ProcessAndEncodeImage(dto.ImageBase64);
 		}
 
 		user.FullName = dto.FullName;
@@ -238,7 +248,7 @@ public class UsersController(
 		}
 
 		var result = await _userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
-		
+
 		if (!result.Succeeded)
 		{
 			return BadRequest(new { message = string.Join(", ", result.Errors.Select(e => e.Description)) });
@@ -262,7 +272,7 @@ public class UsersController(
 		var unformattedKey = await _userManager.GetAuthenticatorKeyAsync(user);
 
 		var otpauthUrl = GenerateOtpAuthUri(unformattedKey!, user.Email!, "PetalBid");
-		
+
 		return Ok(new TotpSetupResponseDto { Secret = unformattedKey!, OtpauthUrl = otpauthUrl });
 	}
 
@@ -286,7 +296,7 @@ public class UsersController(
 		}
 
 		await _userManager.SetTwoFactorEnabledAsync(user, true);
-		
+
 		return Ok(await MapUserAsync(user));
 	}
 
@@ -399,7 +409,8 @@ public class UsersController(
 			Email = user.Email!,
 			Role = roleEnum,
 			IsTotpEnabled = user.TwoFactorEnabled,
-			IsDisabled = user.IsDisabled
+			IsDisabled = user.IsDisabled,
+			ProfileImageBase64 = user.ProfileImageBase64
 		};
 	}
 
@@ -458,6 +469,63 @@ public class UsersController(
 		var label = Uri.EscapeDataString($"{issuer}:{email}");
 		var issuerEncoded = Uri.EscapeDataString(issuer);
 		return $"otpauth://totp/{label}?secret={secret}&issuer={issuerEncoded}&digits=6";
+	}
+
+	/// <summary>
+	/// Processes the input base64 string:
+	/// 1. Decodes base64
+	/// 2. Crops to square (center)
+	/// 3. Resizes to max 512x512 for profiles
+	/// 4. Converts to AVIF at 30% quality
+	/// 5. Returns base64 string
+	/// </summary>
+	private static string ProcessAndEncodeImage(string inputBase64)
+	{
+		if (string.IsNullOrWhiteSpace(inputBase64)) return string.Empty;
+
+		try
+		{
+			// Remove data URI prefix if present (e.g. "data:image/png;base64,")
+			var commaIndex = inputBase64.IndexOf(',');
+			var cleanBase64 = commaIndex != -1 ? inputBase64[(commaIndex + 1)..] : inputBase64;
+
+			var imageBytes = Convert.FromBase64String(cleanBase64);
+
+			using var image = new MagickImage(imageBytes);
+
+			// 1. Crop to square (Center)
+			// Explicitly cast to int to avoid long/uint mismatch errors during calculation
+			var width = (int)image.Width;
+			var height = (int)image.Height;
+			var size = Math.Min(width, height);
+
+			if (width != height)
+			{
+				var x = (width - size) / 2;
+				var y = (height - size) / 2;
+
+				// MagickGeometry expects (int x, int y, uint width, uint height)
+				image.Crop(new MagickGeometry(x, y, (uint)size, (uint)size));
+			}
+
+			// 2. Downscale to max 512x512 for profile pictures
+			if (size > 512)
+			{
+				image.Resize(512, 512);
+			}
+
+			// 3. Convert to AVIF with 30% quality
+			image.Format = MagickFormat.Avif;
+			image.Quality = 30;
+
+			// 4. Return as Base64 Data URI
+			return "data:image/avif;base64," + image.ToBase64();
+		}
+		catch (Exception)
+		{
+			// Fallback or error handling: return empty to indicate failure to process
+			return string.Empty;
+		}
 	}
 }
 
