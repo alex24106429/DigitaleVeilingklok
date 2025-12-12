@@ -132,6 +132,7 @@ function AppBarContent() {
 				backdropFilter: isAuthPage ? "blur(50px)" : "none",
 				width: '100%',
 				zIndex: (theme) => theme.zIndex.drawer + 1,
+				borderRadius: isAuthPage ? "0 0 15px 15px" : "none",
 			}}
 		>
 			<Toolbar>
