@@ -1,9 +1,17 @@
+import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import Avatar from '@mui/material/Avatar';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import Divider from '@mui/material/Divider';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 import { useTheme, alpha } from '@mui/material/styles';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { PurchaseProvider } from './contexts/PurchaseContext';
@@ -21,7 +29,8 @@ import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import ShoppingCart from '@mui/icons-material/ShoppingCart';
 import Inventory from '@mui/icons-material/Inventory';
 import Sell from '@mui/icons-material/Sell';
-import { ManageAccounts } from '@mui/icons-material';
+import ManageAccounts from '@mui/icons-material/ManageAccounts';
+import Settings from '@mui/icons-material/Settings';
 
 const footerButtonSx = {
 	transition: 'none',
@@ -54,12 +63,26 @@ function AppBarContent() {
 	const theme = useTheme();
 	const location = useLocation();
 	const userRole = user?.role;
+	const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
 
 	// Check if the current page is Login or Register to adjust styling
 	const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
 
 	const logoSrc = theme.palette.mode === 'dark' ? "/images/logo-petalbid-dark.svg" : "/images/logo-petalbid.svg";
 	const logoSmallSrc = "/images/logo-petalbid-small.svg";
+
+	const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
+		setAnchorElUser(event.currentTarget);
+	};
+
+	const handleCloseUserMenu = () => {
+		setAnchorElUser(null);
+	};
+
+	const handleLogout = () => {
+		handleCloseUserMenu();
+		logout();
+	};
 
 	const renderRoleSpecificLinks = () => {
 		switch (userRole) {
@@ -181,22 +204,77 @@ function AppBarContent() {
 						</Button>
 					</>
 				) : (
-					<>
-						<Button color="inherit" component={NavLink} to="/account" sx={appBarButtonSx}>
-							<Avatar
-								src={user.profileImageBase64}
-								alt={user.fullName}
-								sx={{ width: 24, height: 24, fontSize: '0.8rem', bgcolor: 'primary.main' }}
+					<Box sx={{ flexGrow: 0, ml: 1 }}>
+						<Tooltip title={user.fullName}>
+							<IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
+								<Avatar
+									src={user.profileImageBase64}
+									alt={user.fullName}
+									sx={{ bgcolor: 'primary.main' }}
+								>
+									{user.fullName.charAt(0).toUpperCase()}
+								</Avatar>
+							</IconButton>
+						</Tooltip>
+						<Menu
+							sx={{ mt: '45px' }}
+							id="menu-appbar"
+							anchorEl={anchorElUser}
+							anchorOrigin={{
+								vertical: 'top',
+								horizontal: 'right',
+							}}
+							keepMounted
+							transformOrigin={{
+								vertical: 'top',
+								horizontal: 'right',
+							}}
+							open={Boolean(anchorElUser)}
+							onClose={handleCloseUserMenu}
+							slotProps={{
+								paper: {
+									sx: {
+										borderRadius: "15px",
+									}
+								},
+								list: {
+									sx: {
+										padding: 0
+									}
+								}
+							}}
+						>
+							<Box sx={{ px: 3, pb: 1, pt: 1 }}>
+								<Typography variant="subtitle1" noWrap fontWeight="bold">
+									{user.fullName}
+								</Typography>
+								<Typography variant="body2" color="text.secondary" noWrap>
+									{user.email}
+								</Typography>
+							</Box>
+							<Divider />
+							<MenuItem
+								component={NavLink}
+								to="/account"
+								onClick={handleCloseUserMenu}
+								sx={{ m: 1, borderRadius: '10px' }}
 							>
-								{user.fullName.charAt(0).toUpperCase()}
-							</Avatar>
-							{user.fullName}
-						</Button>
-						<Button color="inherit" onClick={logout} sx={appBarButtonSx}>
-							<LogoutIcon></LogoutIcon>
-							Uitloggen
-						</Button>
-					</>
+								<ListItemIcon sx={{ color: 'text.primary' }}>
+									<Settings fontSize="small" />
+								</ListItemIcon>
+								Instellingen
+							</MenuItem>
+							<MenuItem
+								onClick={handleLogout}
+								sx={{ m: 1, borderRadius: '10px' }}
+							>
+								<ListItemIcon sx={{ color: 'text.primary' }}>
+									<LogoutIcon fontSize="small" />
+								</ListItemIcon>
+								Uitloggen
+							</MenuItem>
+						</Menu>
+					</Box>
 				)}
 			</Toolbar>
 		</AppBar>
