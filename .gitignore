@@ -45,3 +45,7 @@ client-app/dist
 *.tsbuildinfo
 vite.config.js
 vite.config.d.ts
+
+# screenshots
+screenshots/
+*.png
