@@ -1,3 +1,5 @@
+![PetalBid Header](/client-app/public/images/petalbid-header.avif)
+
 # PetalBid
 
 Dit project is de ontwikkeling van een realtime, web-gebaseerde digitale veilingklok. De applicatie wordt gebouwd in opdracht van **jem-id** voor de klant **Royal FloraHolland**. Het doel is om een modern, zelfstandig en gebruiksvriendelijk veilingsysteem te realiseren dat losstaat van de bestaande systemen.
