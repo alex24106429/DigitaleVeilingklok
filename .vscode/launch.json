@@ -1,7 +1,6 @@
 {
 	"version": "0.2.0",
 	"configurations": [
-		
 		{
 			"name": "Frontend",
 			"type": "node-terminal",
@@ -18,12 +17,7 @@
 			"type": "node-terminal",
 			"request": "launch",
 			"command": "dotnet run",
-			"cwd": "${workspaceFolder}/PetalBid.Api",
-			"serverReadyAction": {
-				"pattern": "Now listening on:\\s+https?://(?:localhost|\\[::\\]|0\\.0\\.0\\.0):(\\d+)",
-				"uriFormat": "http://localhost:%s/swagger/index.html",
-				"action": "openExternally"
-			}
+			"cwd": "${workspaceFolder}/PetalBid.Api"
 		},
 		{
 			"name": "Update Database",
@@ -68,7 +62,8 @@
 				"Frontend",
 				"Backend"
 			]
-		},{
+		},
+		{
 			"name": "All Tests",
 			"configurations": [
 				"Frontend Tests",
