@@ -109,6 +109,13 @@ export const getTheme = (mode: PaletteMode) => createTheme({
 				},
 			},
 		},
+		MuiPaper: {
+			styleOverrides: {
+				root: {
+					borderRadius: '15px'
+				}
+			}
+		}
 	}
 });
 

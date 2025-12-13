@@ -65,8 +65,13 @@ function AppBarContent() {
 	const userRole = user?.role;
 	const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
 
-	// Check if the current page is Login or Register to adjust styling
-	const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+	const newUIPages = [
+		'/login',
+		'/register',
+		'/'
+	]
+
+	const isNewUIPage = newUIPages.includes(location.pathname);
 
 	const logoSrc = theme.palette.mode === 'dark' ? "/images/logo-petalbid-dark.svg" : "/images/logo-petalbid.svg";
 	const logoSmallSrc = "/images/logo-petalbid-small.svg";
@@ -145,17 +150,18 @@ function AppBarContent() {
 
 	return (
 		<AppBar
-			position={isAuthPage ? "absolute" : "static"}
+			position={isNewUIPage ? "absolute" : "static"}
 			elevation={0}
 			sx={{
-				backgroundColor: (theme) => isAuthPage
-					? alpha(theme.palette.background.paper, 0.5)
+				backgroundColor: (theme) => isNewUIPage
+					? alpha(theme.palette.background.paper, 0.8)
 					: theme.palette.background.default,
 				color: (theme) => theme.palette.text.primary,
-				backdropFilter: isAuthPage ? "blur(50px)" : "none",
+				backdropFilter: isNewUIPage ? "blur(50px)" : "none",
 				width: '100%',
 				zIndex: (theme) => theme.zIndex.drawer + 1,
-				borderRadius: isAuthPage ? "0 0 15px 15px" : "none",
+				borderRadius: isNewUIPage ? "0 0 15px 15px" : "0px",
+				border: isNewUIPage ? "1px solid rgba(255, 255, 255, 0.1)" : "none",
 			}}
 		>
 			<Toolbar>
@@ -169,6 +175,7 @@ function AppBarContent() {
 							sx={{
 								height: 50,
 								display: { xs: 'none', md: 'block' },
+								filter: theme.palette.mode === 'light' ? "drop-shadow(0 0 15px #ffffff)" : "none"
 							}}
 						/>
 
@@ -179,6 +186,7 @@ function AppBarContent() {
 							sx={{
 								height: 50,
 								display: { xs: 'block', md: 'none' },
+								filter: theme.palette.mode === 'light' ? "drop-shadow(0 0 15px #ffffff)" : "none"
 							}}
 						/>
 					</NavLink>
@@ -233,8 +241,10 @@ function AppBarContent() {
 							onClose={handleCloseUserMenu}
 							slotProps={{
 								paper: {
+									variant: "outlined",
+									elevation: 0,
 									sx: {
-										borderRadius: "15px",
+										borderRadius: "15px"
 									}
 								},
 								list: {
@@ -292,7 +302,7 @@ export default function App() {
 						<AppRoutes></AppRoutes>
 
 						<div style={{ marginTop: 'auto' }}>
-							<Box textAlign="center" padding="20px" bgcolor={theme.palette.mode === 'dark' ? "grey.900" : "primary.100"} color="text.primary">
+							<Box textAlign="center" padding="20px" bgcolor={theme.palette.mode === 'dark' ? "grey.900" : "grey.200"} color="text.primary">
 								&copy; {new Date().getFullYear()} PetalBid. Alle rechten voorbehouden.
 								<Button color="inherit" component={NavLink} to="/privacy" sx={footerButtonSx}>
 									Privacybeleid
