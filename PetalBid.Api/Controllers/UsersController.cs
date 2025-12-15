@@ -33,6 +33,8 @@ public class UsersController(
 	private readonly UserManager<User> _userManager = userManager;
 	private readonly SignInManager<User> _signInManager = signInManager;
 
+	private const string SuperAdminEmail = "administrator@petalbid.bid";
+
 	/// <summary>
 	/// Retrieves all users
 	/// </summary>
@@ -188,16 +190,7 @@ public class UsersController(
 	public async Task<ActionResult> Logout()
 	{
 		await _signInManager.SignOutAsync();
-
-		var cookieOptions = new CookieOptions
-		{
-			HttpOnly = true,
-			Secure = true,
-			SameSite = Request.Host.Host.Contains("localhost") ? SameSiteMode.Lax : SameSiteMode.Lax,
-			Domain = Request.Host.Host.Contains("localhost") ? null : ".petalbid.bid"
-		};
-
-		Response.Cookies.Delete("jwt", cookieOptions);
+		ClearJwtCookie();
 		return Ok(new { message = "Logged out successfully" });
 	}
 
@@ -215,6 +208,18 @@ public class UsersController(
 
 		if (user.Email != dto.Email)
 		{
+			// Prevent changing super admin email
+			if (user.Email!.Equals(SuperAdminEmail, StringComparison.OrdinalIgnoreCase))
+			{
+				return BadRequest(new { message = "Het e-mailadres van de super-beheerder kan niet worden gewijzigd." });
+			}
+
+			// Prevent changing to super admin email
+			if (dto.Email.Equals(SuperAdminEmail, StringComparison.OrdinalIgnoreCase))
+			{
+				return BadRequest(new { message = "Dit e-mailadres is gereserveerd." });
+			}
+
 			var emailExists = await _userManager.FindByEmailAsync(dto.Email);
 			if (emailExists != null && emailExists.Id != user.Id)
 			{
@@ -264,6 +269,35 @@ public class UsersController(
 		}
 
 		return Ok(new { message = "Wachtwoord succesvol gewijzigd." });
+	}
+
+	/// <summary>
+	/// Deletes the authenticated user's account
+	/// </summary>
+	[HttpDelete("me")]
+	[Authorize]
+	public async Task<ActionResult> DeleteMe()
+	{
+		var user = await _userManager.GetUserAsync(User);
+		if (user is null) return Unauthorized();
+
+		// Prevent deleting super admin
+		if (user.Email!.Equals(SuperAdminEmail, StringComparison.OrdinalIgnoreCase))
+		{
+			return BadRequest(new { message = "Het super-admin account kan niet worden verwijderd." });
+		}
+
+		var result = await _userManager.DeleteAsync(user);
+		if (!result.Succeeded)
+		{
+			return BadRequest(new { message = string.Join(", ", result.Errors.Select(e => e.Description)) });
+		}
+
+		// Log out after deletion
+		await _signInManager.SignOutAsync();
+		ClearJwtCookie();
+
+		return NoContent();
 	}
 
 	/// <summary>
@@ -352,6 +386,18 @@ public class UsersController(
 		// Update Email
 		if (user.Email != dto.Email)
 		{
+			// Prevent changing super admin email
+			if (user.Email!.Equals(SuperAdminEmail, StringComparison.OrdinalIgnoreCase))
+			{
+				return BadRequest(new { message = "Het e-mailadres van de super-beheerder kan niet worden gewijzigd." });
+			}
+
+			// Prevent changing to super admin email
+			if (dto.Email.Equals(SuperAdminEmail, StringComparison.OrdinalIgnoreCase))
+			{
+				return BadRequest(new { message = "Dit e-mailadres is gereserveerd." });
+			}
+
 			var conflict = await _userManager.FindByEmailAsync(dto.Email);
 			if (conflict != null && conflict.Id != id)
 			{
@@ -398,6 +444,12 @@ public class UsersController(
 	{
 		var user = await _userManager.FindByIdAsync(id.ToString());
 		if (user is null) return NotFound();
+
+		// Prevent deleting super admin
+		if (user.Email!.Equals(SuperAdminEmail, StringComparison.OrdinalIgnoreCase))
+		{
+			return BadRequest(new { message = "Het super-admin account kan niet worden verwijderd." });
+		}
 
 		await _userManager.DeleteAsync(user);
 		return NoContent();
@@ -471,6 +523,19 @@ public class UsersController(
 		}
 
 		Response.Cookies.Append("jwt", token, cookieOptions);
+	}
+
+	private void ClearJwtCookie()
+	{
+		var cookieOptions = new CookieOptions
+		{
+			HttpOnly = true,
+			Secure = true,
+			SameSite = Request.Host.Host.Contains("localhost") ? SameSiteMode.Lax : SameSiteMode.Lax,
+			Domain = Request.Host.Host.Contains("localhost") ? null : ".petalbid.bid"
+		};
+
+		Response.Cookies.Delete("jwt", cookieOptions);
 	}
 
 	private static string GenerateOtpAuthUri(string secret, string email, string issuer)

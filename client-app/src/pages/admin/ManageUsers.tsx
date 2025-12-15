@@ -16,6 +16,7 @@ import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
+import { useNavigate } from 'react-router-dom';
 
 import { User, UserRole } from '../../types/user';
 import { userService } from '../../api/services/userService';
@@ -61,7 +62,8 @@ const headCells: readonly HeadCell<DisplayUser>[] = [
  */
 export default function ManageUsers() {
 	const { showAlert } = useAlert();
-	const { user: currentUser } = useAuth();
+	const { user: currentUser, logout } = useAuth();
+	const navigate = useNavigate();
 	const [users, setUsers] = useState<User[]>([]);
 	const [loading, setLoading] = useState(true);
 
@@ -110,21 +112,12 @@ export default function ManageUsers() {
 	const handleDelete = async (selectedIds: readonly (string | number)[]) => {
 		if (!currentUser) return;
 
-		// Filter out the current user's ID to prevent self-deletion
-		const idsToDelete = selectedIds.filter(id => id !== currentUser.id);
-
-		if (idsToDelete.length < selectedIds.length) {
-			showAlert({ title: "Actie niet toegestaan", message: "U kunt uw eigen account niet verwijderen.", severity: 'error' });
-		}
-
-		if (idsToDelete.length === 0) return;
-
 		// Confirmation dialog
-		if (!window.confirm(`Weet u zeker dat u ${idsToDelete.length} gebruiker(s) wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.`)) {
+		if (!window.confirm(`Weet u zeker dat u ${selectedIds.length} gebruiker(s) wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.`)) {
 			return;
 		}
 
-		const deletionPromises = idsToDelete.map(id => userService.deleteUser(id as number));
+		const deletionPromises = selectedIds.map(id => userService.deleteUser(id as number));
 		const results = await Promise.all(deletionPromises);
 
 		const failedDeletions = results.filter(res => res.error);
@@ -132,11 +125,18 @@ export default function ManageUsers() {
 		if (failedDeletions.length > 0) {
 			showAlert({
 				title: 'Fout bij verwijderen',
-				message: `Kon ${failedDeletions.length} van de ${idsToDelete.length} gebruiker(s) niet verwijderen. Eerste fout: ${failedDeletions[0].error}`,
+				message: `Kon ${failedDeletions.length} van de ${selectedIds.length} gebruiker(s) niet verwijderen. Eerste fout: ${failedDeletions[0].error}`,
 				severity: 'error'
 			});
 		} else {
-			showAlert({ title: 'Succes', message: `${idsToDelete.length} gebruiker(s) succesvol verwijderd.`, severity: 'success' });
+			showAlert({ title: 'Succes', message: `${selectedIds.length} gebruiker(s) succesvol verwijderd.`, severity: 'success' });
+		}
+
+		// Check if the current admin deleted themselves
+		if (selectedIds.includes(currentUser.id)) {
+			logout();
+			navigate('/');
+			return;
 		}
 
 		// Force refresh to bypass cache after mutation
