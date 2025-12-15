@@ -11,12 +11,18 @@ import TextField from '@mui/material/TextField';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 import Avatar from '@mui/material/Avatar';
+import AddIcon from '@mui/icons-material/Add';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
 
 import { User, UserRole } from '../../types/user';
 import { userService } from '../../api/services/userService';
 import { useAlert } from '../../components/AlertProvider';
 import TableComponent, { HeadCell } from '../../components/TableComponent';
 import { useAuth } from '../../contexts/AuthContext';
+import { RegisterUserRequest } from '../../types/api';
 
 // Helper to map enum to readable string
 const roleNames: { [key in UserRole]: string } = {
@@ -58,6 +64,15 @@ export default function ManageUsers() {
 	const { user: currentUser } = useAuth();
 	const [users, setUsers] = useState<User[]>([]);
 	const [loading, setLoading] = useState(true);
+
+	// Create User Dialog State
+	const [createOpen, setCreateOpen] = useState(false);
+	const [createForm, setCreateForm] = useState<RegisterUserRequest>({
+		fullName: '',
+		email: '',
+		password: '',
+		role: UserRole.Supplier
+	});
 
 	// Edit Dialog State
 	const [editOpen, setEditOpen] = useState(false);
@@ -126,6 +141,34 @@ export default function ManageUsers() {
 
 		// Force refresh to bypass cache after mutation
 		fetchUsers(true);
+	};
+
+	const handleCreateOpen = () => {
+		setCreateForm({
+			fullName: '',
+			email: '',
+			password: '',
+			role: UserRole.Supplier
+		});
+		setCreateOpen(true);
+	};
+
+	const handleCreateSave = async () => {
+		if (!createForm.fullName || !createForm.email || !createForm.password) {
+			showAlert({ title: 'Fout', message: 'Alle velden zijn verplicht.', severity: 'error' });
+			return;
+		}
+
+		const response = await userService.createUser(createForm);
+
+		if (response.data) {
+			showAlert({ title: 'Succes', message: 'Nieuwe gebruiker succesvol aangemaakt.', severity: 'success' });
+			setCreateOpen(false);
+			// Force refresh to update list
+			fetchUsers(true);
+		} else {
+			showAlert({ title: 'Fout', message: response.error || 'Kon gebruiker niet aanmaken.', severity: 'error' });
+		}
 	};
 
 	const handleEdit = (id: string | number) => {
@@ -201,12 +244,24 @@ export default function ManageUsers() {
 
 	return (
 		<Box sx={{ p: 3 }}>
-			<Typography variant="h4" component="h1" gutterBottom>
-				Gebruikersbeheer
-			</Typography>
-			<Typography variant="body1" color="text.secondary" mb={2}>
-				Beheer alle geregistreerde gebruikers. Selecteer rijen om acties uit te voeren, zoals verwijderen of bewerken.
-			</Typography>
+			<Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+				<div>
+					<Typography variant="h4" component="h1" gutterBottom>
+						Gebruikersbeheer
+					</Typography>
+					<Typography variant="body1" color="text.secondary">
+						Beheer alle geregistreerde gebruikers. Selecteer rijen om acties uit te voeren, zoals verwijderen of bewerken.
+					</Typography>
+				</div>
+				<Button
+					variant="contained"
+					startIcon={<AddIcon />}
+					onClick={handleCreateOpen}
+				>
+					Nieuwe Gebruiker
+				</Button>
+			</Box>
+
 			<TableComponent
 				rows={displayUsers}
 				headCells={headCells}
@@ -215,6 +270,54 @@ export default function ManageUsers() {
 				onDelete={handleDelete}
 				onEdit={handleEdit}
 			/>
+
+			{/* Create User Dialog */}
+			<Dialog open={createOpen} onClose={() => setCreateOpen(false)} maxWidth="sm" fullWidth>
+				<DialogTitle>Nieuwe Gebruiker Toevoegen</DialogTitle>
+				<DialogContent>
+					<TextField
+						margin="normal"
+						label="Volledige Naam"
+						fullWidth
+						value={createForm.fullName}
+						onChange={(e) => setCreateForm({ ...createForm, fullName: e.target.value })}
+					/>
+					<TextField
+						margin="normal"
+						label="E-mail"
+						type="email"
+						fullWidth
+						value={createForm.email}
+						onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+					/>
+					<TextField
+						margin="normal"
+						label="Wachtwoord"
+						type="password"
+						fullWidth
+						value={createForm.password}
+						onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+					/>
+					<FormControl fullWidth margin="normal">
+						<InputLabel id="role-select-label">Rol</InputLabel>
+						<Select
+							labelId="role-select-label"
+							value={createForm.role}
+							label="Rol"
+							onChange={(e) => setCreateForm({ ...createForm, role: Number(e.target.value) as UserRole })}
+						>
+							<MenuItem value={UserRole.Supplier}>Leverancier (Grower)</MenuItem>
+							<MenuItem value={UserRole.Buyer}>Koper (Buyer)</MenuItem>
+							<MenuItem value={UserRole.Auctioneer}>Veilingmeester (Auctioneer)</MenuItem>
+							<MenuItem value={UserRole.Admin}>Administrator</MenuItem>
+						</Select>
+					</FormControl>
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={() => setCreateOpen(false)}>Annuleren</Button>
+					<Button onClick={handleCreateSave} variant="contained">Aanmaken</Button>
+				</DialogActions>
+			</Dialog>
 
 			{/* Edit User Dialog */}
 			<Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="sm" fullWidth>

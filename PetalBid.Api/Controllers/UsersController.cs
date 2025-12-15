@@ -78,6 +78,15 @@ public class UsersController(
 	[HttpPost("register")]
 	public async Task<ActionResult<UserResponseDto>> Register(RegisterUserDto registerDto)
 	{
+		// Security check: Only Admins can create Admin or Auctioneer accounts
+		if (registerDto.Role == UserRole.Admin || registerDto.Role == UserRole.Auctioneer)
+		{
+			if (User.Identity?.IsAuthenticated != true || !User.IsInRole("Admin"))
+			{
+				return StatusCode(403, new { message = "Alleen beheerders kunnen Admin- of Veilingmeester-accounts aanmaken." });
+			}
+		}
+
 		if (await _userManager.FindByEmailAsync(registerDto.Email) != null)
 		{
 			return BadRequest(new { message = "Uw e-mailadres is al geregistreerd." });

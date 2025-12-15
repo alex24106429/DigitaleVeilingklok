@@ -1,5 +1,6 @@
 import { api, createCachedResource } from '../client';
 import { User } from '../../types/user';
+import { RegisterUserRequest } from '../../types/api';
 
 const userCache = createCachedResource<User[]>('/users');
 
@@ -9,6 +10,9 @@ const userCache = createCachedResource<User[]>('/users');
 export const userService = {
 	/** Fetches all users. Uses cache unless forced. */
 	getAllUsers: (opts?: { force?: boolean }) => userCache.get(opts?.force),
+
+	/** Creates a new user (Admin only). */
+	createUser: (data: RegisterUserRequest) => api.post<User>('/users/register', data),
 
 	/** Updates a user by ID and invalidates cache. */
 	updateUser: async (id: number, data: Partial<User>) => {

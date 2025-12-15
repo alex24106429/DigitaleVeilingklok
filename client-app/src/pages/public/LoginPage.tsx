@@ -115,12 +115,6 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 				case "buyer":
 					role = UserRole.Buyer;
 					break;
-				case "auctioneer":
-					role = UserRole.Auctioneer;
-					break;
-				case "admin":
-					role = UserRole.Admin;
-					break;
 				case "grower":
 				default:
 					role = UserRole.Supplier;
@@ -241,8 +235,6 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 								>
 									<FormControlLabel value="grower" control={<Radio />} label="Leverancier" />
 									<FormControlLabel value="buyer" control={<Radio />} label="Koper" />
-									<FormControlLabel value="auctioneer" control={<Radio />} label="Veilingmeester" />
-									<FormControlLabel value="admin" control={<Radio />} label="Administrator" />
 								</RadioGroup>
 							</FormControl>
 

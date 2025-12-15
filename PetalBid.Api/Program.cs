@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Npgsql; 
+using Npgsql;
 using PetalBid.Api.Data;
 using PetalBid.Api.Domain.Entities;
 using PetalBid.Api.Services;
@@ -161,7 +161,8 @@ public class Program
 			var services = scope.ServiceProvider;
 			var db = services.GetRequiredService<AppDbContext>();
 			var roleManager = services.GetRequiredService<RoleManager<IdentityRole<int>>>();
-			
+			var userManager = services.GetRequiredService<UserManager<User>>();
+
 			db.Database.EnsureCreated();
 
 			// Seed Roles
@@ -171,6 +172,29 @@ public class Program
 				if (!await roleManager.RoleExistsAsync(roleName))
 				{
 					await roleManager.CreateAsync(new IdentityRole<int>(roleName));
+				}
+			}
+
+			// Seed Default Admin
+			var adminEmail = "administrator@petalbid.bid";
+			var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
+
+			if (existingAdmin == null)
+			{
+				var adminUser = new Admin
+				{
+					FullName = "Administrator",
+					UserName = adminEmail,
+					Email = adminEmail,
+					EmailConfirmed = true,
+					IsDisabled = false
+				};
+
+				var createResult = await userManager.CreateAsync(adminUser, "PetalBid1!");
+
+				if (createResult.Succeeded)
+				{
+					await userManager.AddToRoleAsync(adminUser, "Admin");
 				}
 			}
 		}
