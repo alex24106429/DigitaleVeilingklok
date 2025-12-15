@@ -50,6 +50,9 @@ export const authService = {
 	/** Changes the authenticated user's password. */
 	changePassword: (data: ChangePasswordRequest) => api.put<{ message: string }>('/users/me/password', data),
 
+	/** Deletes the authenticated user's account. */
+	deleteAccount: () => api.delete('/users/me'),
+
 	/** Starts the TOTP setup flow. */
 	beginTotpSetup: () => api.post<TotpSetupResponse>('/users/me/totp/setup'),
 

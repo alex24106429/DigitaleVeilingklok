@@ -20,6 +20,7 @@ import Avatar from '@mui/material/Avatar';
 import IconButton from '@mui/material/IconButton';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import DeleteIcon from '@mui/icons-material/Delete';
+import WarningIcon from '@mui/icons-material/Warning';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAlert } from '../../components/AlertProvider';
@@ -33,7 +34,7 @@ import QRCode from 'qrcode';
  * @returns JSX.Element
  */
 export default function Account() {
-	const { user, updateUser } = useAuth();
+	const { user, updateUser, logout } = useAuth();
 	const { showAlert } = useAlert();
 	const { mode, toggleColorMode } = useColorMode();
 	const location = useLocation();
@@ -63,6 +64,10 @@ export default function Account() {
 	const [twoFactorCode, setTwoFactorCode] = useState('');
 	const [disableCode, setDisableCode] = useState('');
 	const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
+
+	// Delete Account State
+	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+	const [isDeleting, setIsDeleting] = useState(false);
 
 	useEffect(() => {
 		if (user) {
@@ -243,6 +248,21 @@ export default function Account() {
 		setDisableCode('');
 	};
 
+	const handleDeleteAccount = async () => {
+		setIsDeleting(true);
+		const response = await authService.deleteAccount();
+		setIsDeleting(false);
+
+		if (response.error) {
+			showAlert({ title: 'Fout', message: response.error || 'Kon account niet verwijderen.', severity: 'error' });
+			setDeleteDialogOpen(false);
+		} else {
+			showAlert({ title: 'Succes', message: 'Uw account is verwijderd.', severity: 'success' });
+			logout();
+			navigate('/');
+		}
+	};
+
 	return (
 		<Box maxWidth="md" margin="auto" mt={4} px={2}>
 			<Typography variant="h4" component="h1" gutterBottom>
@@ -410,6 +430,28 @@ export default function Account() {
 				</Box>
 			</Paper>
 
+			<Paper variant="outlined" sx={{ p: 3, mb: 4, borderColor: 'error.main' }}>
+				<Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems="flex-start" spacing={2}>
+					<div>
+						<Typography variant="h6" component="h2" gutterBottom color="error">
+							Account Verwijderen
+						</Typography>
+						<Typography variant="body2" color="text.secondary">
+							Wanneer u uw account verwijdert, worden al uw persoonlijke gegevens permanent gewist. Dit kan niet ongedaan worden gemaakt.
+						</Typography>
+					</div>
+					<Button
+						variant="outlined"
+						color="error"
+						onClick={() => setDeleteDialogOpen(true)}
+						sx={{ alignSelf: 'center', whiteSpace: 'nowrap' }}
+					>
+						Account Verwijderen
+					</Button>
+				</Stack>
+			</Paper>
+
+			{/* 2FA Setup Dialog */}
 			<Dialog open={twoFactorDialogOpen} onClose={() => setTwoFactorDialogOpen(false)} maxWidth="sm" fullWidth>
 				<DialogTitle>Scan de QR-code</DialogTitle>
 				<DialogContent dividers>
@@ -460,6 +502,7 @@ export default function Account() {
 				</DialogActions>
 			</Dialog>
 
+			{/* 2FA Disable Dialog */}
 			<Dialog open={disableDialogOpen} onClose={() => setDisableDialogOpen(false)} maxWidth="xs" fullWidth>
 				<DialogTitle>2FA uitschakelen</DialogTitle>
 				<DialogContent dividers>
@@ -483,6 +526,28 @@ export default function Account() {
 						disabled={disableCode.trim().length < 6 || isDisablingTotp}
 					>
 						{isDisablingTotp ? 'Bezig...' : 'Uitschakelen'}
+					</Button>
+				</DialogActions>
+			</Dialog>
+
+			{/* Delete Account Dialog */}
+			<Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+				<DialogTitle>Weet u het zeker?</DialogTitle>
+				<DialogContent>
+					<Typography>
+						U staat op het punt uw account permanent te verwijderen. Deze actie kan niet ongedaan worden gemaakt.
+					</Typography>
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={() => setDeleteDialogOpen(false)}>Annuleren</Button>
+					<Button
+						onClick={handleDeleteAccount}
+						variant="contained"
+						color="error"
+						disabled={isDeleting}
+						startIcon={isDeleting ? <CircularProgress size={20} color="inherit" /> : null}
+					>
+						{isDeleting ? 'Verwijderen...' : 'Ja, verwijder mijn account'}
 					</Button>
 				</DialogActions>
 			</Dialog>
