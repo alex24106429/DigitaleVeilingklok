@@ -383,6 +383,12 @@ public class UsersController(
 		var user = await _userManager.FindByIdAsync(id.ToString());
 		if (user is null) return NotFound();
 
+		// Prevent disabling super admin
+		if (user.Email!.Equals(SuperAdminEmail, StringComparison.OrdinalIgnoreCase) && dto.IsDisabled)
+		{
+			return BadRequest(new { message = "Het super-admin account kan niet worden uitgeschakeld." });
+		}
+
 		// Update Email
 		if (user.Email != dto.Email)
 		{
