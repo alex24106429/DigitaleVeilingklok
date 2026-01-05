@@ -113,10 +113,13 @@ export const AddAuctionModal: React.FC<AddAuctionModalProps> = ({ open, onClose,
 					InputLabelProps={{
 						shrink: true,
 					}}
+					inputProps={{
+						// Prevent selecting past dates/times (local timezone)
+						min: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+					}}
 					error={!!dateError}
 					helperText={dateError}
 				/>
-				{dateError && <Alert severity="error" sx={{ mt: 1 }}>{dateError}</Alert>}
 				<FormControl fullWidth margin="dense" variant="standard">
 					<InputLabel id="clock-location-label">Locatie Veilingklok</InputLabel>
 					<Select
