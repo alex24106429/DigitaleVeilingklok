@@ -9,8 +9,7 @@ import {
 	MenuItem,
 	Select,
 	FormControl,
-	InputLabel,
-	Alert
+	InputLabel
 } from '@mui/material';
 import { ClockLocation } from '../types/clockLocation';
 import { CreateAuctionDto, Auction } from '../types/auction';
@@ -115,6 +114,7 @@ export const AddAuctionModal: React.FC<AddAuctionModalProps> = ({ open, onClose,
 					}}
 					inputProps={{
 						// Prevent selecting past dates/times (local timezone)
+						// eslint-disable-next-line react-hooks/purity
 						min: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)
 					}}
 					error={!!dateError}

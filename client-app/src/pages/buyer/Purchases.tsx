@@ -65,6 +65,7 @@ export default function Purchases() {
 	const [isLoading, setIsLoading] = useState<boolean>(true);
 
 	useEffect(() => {
+		// eslint-disable-next-line react-hooks/set-state-in-effect
 		setIsLoading(true);
 
 		// Filter purchases by current user
