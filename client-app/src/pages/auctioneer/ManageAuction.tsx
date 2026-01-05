@@ -37,11 +37,22 @@ export default function ManageAuction() {
 
 	const [availableProducts, setAvailableProducts] = useState<Product[]>([]);
 	const [linkedProducts, setLinkedProducts] = useState<Product[]>([]);
+	const [allProducts, setAllProducts] = useState<Product[]>([]);
 	const [loadingProducts, setLoadingProducts] = useState(true);
 	const [errorProducts, setErrorProducts] = useState<string | null>(null);
 
 	const [selectedAuction, setSelectedAuction] = useState<Auction | null>(null);
 	const [selectedProductIds, setSelectedProductIds] = useState<number[]>([]);
+
+	// Helper to get YYYY-MM-DD portion of a date string or Date
+	const getDateOnly = (value: string | Date | undefined | null) => {
+		if (!value) return '';
+		if (value instanceof Date) {
+			return value.toISOString().split('T')[0];
+		}
+		const s = value as string;
+		return s.includes('T') ? s.split('T')[0] : s;
+	};
 
 	// Fetch auctions
 	useEffect(() => {
@@ -57,6 +68,13 @@ export default function ManageAuction() {
 		};
 
 		fetchAuctions();
+
+		// Also fetch all products for counts and quick filtering
+		const fetchAllProducts = async () => {
+			const res = await productService.getMyProducts({ force: true });
+			if (res.data) setAllProducts(res.data);
+		};
+		void fetchAllProducts();
 	}, []);
 
 
@@ -73,10 +91,18 @@ export default function ManageAuction() {
 				return;
 			}
 
-			const response = await productService.getMyProducts();
+			const auctionDateOnly = getDateOnly(selectedAuction.startsAt);
+
+			const response = await productService.getMyProducts({ force: true });
 			if (response.data) {
-				setAvailableProducts(response.data.filter(p => !p.auctionId)); // Products not linked to any auction
-				setLinkedProducts(response.data.filter(p => p.auctionId === selectedAuction.id)); // Products linked to the current auction
+				// Show only products with saleDate matching the auction date
+				setAvailableProducts(
+					response.data.filter(p => !p.auctionId && getDateOnly(p.saleDate) === auctionDateOnly)
+				);
+				// Show all linked products regardless of saleDate
+				setLinkedProducts(
+					response.data.filter(p => p.auctionId === selectedAuction.id)
+				);
 			} else if (response.error) {
 				setErrorProducts(response.error);
 			}
@@ -135,6 +161,8 @@ export default function ManageAuction() {
 		for (const productId of selectedProductIds) {
 			const productToUpdate = availableProducts.find(p => p.id === productId);
 			if (productToUpdate) {
+				// Ensure product saleDate aligns with auction date by setting it
+				const auctionDateOnly = getDateOnly(selectedAuction.startsAt);
 				const productDto = {
 					name: productToUpdate.name,
 					weight: productToUpdate.weight,
@@ -145,11 +173,14 @@ export default function ManageAuction() {
 					potSize: productToUpdate.potSize,
 					stemLength: productToUpdate.stemLength,
 					auctionId: selectedAuction.id,
+					saleDate: auctionDateOnly,
 				};
 				const response = await productService.updateProduct(productId, productDto);
 				if (response.data) {
 					console.log(`Product ${productId} linked to auction ${selectedAuction.id}`);
 					successfulLinks.push(response.data);
+					// Update allProducts for counts
+					setAllProducts(prev => prev.map(p => p.id === response.data!.id ? response.data! : p));
 				} else if (response.error) {
 					console.error(`Error linking product ${productId}:`, response.error);
 					failedLinks.push(productToUpdate.name);
@@ -203,6 +234,8 @@ export default function ManageAuction() {
 				console.log(`Product ${productId} unlinked from auction ${selectedAuction.id}`);
 				setLinkedProducts((prev) => prev.filter((p) => p.id !== productId));
 				setAvailableProducts((prev) => [...prev, response.data!]); // Add back to available products
+				// Update allProducts for counts
+				setAllProducts(prev => prev.map(p => p.id === response.data!.id ? response.data! : p));
 				showAlert({
 					title: 'Succes',
 					message: `Product "${productToUpdate.name}" succesvol ontkoppeld van de veiling.`,
@@ -240,16 +273,18 @@ export default function ManageAuction() {
 				setLinkedProducts((prev) =>
 					prev.map((p) => (p.id === productId ? { ...p, maxPricePerUnit: newPrice } : p))
 				);
+				// Update allProducts for counts
+				setAllProducts(prev => prev.map(p => p.id === response.data!.id ? { ...p, maxPricePerUnit: newPrice } : p));
 				showAlert({
 					title: 'Succes',
-					message: `Maximumprijs voor "${productToUpdate.name}" succesvol bijgewerkt naar €${newPrice.toFixed(2)}.`,
+					message: `Start prijs voor "${productToUpdate.name}" succesvol bijgewerkt naar €${newPrice.toFixed(2)}.`,
 					severity: 'success'
 				});
 			} else if (response.error) {
 				console.error(`Error updating max price for product ${productId}:`, response.error);
 				showAlert({
 					title: 'Fout',
-					message: `Kon maximumprijs voor "${productToUpdate.name}" niet bijwerken.`,
+					message: `Kon start prijs voor "${productToUpdate.name}" niet bijwerken.`,
 					severity: 'error'
 				});
 			}
@@ -322,7 +357,11 @@ export default function ManageAuction() {
 										<Typography variant="h6">{auction.description}</Typography>
 										<Typography>Starttijd: {new Date(auction.startsAt).toLocaleString()}</Typography>
 										<Typography>Status: {AuctionStatus[auction.status]}</Typography>
-										<Typography>Aantal gekoppelde producten: {linkedProducts.length}</Typography>
+										<Typography>
+											Aantal gekoppelde producten: {
+												allProducts.filter(p => p.auctionId === auction.id).length
+											}
+										</Typography>
 
 									</Button>
 								</Grid>

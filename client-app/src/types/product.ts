@@ -26,4 +26,6 @@ export interface Product {
 	auctionId?: number;
 	/** The maximum price per unit that a buyer can bid for the product in an auction. */
 	maxPricePerUnit?: number;
+	/** The date when the product is available for sale. */
+	saleDate?: string;
 }
