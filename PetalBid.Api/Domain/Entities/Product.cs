@@ -22,4 +22,7 @@ public class Product
 
 	// Maximum price per unit that a buyer can bid for the product in an auction
 	public double? MaxPricePerUnit { get; set; }
+
+	// Date when the product is available for sale
+	public DateTime? SaleDate { get; set; }
 }

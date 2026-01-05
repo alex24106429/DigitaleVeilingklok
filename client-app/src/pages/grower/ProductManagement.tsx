@@ -14,22 +14,22 @@ import { productService, ProductDto } from '../../api/services/productService';
 
 const headCells: readonly HeadCell<Product>[] = [
 	{ id: 'id', numeric: true, disablePadding: false, label: 'ID' },
-	{ 
-		id: 'imageBase64', 
-		numeric: false, 
-		disablePadding: true, 
+	{
+		id: 'imageBase64',
+		numeric: false,
+		disablePadding: true,
 		label: 'Afbeelding',
 		format: (value) => value ? (
-			<Box 
-				component="img" 
-				src={value as string} 
-				alt="product" 
-				sx={{ 
-					height: '64px', 
-					width: '64px', 
-					objectFit: 'cover', 
-					borderRadius: 1 
-				}} 
+			<Box
+				component="img"
+				src={value as string}
+				alt="product"
+				sx={{
+					height: '64px',
+					width: '64px',
+					objectFit: 'cover',
+					borderRadius: 1
+				}}
 			/>
 		) : (
 			<Typography variant="caption" color="text.secondary">Geen</Typography>
@@ -39,6 +39,11 @@ const headCells: readonly HeadCell<Product>[] = [
 	{ id: 'species', numeric: false, disablePadding: false, label: 'Soort' },
 	{ id: 'stock', numeric: true, disablePadding: false, label: 'Voorraad' },
 	{ id: 'minimumPrice', numeric: true, disablePadding: false, label: 'Min. Prijs (€)' },
+	{
+		id: 'saleDate', numeric: false, disablePadding: false, label: 'Verkoopdatum', format: (value) => value ? new Date(value as string).toLocaleDateString('nl-NL') : (
+			<Typography variant="caption" color="text.secondary">Geen</Typography>
+		)
+	},
 	{ id: 'auctionId', numeric: true, disablePadding: false, label: 'Veiling ID' },
 ];
 
@@ -51,6 +56,7 @@ const initialFormData: ProductDto = {
 	minimumPrice: 0.01,
 	potSize: undefined,
 	stemLength: undefined,
+	saleDate: undefined,
 };
 /**
  * Manages the products for the grower, including creating, updating, and deleting products.
@@ -86,7 +92,9 @@ export default function ProductManagement() {
 		if (product) {
 			// eslint-disable-next-line @typescript-eslint/no-unused-vars
 			const { id, supplierId, auctionId, ...dto } = product;
-			setFormData(dto);
+			// Ensure saleDate is in YYYY-MM-DD format for date input
+			const formattedSaleDate = dto.saleDate ? dto.saleDate.split('T')[0] : undefined;
+			setFormData({ ...dto, saleDate: formattedSaleDate });
 		} else {
 			setFormData(initialFormData);
 		}
@@ -209,18 +217,18 @@ export default function ProductManagement() {
 						<Grid size={{ xs: 12, sm: 6 }}>
 							<TextField name="species" label="Soort" value={formData.species} onChange={handleFormChange} fullWidth />
 						</Grid>
-						
+
 						{/* Image Upload Section */}
 						<Grid size={12}>
 							<Box sx={{ border: '1px dashed grey', p: 2, textAlign: 'center', borderRadius: 2 }}>
 								{formData.imageBase64 ? (
 									<Box position="relative" display="inline-block">
-										<img 
-											src={formData.imageBase64} 
-											alt="Preview" 
-											style={{ maxHeight: '200px', maxWidth: '100%', objectFit: 'contain' }} 
+										<img
+											src={formData.imageBase64}
+											alt="Preview"
+											style={{ maxHeight: '200px', maxWidth: '100%', objectFit: 'contain' }}
 										/>
-										<IconButton 
+										<IconButton
 											onClick={handleRemoveImage}
 											color="error"
 											sx={{ position: 'absolute', top: 0, right: 0, bgcolor: 'rgba(255,255,255,0.7)' }}
@@ -260,6 +268,18 @@ export default function ProductManagement() {
 						</Grid>
 						<Grid size={{ xs: 6, sm: 3 }}>
 							<TextField name="stemLength" label="Steellengte (cm)" type="number" value={formData.stemLength || ''} onChange={handleFormChange} fullWidth inputProps={{ min: 0 }} />
+						</Grid>
+						<Grid size={{ xs: 12, sm: 6 }}>
+							<TextField
+								name="saleDate"
+								label="Verkoopdatum"
+								type="date"
+								value={formData.saleDate || ''}
+								onChange={handleFormChange}
+								fullWidth
+								InputLabelProps={{ shrink: true }}
+								inputProps={{ min: new Date().toISOString().split('T')[0] }}
+							/>
 						</Grid>
 					</Grid>
 				</DialogContent>

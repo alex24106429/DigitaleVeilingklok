@@ -261,9 +261,9 @@ export const ProductManagementModal: React.FC<ProductManagementModalProps> = ({
 								<Typography variant="subtitle1">
 									{product.name} (ID: {product.id})
 								</Typography>
-								<Typography variant="body2">Huidige Maximumprijs: {product.maxPricePerUnit ?? 'Niet ingesteld'}</Typography>
+								<Typography variant="body2">Huidige Startprijs: {product.maxPricePerUnit ?? 'Niet ingesteld'}</Typography>
 								<TextField
-									label="Maximumprijs"
+									label="Start Prijs"
 									type="number"
 									value={product.maxPricePerUnit ?? ''}
 									onChange={(e) => onMaxPriceChange(product.id, parseFloat(e.target.value))}

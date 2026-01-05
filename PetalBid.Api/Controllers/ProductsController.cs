@@ -85,6 +85,7 @@ public class ProductsController(AppDbContext db) : ApiControllerBase(db)
 			StemLength = productDto.StemLength,
 			Stock = productDto.Stock,
 			MinimumPrice = productDto.MinimumPrice,
+			SaleDate = productDto.SaleDate,
 			SupplierId = userId,
 			AuctionId = null
 		};
@@ -129,6 +130,7 @@ public class ProductsController(AppDbContext db) : ApiControllerBase(db)
 		existing.MinimumPrice = updatedDto.MinimumPrice;
 		existing.AuctionId = updatedDto.AuctionId;
 		existing.MaxPricePerUnit = updatedDto.MaxPricePerUnit;
+		existing.SaleDate = updatedDto.SaleDate;
 
 		await Db.SaveChangesAsync();
 		return Ok(existing);
