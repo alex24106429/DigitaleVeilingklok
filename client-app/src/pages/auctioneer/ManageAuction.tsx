@@ -197,11 +197,11 @@ export default function ManageAuction() {
 
 		// Show alerts
 		if (successfulLinks.length > 0) {
-				showAlert({
-					title: 'Succes',
-					message: `${successfulLinks.length} product(en) succesvol gekoppeld aan de veiling.`,
-					severity: 'success'
-				});
+			showAlert({
+				title: 'Succes',
+				message: `${successfulLinks.length} product(en) succesvol gekoppeld aan de veiling.`,
+				severity: 'success'
+			});
 		}
 
 		if (failedLinks.length > 0) {
