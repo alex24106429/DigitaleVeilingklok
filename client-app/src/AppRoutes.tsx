@@ -7,7 +7,6 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { UserRole } from "./types/user";
 
 // Eagerly loaded components (for frequently accessed pages or pages with complex dependencies)
-import ManageAuction from "./pages/auctioneer/ManageAuction";
 import Account from "./pages/public/Account";
 import ProductManagement from "./pages/grower/ProductManagement";
 import Sales from "./pages/grower/Sales";
@@ -51,7 +50,6 @@ const titleMap: { [key: string]: string } = {
 
 	// Auctioneer
 	"/auctioneer/dashboard": "Dashboard",
-	"/auctioneer/manageauction": "Veilingbeheer",
 
 	// Admin
 	"/admin/manageusers": "Gebruikerbeheer",
@@ -128,11 +126,6 @@ export default function AppRoutes() {
 				<Route path="/auctioneer/dashboard" element={
 					<ProtectedRoute allowedRoles={[UserRole.Auctioneer]}>
 						<AuctioneerDashboard />
-					</ProtectedRoute>
-				} />
-				<Route path="/auctioneer/manageauction" element={
-					<ProtectedRoute allowedRoles={[UserRole.Auctioneer]}>
-						<ManageAuction />
 					</ProtectedRoute>
 				} />
 

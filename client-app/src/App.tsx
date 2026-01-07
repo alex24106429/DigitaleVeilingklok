@@ -24,7 +24,6 @@ import AvTimerIcon from '@mui/icons-material/AvTimer';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import HomeIcon from '@mui/icons-material/Home';
 import LoginIcon from '@mui/icons-material/Login';
-import Gavel from '@mui/icons-material/Gavel';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import ShoppingCart from '@mui/icons-material/ShoppingCart';
 import Inventory from '@mui/icons-material/Inventory';
@@ -113,10 +112,6 @@ function AppBarContent() {
 						<Button color="inherit" component={NavLink} to="/auctioneer/dashboard" end sx={appBarButtonSx}>
 							<DashboardIcon />
 							Dashboard
-						</Button>
-						<Button color="inherit" component={NavLink} to="/auctioneer/manageauction" end sx={appBarButtonSx}>
-							<Gavel />
-							Veilingbeheer
 						</Button>
 					</>
 				);
