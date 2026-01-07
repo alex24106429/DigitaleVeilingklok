@@ -9,4 +9,6 @@ export interface Purchase {
 	purchasePrice: number;
 	purchaseDate: string;
 	sideBuy: boolean;
+	sold?: boolean;
+	buyer?: string;
 }
