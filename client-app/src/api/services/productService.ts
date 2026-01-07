@@ -1,5 +1,5 @@
 import { api, createCachedResource } from '../client';
-import { Product } from '../../types/product';
+import { Product, ProductHistory } from '../../types/product';
 
 /** DTO for creating/updating a product. */
 export type ProductDto = Omit<Product, 'id' | 'supplierId' | 'supplier' | 'auction'>;
@@ -12,6 +12,9 @@ const productCache = createCachedResource<Product[]>('/products');
 export const productService = {
 	/** Fetches all products. Uses cache unless forced. */
 	getMyProducts: (opts?: { force?: boolean }) => productCache.get(opts?.force),
+
+	/** Fetches the price history for a specific product ID. */
+	getProductHistory: (id: number) => api.get<ProductHistory>(`/products/${id}/history`),
 
 	/** Creates a new product and invalidates cache. */
 	createProduct: async (data: ProductDto) => {

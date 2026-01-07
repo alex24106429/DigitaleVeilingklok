@@ -3,60 +3,86 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PetalBid.Api.Data;
 using PetalBid.Api.Domain.Entities;
+using System.Security.Claims;
 
 namespace PetalBid.Api.Controllers;
-/// <summary>
-/// Controller for "Sale" 
-/// </summary>
 
+/// <summary>
+/// Controller for "Sale" entities and history
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin,Buyer")]
+[Authorize]
 public class SalesController(AppDbContext db) : ApiControllerBase(db)
 {
 	/// <summary>
-	/// Retrieves all "Sales"
+	/// Retrieves Sales based on user role (History).
+	/// Returns a simplified DTO structure for the frontend table.
 	/// </summary>
-
 	[HttpGet]
-	public async Task<ActionResult<List<Sale>>> GetAll()
+	public async Task<ActionResult<List<SaleHistoryDto>>> GetAll()
 	{
-		var sales = await Db.Sales.AsNoTracking().ToListAsync();
-		return Ok(sales);
-	}
-	/// <summary>
-	/// Retrieves a specific "Sale"
-	/// </summary>
+		var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+		if (userIdString == null) return Unauthorized();
+		var userId = int.Parse(userIdString);
+		var role = User.FindFirstValue(ClaimTypes.Role);
 
-	[HttpGet("{id:int}")]
-	public async Task<ActionResult<Sale>> GetById(int id)
-	{
-		var sale = await Db.Sales.AsNoTracking().FirstOrDefaultAsync(s => s.Id == id);
-		return sale is null ? NotFound() : Ok(sale);
-	}
-	/// <summary>
-	/// Creates a new "Sale"
-	/// </summary>
+		// We need to fetch sales and join with SaleItems/Products to give details
+		var query = Db.Sales
+			.Include(s => s.Buyer)
+			.Include(s => s.Auction)
+			.AsNoTracking();
 
-	[HttpPost]
-	public async Task<ActionResult<Sale>> Create(Sale sale)
-	{
-		Db.Sales.Add(sale);
-		await Db.SaveChangesAsync();
-		return CreatedAtAction(nameof(GetById), new { id = sale.Id }, sale);
-	}
-	/// <summary>
-	/// Deletes an existing "Sale"
-	/// </summary>
+		// Flatten the data. A sale might have multiple items, but for "Purchases.tsx"
+		// we usually list transactions. One sale = one transaction for simplicity here,
+		// or we list SaleItems. The frontend expects rows like "Product Name, Qty, Price".
+		// So we should query SaleItems directly.
 
-	[HttpDelete("{id:int}")]
-	public async Task<ActionResult> Delete(int id)
-	{
-		var sale = await Db.Sales.FindAsync(id);
-		if (sale is null) return NotFound();
+		var itemsQuery = Db.SaleItems
+			.Include(si => si.Sale)
+				.ThenInclude(s => s.Buyer)
+			.Include(si => si.Product)
+				.ThenInclude(p => p.Supplier)
+			.AsNoTracking();
 
-		Db.Sales.Remove(sale);
-		await Db.SaveChangesAsync();
-		return NoContent();
+		if (role == "Buyer")
+		{
+			itemsQuery = itemsQuery.Where(si => si.Sale.BuyerId == userId);
+		}
+		else if (role == "Supplier")
+		{
+			itemsQuery = itemsQuery.Where(si => si.Product.SupplierId == userId);
+		}
+		// Admin sees all
+
+		var items = await itemsQuery.OrderByDescending(si => si.Sale.OccurredAt).ToListAsync();
+
+		var history = items.Select(si => new SaleHistoryDto
+		{
+			Id = si.Id, // Use SaleItem ID as the unique row ID
+			ProductName = si.Product.Name,
+			Species = si.Product.Species,
+			Origin = "Unknown", // Add origin to product entity if needed later
+			Quantity = si.Quantity,
+			PurchasePrice = (double)si.UnitPrice / 100.0, // Convert cents to eur
+			PurchaseDate = si.Sale.OccurredAt,
+			BuyerName = si.Sale.Buyer.FullName,
+			SideBuy = false // Logic for side buy if stored
+		}).ToList();
+
+		return Ok(history);
 	}
+}
+
+public class SaleHistoryDto
+{
+	public int Id { get; set; }
+	public string ProductName { get; set; } = string.Empty;
+	public string Species { get; set; } = string.Empty;
+	public string Origin { get; set; } = string.Empty;
+	public int Quantity { get; set; }
+	public double PurchasePrice { get; set; }
+	public DateTime PurchaseDate { get; set; }
+	public string BuyerName { get; set; } = string.Empty;
+	public bool SideBuy { get; set; }
 }

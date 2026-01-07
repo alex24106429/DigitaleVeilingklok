@@ -29,3 +29,19 @@ export interface Product {
 	/** The date when the product is available for sale. */
 	saleDate?: string;
 }
+
+export interface HistoryItem {
+	price: number;
+	date: string;
+}
+
+export interface SupplierHistoryStats {
+	averagePrice: number;
+	last10Sales: HistoryItem[];
+}
+
+export interface ProductHistory {
+	species: string;
+	supplierStats: SupplierHistoryStats;
+	marketStats: SupplierHistoryStats;
+}

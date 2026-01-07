@@ -32,4 +32,7 @@ export const auctionService = {
 
 	/** Ends an auction by ID. */
 	endAuction: (id: number) => api.post<null>(`/auctions/${id}/end`),
+
+	/** Moves to the next lot in an auction by ID. */
+	nextLot: (id: number) => api.post<null>(`/auctions/${id}/next`),
 };

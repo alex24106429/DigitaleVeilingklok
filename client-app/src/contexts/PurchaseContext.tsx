@@ -4,7 +4,6 @@ import { Purchase } from '../types/purchase';
 interface PurchaseContextType {
 	purchases: Purchase[];
 	addPurchase: (purchase: Purchase) => void;
-	updatePurchase: (updatedPurchase: Purchase) => void;
 	getPurchasesByUser: (userId: string) => Purchase[];
 	clearPurchases: () => void;
 }
@@ -25,14 +24,6 @@ export function PurchaseProvider({ children }: PurchaseProviderProps) {
 		setPurchases(prev => [...prev, purchase]);
 	};
 
-	const updatePurchase = (updatedPurchase: Purchase) => {
-		setPurchases(prev =>
-			prev.map(purchase =>
-				purchase.id === updatedPurchase.id ? updatedPurchase : purchase
-			)
-		);
-	};
-
 	const getPurchasesByUser = (userId: string) => {
 		return purchases.filter(purchase => purchase.userId === userId);
 	};
@@ -44,7 +35,6 @@ export function PurchaseProvider({ children }: PurchaseProviderProps) {
 	const value: PurchaseContextType = {
 		purchases,
 		addPurchase,
-		updatePurchase,
 		getPurchasesByUser,
 		clearPurchases,
 	};

@@ -7,7 +7,7 @@ using System.Text.Json;
 namespace PetalBid.Api.Data;
 
 // Inherit from IdentityDbContext to include User, Role, and Claim tables
-public class AppDbContext(DbContextOptions<AppDbContext> options) 
+public class AppDbContext(DbContextOptions<AppDbContext> options)
 	: IdentityDbContext<User, IdentityRole<int>, int>(options)
 {
 	// TPT Subclasses
@@ -75,6 +75,17 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 			.WithMany()
 			.HasForeignKey(i => i.ProductId)
 			.OnDelete(DeleteBehavior.Cascade);
+
+		// Performance Indexes for Price History
+		// We query heavily on Species for aggregations
+		model.Entity<Product>()
+			.HasIndex(p => p.Species)
+			.HasDatabaseName("IX_Products_Species");
+
+		// We also query Sales by Date for the "Last 10" history
+		model.Entity<Sale>()
+			.HasIndex(s => s.OccurredAt)
+			.HasDatabaseName("IX_Sales_OccurredAt");
 	}
 
 	private void AddAuditEntries()
@@ -91,7 +102,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 		foreach (var entry in entries)
 		{
 			// Skip Identity tables if desired, or keep them for full audit
-			
+
 			var pk = entry.Properties.Where(p => p.Metadata.IsPrimaryKey()).ToDictionary(p => p.Metadata.Name, p => p.CurrentValue);
 
 			var audit = new AuditLog

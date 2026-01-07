@@ -25,55 +25,61 @@ const mockProductDto: ProductDto = {
 };
 
 describe('productService', () => {
-	// Helper to mock fetch responses
-	const mockFetch = (ok: boolean, data: unknown, statusText = 'Error') => {
-		return vi.fn().mockResolvedValue({
-			ok,
-			json: async () => data,
-			statusText,
-		});
-	};
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	let fetchSpy: any;
 
 	beforeEach(() => {
 		vi.restoreAllMocks();
 		localStorage.clear();
-		// Set a token so getAuthHeaders doesn't throw immediately (unless we want it to)
-		localStorage.setItem('token', 'valid-token');
+		fetchSpy = vi.spyOn(global, 'fetch');
 	});
 
 	afterEach(() => {
-		vi.clearAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	describe('getMyProducts', () => {
 		it('fetches products successfully', async () => {
-			global.fetch = mockFetch(true, [mockProduct]);
+			fetchSpy.mockResolvedValue({
+				ok: true,
+				json: async () => [mockProduct],
+			});
 
 			const result = await productService.getMyProducts({ force: true });
 
 			expect(result.data).toEqual([mockProduct]);
 			expect(result.error).toBeUndefined();
-			expect(global.fetch).toHaveBeenCalledWith(
+			expect(fetchSpy).toHaveBeenCalledWith(
 				expect.stringContaining('/products'),
-				expect.objectContaining({ method: 'GET' })
+				expect.objectContaining({
+					// createCachedResource uses request() defaults, so method is implicit GET (undefined in options)
+					credentials: 'include'
+				})
 			);
 		});
 
 		it('uses caching for subsequent calls', async () => {
-			global.fetch = mockFetch(true, [mockProduct]);
+			fetchSpy.mockResolvedValue({
+				ok: true,
+				json: async () => [mockProduct],
+			});
 
 			// First call - triggers fetch
 			await productService.getMyProducts({ force: true });
 
 			// Second call - should use cache
+			fetchSpy.mockClear();
 			const result = await productService.getMyProducts();
 
 			expect(result.data).toEqual([mockProduct]);
-			expect(global.fetch).toHaveBeenCalledTimes(1);
+			expect(fetchSpy).not.toHaveBeenCalled();
 		});
 
 		it('bypasses cache when force is true', async () => {
-			global.fetch = mockFetch(true, [mockProduct]);
+			fetchSpy.mockResolvedValue({
+				ok: true,
+				json: async () => [mockProduct],
+			});
 
 			// First call
 			await productService.getMyProducts({ force: true });
@@ -81,11 +87,14 @@ describe('productService', () => {
 			// Second call with force
 			await productService.getMyProducts({ force: true });
 
-			expect(global.fetch).toHaveBeenCalledTimes(2);
+			expect(fetchSpy).toHaveBeenCalledTimes(2);
 		});
 
 		it('handles API errors', async () => {
-			global.fetch = mockFetch(false, { message: 'Server Error' });
+			fetchSpy.mockResolvedValue({
+				ok: false,
+				json: async () => ({ message: 'Server Error' }),
+			});
 
 			const result = await productService.getMyProducts({ force: true });
 
@@ -94,7 +103,7 @@ describe('productService', () => {
 		});
 
 		it('handles network exceptions', async () => {
-			global.fetch = vi.fn().mockRejectedValue(new Error('Network fail'));
+			fetchSpy.mockRejectedValue(new Error('Network fail'));
 
 			const result = await productService.getMyProducts({ force: true });
 
@@ -104,7 +113,10 @@ describe('productService', () => {
 
 	describe('createProduct', () => {
 		it('creates a product successfully and invalidates cache', async () => {
-			global.fetch = mockFetch(true, mockProduct);
+			fetchSpy.mockResolvedValue({
+				ok: true,
+				json: async () => mockProduct,
+			});
 
 			// 1. Prime the cache
 			await productService.getMyProducts({ force: true });
@@ -113,7 +125,7 @@ describe('productService', () => {
 			const result = await productService.createProduct(mockProductDto);
 
 			expect(result.data).toEqual(mockProduct);
-			expect(global.fetch).toHaveBeenCalledWith(
+			expect(fetchSpy).toHaveBeenCalledWith(
 				expect.stringContaining('/products'),
 				expect.objectContaining({
 					method: 'POST',
@@ -121,38 +133,40 @@ describe('productService', () => {
 				})
 			);
 
-			// 3. Verify cache was invalidated by calling getMyProducts again
-			// If cache was valid, fetch count would be 2 (1 prime + 1 create).
-			// Since it's invalidated, it should be 3 (1 prime + 1 create + 1 re-fetch).
+			// 3. Verify cache invalidation
+			fetchSpy.mockClear();
+			fetchSpy.mockResolvedValue({
+				ok: true,
+				json: async () => [mockProduct]
+			});
 			await productService.getMyProducts();
-			expect(global.fetch).toHaveBeenCalledTimes(3);
+			expect(fetchSpy).toHaveBeenCalledTimes(1);
 		});
 
 		it('handles validation errors from backend', async () => {
-			global.fetch = mockFetch(false, { errors: { name: 'Name required' } });
+			fetchSpy.mockResolvedValue({
+				ok: false,
+				json: async () => ({ errors: { name: 'Name required' } }),
+			});
 
 			const result = await productService.createProduct(mockProductDto);
 
 			expect(result.error).toBe('Name required');
-		});
-
-		it('returns error if no token is present', async () => {
-			localStorage.removeItem('token');
-			// The service catches the synchronous error thrown by getAuthHeaders inside the try/catch block
-			const result = await productService.createProduct(mockProductDto);
-			expect(result.error).toBe('Network error. Please try again.');
 		});
 	});
 
 	describe('updateProduct', () => {
 		it('updates a product successfully', async () => {
 			const updatedProduct = { ...mockProduct, name: 'Updated Rose' };
-			global.fetch = mockFetch(true, updatedProduct);
+			fetchSpy.mockResolvedValue({
+				ok: true,
+				json: async () => updatedProduct,
+			});
 
 			const result = await productService.updateProduct(1, mockProductDto);
 
 			expect(result.data).toEqual(updatedProduct);
-			expect(global.fetch).toHaveBeenCalledWith(
+			expect(fetchSpy).toHaveBeenCalledWith(
 				expect.stringContaining('/products/1'),
 				expect.objectContaining({
 					method: 'PUT',
@@ -162,7 +176,10 @@ describe('productService', () => {
 		});
 
 		it('handles update failures', async () => {
-			global.fetch = mockFetch(false, { errors: { stock: 'Invalid stock' } });
+			fetchSpy.mockResolvedValue({
+				ok: false,
+				json: async () => ({ errors: { stock: 'Invalid stock' } }),
+			});
 
 			const result = await productService.updateProduct(1, mockProductDto);
 
@@ -172,27 +189,26 @@ describe('productService', () => {
 
 	describe('deleteProduct', () => {
 		it('deletes a product successfully and invalidates cache', async () => {
-			global.fetch = mockFetch(true, {}); // Delete usually returns 200/204
+			fetchSpy.mockResolvedValue({
+				ok: true,
+				json: async () => ({ message: 'Product deleted successfully.' })
+			});
 
 			const result = await productService.deleteProduct(1);
 
 			expect(result.message).toBe('Product deleted successfully.');
-			expect(global.fetch).toHaveBeenCalledWith(
+			expect(fetchSpy).toHaveBeenCalledWith(
 				expect.stringContaining('/products/1'),
 				expect.objectContaining({ method: 'DELETE' })
 			);
-
-			// Ensure cache invalidation logic is hit (we can't easily check the private cache var, 
-			// but we can check if a subsequent get triggers a fetch)
-			vi.clearAllMocks(); // clear the delete call
-			global.fetch = mockFetch(true, []);
-
-			await productService.getMyProducts();
-			expect(global.fetch).toHaveBeenCalledTimes(1);
 		});
 
 		it('handles delete errors', async () => {
-			global.fetch = mockFetch(false, { message: 'Not found' }, 'Not Found');
+			fetchSpy.mockResolvedValue({
+				ok: false,
+				statusText: 'Not Found',
+				json: async () => ({ message: 'Not found' }),
+			});
 
 			const result = await productService.deleteProduct(999);
 

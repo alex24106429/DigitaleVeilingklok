@@ -43,7 +43,8 @@ describe('AlertProvider Component', () => {
 			</AlertProvider>
 		);
 		await fireEvent.click(screen.getByText(/show alert/i));
-		expect(screen.getByText(/test alert/i)).toBeInTheDocument();
+		// Use getAllByText because MUI Alert might render the text in a couple of places (content and title container), or verify presence
+		expect(screen.getAllByText(/test alert/i)[0]).toBeInTheDocument();
 		expect(screen.getByText(/this is a test alert message./i)).toBeInTheDocument();
 	});
 });

@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using PetalBid.Api.Data;
 using PetalBid.Api.Domain.Entities;
 using PetalBid.Api.DTOs;
+using System.Data;
+using System.Data.Common;
 using System.Security.Claims;
 
 namespace PetalBid.Api.Controllers;
@@ -14,7 +16,7 @@ namespace PetalBid.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin,Supplier,Auctioneer")]
+[Authorize(Roles = "Admin,Supplier,Auctioneer,Buyer")]
 public class ProductsController(AppDbContext db) : ApiControllerBase(db)
 {
 	/// <summary>
@@ -57,6 +59,131 @@ public class ProductsController(AppDbContext db) : ApiControllerBase(db)
 
 		return Ok(product);
 	}
+
+	/// <summary>
+	/// Retrieves historical price data for a product.
+	/// NOTE: Implemented using Raw SQL for performance reasons as per requirements.
+	/// </summary>
+	[HttpGet("{id:int}/history")]
+	public async Task<ActionResult<ProductHistoryDto>> GetHistory(int id)
+	{
+		// 1. Get Product Details (Species & SupplierId) using EF for simplicity of the initial lookup
+		var productInfo = await Db.Products
+			.AsNoTracking()
+			.Where(p => p.Id == id)
+			.Select(p => new { p.Species, p.SupplierId })
+			.FirstOrDefaultAsync();
+
+		if (productInfo is null) return NotFound();
+
+		var result = new ProductHistoryDto { Species = productInfo.Species };
+
+		// 2. Open Raw Connection
+		var connection = Db.Database.GetDbConnection();
+		await connection.OpenAsync();
+
+		try
+		{
+			// --- Helper to create command ---
+			DbCommand CreateCommand(string sql)
+			{
+				var cmd = connection.CreateCommand();
+				cmd.CommandText = sql;
+				return cmd;
+			}
+
+			// --- Query A: Average Price & History for THIS Supplier ---
+			// Calculate AVG
+			using (var cmd = CreateCommand(
+				@"SELECT AVG(si.UnitPrice)
+                  FROM SaleItems si
+                  JOIN Products p ON si.ProductId = p.Id
+                  WHERE p.Species = @species AND p.SupplierId = @supplierId"))
+			{
+				var pSpecies = cmd.CreateParameter(); pSpecies.ParameterName = "@species"; pSpecies.Value = productInfo.Species; cmd.Parameters.Add(pSpecies);
+				var pSupplier = cmd.CreateParameter(); pSupplier.ParameterName = "@supplierId"; pSupplier.Value = productInfo.SupplierId; cmd.Parameters.Add(pSupplier);
+
+				var avgObj = await cmd.ExecuteScalarAsync();
+				if (avgObj != null && avgObj != DBNull.Value)
+				{
+					// UnitPrice is stored in cents (int), convert to EUR (double)
+					result.SupplierStats.AveragePrice = Convert.ToDouble(avgObj) / 100.0;
+				}
+			}
+
+			// Get Last 10
+			using (var cmd = CreateCommand(
+				@"SELECT si.UnitPrice, s.OccurredAt
+                  FROM SaleItems si
+                  JOIN Products p ON si.ProductId = p.Id
+                  JOIN Sales s ON si.SaleId = s.Id
+                  WHERE p.Species = @species AND p.SupplierId = @supplierId
+                  ORDER BY s.OccurredAt DESC
+                  LIMIT 10"))
+			{
+				var pSpecies = cmd.CreateParameter(); pSpecies.ParameterName = "@species"; pSpecies.Value = productInfo.Species; cmd.Parameters.Add(pSpecies);
+				var pSupplier = cmd.CreateParameter(); pSupplier.ParameterName = "@supplierId"; pSupplier.Value = productInfo.SupplierId; cmd.Parameters.Add(pSupplier);
+
+				using var reader = await cmd.ExecuteReaderAsync();
+				while (await reader.ReadAsync())
+				{
+					result.SupplierStats.Last10Sales.Add(new HistoryItemDto
+					{
+						Price = Convert.ToInt32(reader["UnitPrice"]) / 100.0,
+						Date = Convert.ToDateTime(reader["OccurredAt"])
+					});
+				}
+			}
+
+			// --- Query B: Average Price & History for ENTIRE Market (All Suppliers) ---
+
+			// Calculate AVG
+			using (var cmd = CreateCommand(
+				@"SELECT AVG(si.UnitPrice)
+                  FROM SaleItems si
+                  JOIN Products p ON si.ProductId = p.Id
+                  WHERE p.Species = @species"))
+			{
+				var pSpecies = cmd.CreateParameter(); pSpecies.ParameterName = "@species"; pSpecies.Value = productInfo.Species; cmd.Parameters.Add(pSpecies);
+
+				var avgObj = await cmd.ExecuteScalarAsync();
+				if (avgObj != null && avgObj != DBNull.Value)
+				{
+					result.MarketStats.AveragePrice = Convert.ToDouble(avgObj) / 100.0;
+				}
+			}
+
+			// Get Last 10
+			using (var cmd = CreateCommand(
+				@"SELECT si.UnitPrice, s.OccurredAt
+                  FROM SaleItems si
+                  JOIN Products p ON si.ProductId = p.Id
+                  JOIN Sales s ON si.SaleId = s.Id
+                  WHERE p.Species = @species
+                  ORDER BY s.OccurredAt DESC
+                  LIMIT 10"))
+			{
+				var pSpecies = cmd.CreateParameter(); pSpecies.ParameterName = "@species"; pSpecies.Value = productInfo.Species; cmd.Parameters.Add(pSpecies);
+
+				using var reader = await cmd.ExecuteReaderAsync();
+				while (await reader.ReadAsync())
+				{
+					result.MarketStats.Last10Sales.Add(new HistoryItemDto
+					{
+						Price = Convert.ToInt32(reader["UnitPrice"]) / 100.0,
+						Date = Convert.ToDateTime(reader["OccurredAt"])
+					});
+				}
+			}
+		}
+		finally
+		{
+			await connection.CloseAsync();
+		}
+
+		return Ok(result);
+	}
+
 	/// <summary>
 	/// Creates a new "product"
 	/// </summary>

@@ -57,7 +57,7 @@ describe('authService', () => {
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			const result = await authService.register({} as any);
 
-			expect(result.error).toContain("Registratie mislukt!");
+			expect(result.error).toBe("Network error. Please try again.");
 		});
 	});
 });

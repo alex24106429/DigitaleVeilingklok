@@ -21,11 +21,11 @@ public class ProductDto
 
 	private const double MaxPotSize = 70;
 	[Range(0, MaxPotSize)]
-	public double PotSize { get; set; }
+	public double? PotSize { get; set; }
 
 	private const double MaxStemLength = 100;
 	[Range(0, MaxStemLength)]
-	public double StemLength { get; set; }
+	public double? StemLength { get; set; }
 
 	[Range(1, int.MaxValue)]
 	public int Stock { get; set; }

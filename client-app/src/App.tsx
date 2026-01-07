@@ -68,7 +68,9 @@ function AppBarContent() {
 	const newUIPages = [
 		'/login',
 		'/register',
-		'/'
+		'/',
+		'/contact',
+		'/info'
 	]
 
 	const isNewUIPage = newUIPages.includes(location.pathname);
@@ -304,6 +306,8 @@ export default function App() {
 						<div style={{ marginTop: 'auto' }}>
 							<Box textAlign="center" padding="20px" bgcolor={theme.palette.mode === 'dark' ? "grey.900" : "grey.200"} color="text.primary">
 								&copy; {new Date().getFullYear()} PetalBid. Alle rechten voorbehouden.
+								<br />
+								<br />
 								<Button color="inherit" component={NavLink} to="/privacy" sx={footerButtonSx}>
 									Privacybeleid
 								</Button>

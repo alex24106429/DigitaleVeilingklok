@@ -6,6 +6,8 @@ using Microsoft.OpenApi.Models;
 using Npgsql;
 using PetalBid.Api.Data;
 using PetalBid.Api.Domain.Entities;
+using PetalBid.Api.Domain.Enums;
+using PetalBid.Api.Hubs;
 using PetalBid.Api.Services;
 using System.Text;
 
@@ -54,17 +56,12 @@ public class Program
 		// -------------------------------------------------------------------------
 		builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
 		{
-			// Password settings (matching previous logic)
 			options.Password.RequireDigit = true;
 			options.Password.RequireLowercase = true;
 			options.Password.RequireNonAlphanumeric = true;
 			options.Password.RequireUppercase = true;
 			options.Password.RequiredLength = 8;
-
-			// User settings
 			options.User.RequireUniqueEmail = true;
-
-			// Lockout settings
 			options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
 			options.Lockout.MaxFailedAccessAttempts = 5;
 			options.Lockout.AllowedForNewUsers = true;
@@ -73,9 +70,11 @@ public class Program
 		.AddDefaultTokenProviders();
 
 		builder.Services.AddControllers();
+		builder.Services.AddSignalR(); // Add SignalR services
 
-		// Add Pwned Passwords service
+		// Services
 		builder.Services.AddHttpClient<IPwnedPasswordsService, PwnedPasswordsService>();
+		builder.Services.AddSingleton<AuctionClockService>(); // Singleton state management for auctions
 
 		// -------------------------------------------------------------------------
 		// Authentication & JWT Configuration
@@ -99,7 +98,6 @@ public class Program
 				IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
 			};
 
-			// Extract token from HttpOnly cookie
 			options.Events = new JwtBearerEvents
 			{
 				OnMessageReceived = context =>
@@ -107,6 +105,13 @@ public class Program
 					if (context.Request.Cookies.ContainsKey("jwt"))
 					{
 						context.Token = context.Request.Cookies["jwt"];
+					}
+					// Allow token in query string for SignalR connections
+					var accessToken = context.Request.Query["access_token"];
+					var path = context.HttpContext.Request.Path;
+					if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/auctionHub"))
+					{
+						context.Token = accessToken;
 					}
 					return Task.CompletedTask;
 				}
@@ -122,7 +127,7 @@ public class Program
 				policy.WithOrigins("http://localhost:5173", "https://petalbid.bid")
 					.AllowAnyHeader()
 					.AllowAnyMethod()
-					.AllowCredentials(); // Required for cookies
+					.AllowCredentials();
 			});
 		});
 
@@ -153,9 +158,7 @@ public class Program
 
 		var app = builder.Build();
 
-		// -------------------------------------------------------------------------
-		// Database Initialization & Seeding
-		// -------------------------------------------------------------------------
+		// Database Init & Seeding
 		using (var scope = app.Services.CreateScope())
 		{
 			var services = scope.ServiceProvider;
@@ -165,7 +168,7 @@ public class Program
 
 			db.Database.EnsureCreated();
 
-			// Seed Roles
+			// 1. Roles
 			string[] roleNames = { "Admin", "Auctioneer", "Buyer", "Supplier" };
 			foreach (var roleName in roleNames)
 			{
@@ -175,10 +178,11 @@ public class Program
 				}
 			}
 
-			// Seed Default Admin
+			string defaultPassword = "PetalBid1!";
+
+			// 2. Administrator
 			var adminEmail = "administrator@petalbid.bid";
 			var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
-
 			if (existingAdmin == null)
 			{
 				var adminUser = new Admin
@@ -189,13 +193,136 @@ public class Program
 					EmailConfirmed = true,
 					IsDisabled = false
 				};
+				var createResult = await userManager.CreateAsync(adminUser, defaultPassword);
+				if (createResult.Succeeded) await userManager.AddToRoleAsync(adminUser, "Admin");
+			}
 
-				var createResult = await userManager.CreateAsync(adminUser, "PetalBid1!");
-
-				if (createResult.Succeeded)
+			// 3. Buyer
+			var buyerEmail = "koper@petalbid.bid";
+			var existingBuyer = await userManager.FindByEmailAsync(buyerEmail);
+			if (existingBuyer == null)
+			{
+				var buyerUser = new Buyer
 				{
-					await userManager.AddToRoleAsync(adminUser, "Admin");
+					FullName = "Koper",
+					UserName = buyerEmail,
+					Email = buyerEmail,
+					EmailConfirmed = true,
+					IsDisabled = false,
+					CompanyName = "Bloemenwinkel De Hoek"
+				};
+				var createResult = await userManager.CreateAsync(buyerUser, defaultPassword);
+				if (createResult.Succeeded) await userManager.AddToRoleAsync(buyerUser, "Buyer");
+			}
+
+			// 4. Supplier
+			var supplierEmail = "leverancier@petalbid.bid";
+			var existingSupplier = await userManager.FindByEmailAsync(supplierEmail);
+			if (existingSupplier == null)
+			{
+				var supplierUser = new Supplier
+				{
+					FullName = "Leverancier",
+					UserName = supplierEmail,
+					Email = supplierEmail,
+					EmailConfirmed = true,
+					IsDisabled = false,
+					CompanyName = "Grote Kwekerij BV"
+				};
+				var createResult = await userManager.CreateAsync(supplierUser, defaultPassword);
+				if (createResult.Succeeded) await userManager.AddToRoleAsync(supplierUser, "Supplier");
+			}
+
+			// 5. Auctioneer
+			var auctioneerEmail = "veilingmeester@petalbid.bid";
+			var existingAuctioneer = await userManager.FindByEmailAsync(auctioneerEmail);
+			if (existingAuctioneer == null)
+			{
+				var auctioneerUser = new Auctioneer
+				{
+					FullName = "Veilingmeester",
+					UserName = auctioneerEmail,
+					Email = auctioneerEmail,
+					EmailConfirmed = true,
+					IsDisabled = false
+				};
+				var createResult = await userManager.CreateAsync(auctioneerUser, defaultPassword);
+				if (createResult.Succeeded) await userManager.AddToRoleAsync(auctioneerUser, "Auctioneer");
+			}
+
+			// 6. Auctions
+			var auctioneer = await db.Auctioneers.FirstOrDefaultAsync(a => a.Email == auctioneerEmail);
+			Auction? auctionNaaldwijk = null;
+			Auction? auctionAalsmeer = null;
+
+			if (auctioneer != null)
+			{
+				// Ensure Naaldwijk auction exists
+				auctionNaaldwijk = await db.Auctions.FirstOrDefaultAsync(a => a.ClockLocation == ClockLocation.Naaldwijk && a.AuctioneerId == auctioneer.Id);
+				if (auctionNaaldwijk == null)
+				{
+					auctionNaaldwijk = new Auction
+					{
+						Description = "Veiling in Naaldwijk",
+						StartsAt = DateTime.UtcNow.AddMinutes(30),
+						ClockLocation = ClockLocation.Naaldwijk,
+						Status = AuctionStatus.Pending,
+						AuctioneerId = auctioneer.Id
+					};
+					db.Auctions.Add(auctionNaaldwijk);
 				}
+
+				// Ensure Aalsmeer auction exists
+				auctionAalsmeer = await db.Auctions.FirstOrDefaultAsync(a => a.ClockLocation == ClockLocation.Aalsmeer && a.AuctioneerId == auctioneer.Id);
+				if (auctionAalsmeer == null)
+				{
+					auctionAalsmeer = new Auction
+					{
+						Description = "Veiling in Aalsmeer",
+						StartsAt = DateTime.UtcNow.AddHours(1),
+						ClockLocation = ClockLocation.Aalsmeer,
+						Status = AuctionStatus.Pending,
+						AuctioneerId = auctioneer.Id
+					};
+					db.Auctions.Add(auctionAalsmeer);
+				}
+
+				await db.SaveChangesAsync();
+			}
+
+			// 7. Plants (Products)
+			var supplier = await db.Suppliers.FirstOrDefaultAsync(s => s.Email == supplierEmail);
+			if (supplier != null && !await db.Products.AnyAsync(p => p.SupplierId == supplier.Id))
+			{
+				var products = new List<Product>
+				{
+					new Product {
+						Name = "Roos", Species = "Rosa", Weight = 0.1, Stock = 1000, MinimumPrice = 0.50,
+						SupplierId = supplier.Id, ImageBase64 = "/images/plants/rose.avif",
+						AuctionId = auctionNaaldwijk?.Id,
+						MaxPricePerUnit = 2.00
+					},
+					new Product {
+						Name = "Tulp", Species = "Tulipa", Weight = 0.05, Stock = 2000, MinimumPrice = 0.30,
+						SupplierId = supplier.Id, ImageBase64 = "/images/plants/tulip.avif",
+						AuctionId = auctionNaaldwijk?.Id,
+						MaxPricePerUnit = 1.00
+					},
+					new Product {
+						Name = "Orchidee", Species = "Phalaenopsis", Weight = 0.5, Stock = 500, MinimumPrice = 5.00,
+						SupplierId = supplier.Id, ImageBase64 = "/images/plants/orchid.avif",
+						AuctionId = auctionAalsmeer?.Id,
+						MaxPricePerUnit = 10.00
+					},
+					new Product {
+						Name = "Lelie", Species = "Lilium", Weight = 0.2, Stock = 800, MinimumPrice = 0.80,
+						SupplierId = supplier.Id, ImageBase64 = "/images/plants/lily.avif",
+						AuctionId = auctionAalsmeer?.Id,
+						MaxPricePerUnit = 2.50
+					}
+				};
+				db.Products.AddRange(products);
+				await db.SaveChangesAsync();
 			}
 		}
 
@@ -215,6 +342,7 @@ public class Program
 		app.UseAuthorization();
 
 		app.MapControllers();
+		app.MapHub<AuctionHub>("/auctionHub"); // Map SignalR Hub
 
 		app.Run();
 	}

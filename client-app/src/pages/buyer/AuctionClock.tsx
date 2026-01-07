@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
 	Typography,
 	Container,
@@ -7,459 +6,417 @@ import {
 	Paper,
 	Stack,
 	Button,
-	IconButton,
 	TextField,
-	Chip,
-	Tooltip,
-	Dialog,
-	DialogTitle,
-	DialogContent,
-	DialogActions,
 	CircularProgress,
+	Select,
+	MenuItem,
+	InputLabel,
+	FormControl,
+	Grid,
+	List,
+	ListItem,
+	ListItemText,
+	ListItemAvatar,
+	Avatar,
+	Card,
+	CardHeader,
+	Divider
 } from '@mui/material';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
-import AddIcon from '@mui/icons-material/Add';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import { useAuth } from '../../contexts/AuthContext';
-import { usePurchase } from '../../contexts/PurchaseContext';
-import { Purchase } from '../../types/purchase';
+import InventoryIcon from '@mui/icons-material/Inventory';
+import HistoryIcon from '@mui/icons-material/History';
+import { useAlert } from '../../components/AlertProvider';
+import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
+import { auctionService } from '../../api/services/auctionService';
+import { productService } from '../../api/services/productService';
+import { Auction } from '../../types/auction';
+import { Product } from '../../types/product';
+import PriceHistoryModal from '../../components/PriceHistoryModal';
 
-/**
- * Transaction type for auction purchases
- */
-type Transaction = {
-	buyer: string;
-	qty: number;
-	price: number; // per unit at transaction time
-	sideBuy?: boolean; // meekoop
-	id: string;
-};
-// Euro currency formatter
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5048';
 const euro = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' });
 
-/**
- * Clamps a number between a minimum and maximum value.
- * @param n The number to clamp
- * @param min The minimum value
- * @param max The maximum value
- * @returns The clamped value
- */
-function clamp(n: number, min: number, max: number) {
-	return Math.min(max, Math.max(min, n));
+interface AuctionState {
+	auctionId: number;
+	currentProduct: Product | null;
+	currentPrice: number;
+	isRunning: boolean;
+	isPaused: boolean;
 }
 
-/**
- * Rounds a number to two decimal places.
- * @param n The number to round
- * @returns The rounded number
- */
-function round2(n: number) {
-	return Math.round(n * 100) / 100;
-}
-/**
- * Custom hook to manage intervals.
- * @param callback The function to call on each interval
- * @param delayMs The interval delay in milliseconds
- */
-function useInterval(callback: () => void, delayMs: number | null) {
-	const savedRef = useRef(callback);
-	useEffect(() => {
-		savedRef.current = callback;
-	}, [callback]);
-	useEffect(() => {
-		if (delayMs == null) return;
-		const id = setInterval(() => savedRef.current(), delayMs);
-		return () => clearInterval(id);
-	}, [delayMs]);
-}
-/**
- * AuctionClock component for the auction clock
- * @returns JSX.Element
- */
 export default function AuctionClock() {
-	const { user } = useAuth();
-	const { addPurchase } = usePurchase();
+	const { showAlert } = useAlert();
+	const [connection, setConnection] = useState<HubConnection | null>(null);
 
-	// Lot/product settings
-	const [product, setProduct] = useState('Rozen (A1)');
-	const [species, setSpecies] = useState('Rosa');
-	const [origin, setOrigin] = useState('Aalsmeer');
-	const [totalQty, setTotalQty] = useState(100);
-	const [minPerBuy, setMinPerBuy] = useState(10); // minimum afname per koop
-	const [orderStep, setOrderStep] = useState(10); // stapgrootte in aantallen
+	// Auction Selection
+	const [auctions, setAuctions] = useState<Auction[]>([]);
+	const [selectedAuctionId, setSelectedAuctionId] = useState<number | ''>('');
 
-	// Clock settings
-	const [startPrice, setStartPrice] = useState(0.5); // €/stuk
-	const [floorPrice, setFloorPrice] = useState(0.2); // €/stuk
-	const [priceStep, setPriceStep] = useState(0.01); // €/tik
-	const [ticksPerSecond] = useState(3); // Fixed speed - removed user control
+	// Data
+	const [auctionProducts, setAuctionProducts] = useState<Product[]>([]);
 
-	// Runtime state
-	const [running, setRunning] = useState(false);
-	const [ticks, setTicks] = useState(0);
-	const [remainingQty, setRemainingQty] = useState(totalQty);
-	const [transactions, setTransactions] = useState<Transaction[]>([]);
-	const [pausedForSale, setPausedForSale] = useState(false); // true na koop, om meekopen mogelijk te maken
+	// Clock State
+	const [auctionState, setAuctionState] = useState<AuctionState | null>(null);
+	const [connected, setConnected] = useState(false);
 
-	// Purchase dialog state
-	const [purchaseOpen, setPurchaseOpen] = useState(false);
-	const [buyer, setBuyer] = useState(user?.fullName || 'Koper A');
-	const [buyQty, setBuyQty] = useState(minPerBuy);
-	const [sideBuyMode, setSideBuyMode] = useState<null | { price: number }>(null); // meekoop prijs
-	const [errors, setErrors] = useState<{ qty?: string }>({});
+	// Purchase State
+	const [buyQty, setBuyQty] = useState(1);
 	const [submitting, setSubmitting] = useState(false);
 
-	// Derived values
-	const priceRange = Math.max(0.00001, startPrice - floorPrice);
-	const currentPrice = useMemo(() => {
-		const p = round2(startPrice - ticks * priceStep);
-		return clamp(p, floorPrice, startPrice);
-	}, [startPrice, floorPrice, priceStep, ticks]);
-	const progressPct = useMemo(() => {
-		// 0% at startPrice, 100% at floorPrice
-		const dropped = startPrice - currentPrice;
-		return clamp((dropped / priceRange) * 100, 0, 100);
-	}, [startPrice, currentPrice, priceRange]);
+	// History Dialog
+	const [historyOpen, setHistoryOpen] = useState(false);
 
-	// Check if sold out
-	const isSoldOut = remainingQty <= 0;
+	// Fetch active auctions on mount
+	useEffect(() => {
+		const loadAuctions = async () => {
+			const res = await auctionService.getAllAuctions();
+			if (res.data) setAuctions(res.data);
+		};
+		void loadAuctions();
+	}, []);
 
-	// Timer
-	useInterval(
-		() => {
-			setTicks((t) => {
-				const next = t + 1;
-				const nextPrice = round2(startPrice - next * priceStep);
-				// Stop at floor price
-				if (nextPrice <= floorPrice) {
-					setRunning(false);
-					return Math.ceil((startPrice - floorPrice) / priceStep);
+	// Fetch products when auction selected
+	useEffect(() => {
+		if (selectedAuctionId) {
+			const loadProducts = async () => {
+				const res = await productService.getMyProducts({ force: true });
+				if (res.data) {
+					// Filter for this auction and sort by ID (as backend does for queue order)
+					const sorted = res.data
+						.filter(p => p.auctionId === selectedAuctionId)
+						.sort((a, b) => a.id - b.id);
+					setAuctionProducts(sorted);
 				}
-				return next;
-			});
-		},
-		running ? Math.max(10, Math.round(1000 / ticksPerSecond)) : null
-	);
-
-	// Reset remainingQty when totalQty changes
-	useEffect(() => {
-		setRemainingQty(totalQty);
-	}, [totalQty]);
-
-	// Update buyer name when user changes
-	useEffect(() => {
-		if (user) {
-			setBuyer(user.fullName || 'Koper A');
+			};
+			void loadProducts();
+		} else {
+			setAuctionProducts([]);
 		}
-	}, [user]);
+	}, [selectedAuctionId]);
 
-	// Validate buy quantity
+	// Reset quantity when product changes
 	useEffect(() => {
-		setErrors(() => {
-			const e: {
-				qty?: string | undefined;
-			} = {};
-			if (buyQty <= 0) {
-				e.qty = 'Aantal moet groter dan 0 zijn';
-			} else if (buyQty > remainingQty) {
-				e.qty = `Maximaal ${remainingQty}`;
-			} else if (buyQty < minPerBuy) {
-				e.qty = `Minimale afname is ${minPerBuy}`;
-			} else if ((buyQty - minPerBuy) % orderStep !== 0) {
-				e.qty = `Na de minimumafname in stappen van ${orderStep}`;
-			}
-			return e;
-		});
-	}, [buyQty, remainingQty, minPerBuy, orderStep]);
+		if (auctionState?.currentProduct) {
+			setBuyQty(1);
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [auctionState?.currentProduct?.id]);
 
-	// Open purchase dialog
-	const openBuyDialog = (sideBuy?: boolean) => {
-		if (isSoldOut) return;
-		setRunning(false);
-		setPausedForSale(true);
-		setSideBuyMode(sideBuy ? { price: currentPrice } : null);
-		// Default qty
-		setBuyQty(Math.min(Math.max(minPerBuy, orderStep ? orderStep : minPerBuy), remainingQty));
-		setPurchaseOpen(true);
-	};
+	// Setup SignalR connection logic
+	useEffect(() => {
+		// Reset state when switching auctions
+		setConnected(false);
+		setAuctionState(null);
 
-	// Commit purchase
+		if (!selectedAuctionId) {
+			setConnection(null);
+			return;
+		}
+
+		// Create new connection
+		const newConnection = new HubConnectionBuilder()
+			.withUrl(`${API_BASE_URL}/auctionHub`, {
+				withCredentials: true, // Use cookie for auth
+			})
+			.withAutomaticReconnect()
+			.configureLogging(LogLevel.Information)
+			.build();
+
+		setConnection(newConnection);
+
+		// Cleanup: stop connection when component unmounts or auctionId changes
+		return () => {
+			void newConnection.stop();
+		};
+	}, [selectedAuctionId]);
+
+	// Handle SignalR events
+	useEffect(() => {
+		if (connection && selectedAuctionId) {
+			const startConnection = async () => {
+				try {
+					await connection.start();
+					console.log('Connected to AuctionHub');
+					setConnected(true);
+					await connection.invoke('JoinAuctionGroup', selectedAuctionId);
+				} catch (err) {
+					console.error('Connection failed: ', err);
+				}
+			};
+
+			void startConnection();
+
+			connection.on('AuctionState', (state: AuctionState) => {
+				setAuctionState(state);
+			});
+
+			connection.on('PriceUpdate', (price: number) => {
+				setAuctionState(prev => prev ? { ...prev, currentPrice: price } : null);
+			});
+
+			connection.on('BidRejected', (message: string) => {
+				showAlert({ title: "Mislukt", message, severity: "error" });
+				setSubmitting(false);
+			});
+
+			connection.on('LotSold', (data: { buyerName: string, quantity: number, price: number, productId: number, remainingStock: number }) => {
+				showAlert({
+					title: "Verkocht",
+					message: `${data.quantity} stuks verkocht aan ${data.buyerName} voor ${euro.format(data.price)}`,
+					severity: "info",
+					display: "inline"
+				});
+
+				// Update local stock list
+				setAuctionProducts(prev => prev.map(p =>
+					p.id === data.productId ? { ...p, stock: data.remainingStock } : p
+				));
+
+				// Update current product state if it matches
+				setAuctionState(prev => {
+					if (prev && prev.currentProduct && prev.currentProduct.id === data.productId) {
+						return {
+							...prev,
+							currentProduct: { ...prev.currentProduct, stock: data.remainingStock }
+						};
+					}
+					return prev;
+				});
+
+				setSubmitting(false);
+			});
+
+			connection.on('NextLot', (product: Product) => {
+				showAlert({ title: "Volgend Kavel", message: `Nieuw product: ${product.name}`, severity: "info" });
+			});
+
+			connection.on('AuctionEnded', () => {
+				showAlert({ title: "Veiling", message: "De veiling is afgelopen.", severity: "warning" });
+				setAuctionState(null);
+			});
+		}
+	}, [connection, selectedAuctionId, showAlert]);
+
 	const commitPurchase = async () => {
-		if (errors.qty || !user) return;
-		if (isSoldOut) return;
+		if (!connection || !selectedAuctionId || !auctionState?.currentProduct) return;
+
+		if (buyQty <= 0) {
+			showAlert({ title: "Ongeldig aantal", message: "Aantal moet minimaal 1 zijn.", severity: "warning" });
+			return;
+		}
+
+		if (buyQty > auctionState.currentProduct.stock) {
+			showAlert({ title: "Ongeldig aantal", message: `Er zijn slechts ${auctionState.currentProduct.stock} stuks beschikbaar.`, severity: "warning" });
+			return;
+		}
 
 		setSubmitting(true);
 		try {
-			const price = sideBuyMode?.price ?? currentPrice;
-			const qty = buyQty;
-
-			// Create Purchase object and add to context
-			const purchase: Purchase = {
-				id: Date.now(),
-				userId: String(user.id) || user.fullName || 'unknown',
-				buyerName: buyer.trim() || 'Onbekend',
-				productName: product,
-				species: species,
-				origin: origin,
-				quantity: qty,
-				purchasePrice: price,
-				purchaseDate: new Date().toISOString(),
-				sideBuy: Boolean(sideBuyMode),
-			};
-
-			// Add to purchase context for sharing with Purchases component
-			addPurchase(purchase);
-
-			// Also add to local transactions for display
-			const tx: Transaction = {
-				buyer: buyer.trim() || 'Onbekend',
-				qty,
-				price,
-				sideBuy: Boolean(sideBuyMode),
-				id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-			};
-			setTransactions((prev) => [...prev, tx]);
-			setRemainingQty((r) => r - qty);
-			setPurchaseOpen(false);
-			// keep paused after first purchase to allow more side buys
-			setPausedForSale(true);
-			// If no remaining, end
-			if (remainingQty - qty <= 0) {
-				setRunning(false);
-			}
+			await connection.invoke('PlaceBid', selectedAuctionId, buyQty);
+			// We wait for server response (LotSold or BidRejected) to close loading via event listeners
 		} catch (err) {
-			console.error('Purchase error:', err);
-		} finally {
+			console.error(err);
 			setSubmitting(false);
 		}
 	};
 
-	// Resume clock after sales
-	const resumeAfterSales = () => {
-		setPausedForSale(false);
-		setSideBuyMode(null);
-		if (remainingQty > 0 && currentPrice > floorPrice) {
-			setRunning(true);
-		}
-	};
+	// Determine UI State
+	const product = auctionState?.currentProduct;
+	const currentPrice = auctionState?.currentPrice ?? 0;
+	const isRunning = auctionState?.isRunning ?? false;
+	const isSoldOut = product ? product.stock <= 0 : true;
 
-	// Finish lot immediately
-	const finishLot = () => {
-		setRunning(false);
-		setPausedForSale(false);
-		setSideBuyMode(null);
-		setRemainingQty(0);
-	};
+	// Visuals for clock
+	const maxPrice = product?.maxPricePerUnit ?? 2.0;
+	const minPrice = 0.1; // Floor
+	const percentage = maxPrice > minPrice
+		? Math.max(0, Math.min(100, ((maxPrice - currentPrice) / (maxPrice - minPrice)) * 100))
+		: 0;
 
-	// Check if buyer can make a purchase
-	const canBuy = remainingQty > 0 && currentPrice > 0 && !purchaseOpen && !!user;
-	const atFloor = currentPrice <= floorPrice + 1e-9;
+	// Filter products to show upcoming (products with ID greater than current, or all if none current)
+	// We assume backend moves sequentially by ID.
+	const upcomingProducts = auctionProducts.filter(p => !product || p.id > product.id);
 
 	return (
-		<>
-			<Container maxWidth="md" sx={{ py: 4 }}>
-				<Box sx={{ display: 'flex', justifyContent: 'center' }}>
-					<Paper variant="outlined" sx={{ p: 4, maxWidth: 600, width: '100%' }}>
-						<Stack spacing={3} alignItems="center">
-							{/* Product Info */}
-							<Stack spacing={1} alignItems="center" sx={{ textAlign: 'center' }}>
-								<Typography variant="h4" fontWeight={600}>
-									{product}
-								</Typography>
-								<Typography variant="body1" color="text.secondary">
-									Soort: {species} • Herkomst: {origin} • Kavel: {totalQty} stuks • Min. afname: {minPerBuy} • Stap: {orderStep}
-								</Typography>
-								<Chip
-									color="primary"
-									variant="outlined"
-									label={`Start: ${euro.format(startPrice)} • Bodem: ${euro.format(floorPrice)}`}
-								/>
-							</Stack>
+		<Container maxWidth="xl" sx={{ py: 4 }}>
+			<Typography variant="h4" gutterBottom>Digitale Veilingklok</Typography>
 
-							{/* Price Display */}
-							<Box
-								sx={{
-									position: 'relative',
-									display: 'flex',
-									alignItems: 'center',
-									justifyContent: 'center',
-									height: 320,
-								}}
-							>
-								<CircularProgress
-									variant="determinate"
-									value={progressPct}
-									size={280}
-									thickness={5}
-									color={atFloor ? 'warning' : isSoldOut ? 'error' : 'primary'}
-								/>
-								<CircularProgress
-									variant="determinate"
-									value={100}
-									size={300}
-									thickness={1.5}
-									color="inherit"
-									sx={{ position: 'absolute', opacity: 0.25 }}
-								/>
-								<Stack
-									spacing={1}
-									alignItems="center"
-									sx={{ textAlign: 'center', position: 'absolute' }}
-								>
-									<Typography
-										variant="overline"
-										color="text.secondary"
-										sx={{
-											textAlign: 'center',
-											width: '100%',
-											display: 'block'
-										}}
-									>
-										{isSoldOut ? 'Uitverkocht' : 'Huidige prijs'}
-									</Typography>
-									<Typography
-										variant="h1"
-										sx={{
-											fontWeight: 700,
-											textAlign: 'left',
-											width: '100%',
-											display: 'block'
-										}}
-										color={isSoldOut ? 'error' : 'inherit'}
-									>
-										{isSoldOut ? 'Uitverkocht' : euro.format(currentPrice)}
-									</Typography>
-									<Typography
-										variant="caption"
-										color="text.secondary"
-										sx={{
-											textAlign: 'center',
-											width: '100%',
-											display: 'block'
-										}}
-									>
-										{!isSoldOut && `${ticks} tikken • Stap ${euro.format(priceStep)}`}
-									</Typography>
-								</Stack>
-							</Box>
+			<FormControl fullWidth sx={{ mb: 4, maxWidth: 600 }}>
+				<InputLabel>Kies een Veiling</InputLabel>
+				<Select
+					value={selectedAuctionId}
+					label="Kies een Veiling"
+					onChange={(e) => setSelectedAuctionId(Number(e.target.value))}
+				>
+					{auctions.map(a => (
+						<MenuItem key={a.id} value={a.id}>{a.description} - {new Date(a.startsAt).toLocaleDateString()}</MenuItem>
+					))}
+				</Select>
+			</FormControl>
 
-							{/* Purchase Section */}
-							<Stack spacing={3} alignItems="center">
-								{/* Main Purchase Button */}
-								<Box sx={{ textAlign: 'center' }}>
-									<Tooltip title={isSoldOut ? 'Uitverkocht' : 'Koop op huidige prijs'}>
-										<span>
-											<IconButton
-												color={isSoldOut ? 'error' : 'success'}
-												onClick={() => openBuyDialog(false)}
-												disabled={!canBuy || atFloor || isSoldOut}
-												size="large"
+			{!selectedAuctionId && (
+				<Typography>Selecteer een veiling om te beginnen.</Typography>
+			)}
+
+			{selectedAuctionId && !connected && (
+				<CircularProgress />
+			)}
+
+			{selectedAuctionId && connected && !auctionState && (
+				<Typography>Wachten op veiling data...</Typography>
+			)}
+
+			{auctionState && (
+				<Grid container spacing={3}>
+					{/* Clock Column */}
+					<Grid size={{ xs: 12, md: 8 }}>
+						<Box sx={{ display: 'flex', justifyContent: 'center' }}>
+							<Paper variant="outlined" sx={{ p: 4, width: '100%' }}>
+								<Stack spacing={3} alignItems="center">
+									{/* Product Info */}
+									{product ? (
+										<Stack spacing={1} alignItems="center" sx={{ textAlign: 'center' }}>
+											<Typography variant="h4" fontWeight={600}>
+												{product.name}
+											</Typography>
+											<Typography variant="body1" color="text.secondary">
+												Soort: {product.species} • Voorraad: {product.stock} stuks
+											</Typography>
+											<Box
+												component="img"
+												src={product.imageBase64 || '/images/placeholder.png'}
+												alt={product.name}
 												sx={{
-													width: 140,
-													height: 140,
-													border: `4px solid`,
-													borderColor: isSoldOut ? 'error.main' : 'success.main',
-													'&:hover': {
-														backgroundColor: isSoldOut ? 'error.light' : 'success.light',
-														borderColor: isSoldOut ? 'error.dark' : 'success.dark',
-													},
+													width: 200,
+													height: 200,
+													objectFit: 'cover',
+													borderRadius: 2,
+													bgcolor: 'grey.100'
 												}}
-											>
-												<ShoppingCartIcon sx={{ fontSize: 56 }} />
-											</IconButton>
-										</span>
-									</Tooltip>
-									<Typography variant="h5" color={isSoldOut ? 'error' : 'success.main'} sx={{ mt: 2, fontWeight: 600 }}>
-										{isSoldOut ? 'Uitverkocht' : 'Koop Nu'}
-									</Typography>
-								</Box>
-
-								{/* Side Buy Options */}
-								{pausedForSale && remainingQty > 0 && (
-									<Paper variant="outlined" sx={{ p: 3, bgcolor: 'success.50', borderColor: 'success.main', width: '100%' }}>
-										<Stack spacing={3} alignItems="center">
-											<Chip
-												color="success"
-												label={`Meekopen mogelijk: ${euro.format(currentPrice)}`}
-												variant="filled"
 											/>
-											<Stack direction="row" spacing={2} justifyContent="center">
-												<Button
-													size="large"
-													startIcon={<AddIcon />}
-													onClick={() => openBuyDialog(true)}
-													variant="contained"
-													color="success"
-												>
-													Meekopen
-												</Button>
-												<Button
-													size="large"
-													startIcon={<ArrowForwardIcon />}
-													onClick={resumeAfterSales}
-													variant="outlined"
-													color="success"
-												>
-													Doorgaan
-												</Button>
-												<Button size="large" color="warning" onClick={finishLot} variant="outlined">
-													Afronden
-												</Button>
-											</Stack>
 										</Stack>
-									</Paper>
-								)}
-							</Stack>
-						</Stack>
-					</Paper>
-				</Box>
-			</Container>
+									) : (
+										<Typography variant="h5">Wachten op volgend kavel...</Typography>
+									)}
 
-			{/* Purchase dialog */}
-			<Dialog open={purchaseOpen} onClose={() => setPurchaseOpen(false)} maxWidth="xs" fullWidth>
-				<DialogTitle>{sideBuyMode ? 'Meekopen op huidige prijs' : 'Koop kavel-deel'}</DialogTitle>
-				<DialogContent dividers>
-					<Stack spacing={2}>
-						<TextField
-							label="Koper"
-							value={buyer}
-							fullWidth
-							InputProps={{
-								readOnly: true,
-							}}
-						/>
-						<TextField
-							label="Aantal"
-							type="number"
-							value={buyQty}
-							onChange={(e) => setBuyQty(Math.max(0, Number(e.target.value)))}
-							inputProps={{ min: 1, step: 1 }}
-							error={Boolean(errors.qty)}
-							helperText={errors.qty || `Beschikbaar: ${remainingQty}`}
-							fullWidth
-						/>
-						<TextField
-							label="Prijs per stuk"
-							value={euro.format(sideBuyMode?.price ?? currentPrice)}
-							fullWidth
-							InputProps={{
-								readOnly: true,
-							}}
-						/>
-					</Stack>
-				</DialogContent>
-				<DialogActions>
-					<Button onClick={() => setPurchaseOpen(false)} disabled={submitting}>Annuleren</Button>
-					<Button
-						onClick={commitPurchase}
-						variant="contained"
-						disabled={Boolean(errors.qty) || buyQty <= 0 || submitting}
-						color="success"
-					>
-						{submitting ? 'Verwerken...' : 'Bevestig'}
-					</Button>
-				</DialogActions>
-			</Dialog>
-		</>
+									{/* Price Display */}
+									<Box
+										sx={{
+											position: 'relative',
+											display: 'flex',
+											alignItems: 'center',
+											justifyContent: 'center',
+											height: 320,
+										}}
+									>
+										<CircularProgress
+											variant="determinate"
+											value={percentage}
+											size={280}
+											thickness={5}
+											color={isRunning ? "primary" : "warning"}
+										/>
+										<Stack
+											spacing={1}
+											alignItems="center"
+											sx={{ textAlign: 'center', position: 'absolute' }}
+										>
+											<Typography variant="overline" color="text.secondary">Huidige prijs</Typography>
+											<Typography variant="h1" fontWeight={700}>
+												{euro.format(currentPrice)}
+											</Typography>
+										</Stack>
+									</Box>
+
+									{/* Purchase Controls */}
+									<Stack spacing={2} width="100%" maxWidth={400}>
+										<TextField
+											label="Aantal te kopen"
+											type="number"
+											value={buyQty}
+											onChange={(e) => setBuyQty(Math.max(1, parseInt(e.target.value) || 0))}
+											fullWidth
+											disabled={!isRunning || isSoldOut || submitting}
+											inputProps={{ min: 1, max: product?.stock }}
+											helperText={product ? `Beschikbaar: ${product.stock}` : ''}
+										/>
+
+										<Box display="flex" gap={2}>
+											<Button
+												variant="outlined"
+												color="info"
+												startIcon={<HistoryIcon />}
+												onClick={() => setHistoryOpen(true)}
+												disabled={!product}
+												sx={{ flex: 1 }}
+											>
+												Historie
+											</Button>
+
+											<Button
+												variant="contained"
+												color="success"
+												size="large"
+												startIcon={submitting ? <CircularProgress size={24} color="inherit" /> : <ShoppingCartIcon />}
+												onClick={commitPurchase}
+												disabled={!isRunning || isSoldOut || submitting}
+												sx={{ flex: 2, height: 60, fontSize: '1.2rem' }}
+											>
+												KOOP NU
+											</Button>
+										</Box>
+									</Stack>
+								</Stack>
+							</Paper>
+						</Box>
+					</Grid>
+
+					{/* Upcoming Products Column */}
+					<Grid size={{ xs: 12, md: 4 }}>
+						<Card variant="outlined" sx={{ height: '100%', maxHeight: '800px', display: 'flex', flexDirection: 'column' }}>
+							<CardHeader
+								title="Volgende Kavels"
+								avatar={<InventoryIcon color="action" />}
+								titleTypographyProps={{ variant: 'h6' }}
+								subheader={`${upcomingProducts.length} kavels in de wachtrij`}
+							/>
+							<Divider />
+							<List dense sx={{ overflow: 'auto', flexGrow: 1 }}>
+								{upcomingProducts.length === 0 ? (
+									<ListItem>
+										<ListItemText secondary="Geen verdere kavels." />
+									</ListItem>
+								) : (
+									upcomingProducts.map((p) => (
+										<ListItem key={p.id} divider>
+											<ListItemAvatar>
+												<Avatar src={p.imageBase64} variant="rounded">
+													{p.name.charAt(0)}
+												</Avatar>
+											</ListItemAvatar>
+											<ListItemText
+												primary={
+													<Typography variant="body2" fontWeight="bold">
+														{p.name}
+													</Typography>
+												}
+												secondary={`Voorraad: ${p.stock} | Start: ${euro.format(p.maxPricePerUnit ?? 2.0)}`}
+											/>
+										</ListItem>
+									))
+								)}
+							</List>
+						</Card>
+					</Grid>
+				</Grid>
+			)}
+
+			{/* Price History Modal */}
+			<PriceHistoryModal
+				open={historyOpen}
+				onClose={() => setHistoryOpen(false)}
+				product={product || null}
+			/>
+		</Container>
 	);
 }
