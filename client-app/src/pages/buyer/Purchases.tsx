@@ -21,6 +21,10 @@ const headCells: readonly HeadCell<PurchaseItem>[] = [
 	{ id: 'id', numeric: true, disablePadding: false, label: 'Totaal', format: (val, row) => `€ ${(row.purchasePrice * row.quantity).toFixed(2)}` },
 ];
 
+/**
+ * Purchases page component for buyers to view their purchase history.
+ * @returns JSX.Element representing the Purchases page.
+ */
 export default function Purchases() {
 	const [purchases, setPurchases] = useState<PurchaseItem[]>([]);
 	const [loading, setLoading] = useState(true);

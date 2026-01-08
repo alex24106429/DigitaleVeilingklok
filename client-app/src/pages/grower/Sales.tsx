@@ -21,7 +21,10 @@ const headCells: readonly HeadCell<SaleHistoryItem>[] = [
 	{ id: 'purchasePrice', numeric: true, disablePadding: false, label: 'Prijs/st', format: (val) => `€ ${val.toFixed(2)}` },
 	{ id: 'id', numeric: true, disablePadding: false, label: 'Totaal', format: (val, row) => `€ ${(row.purchasePrice * row.quantity).toFixed(2)}` },
 ];
-
+/**
+ * Sales page component for growers to view their sales history.
+ * @returns JSX.Element representing the Sales page.
+ */
 export default function Sales() {
 	const [sales, setSales] = useState<SaleHistoryItem[]>([]);
 	const [loading, setLoading] = useState(true);

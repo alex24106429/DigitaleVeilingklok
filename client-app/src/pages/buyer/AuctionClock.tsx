@@ -43,7 +43,10 @@ interface AuctionState {
 	isRunning: boolean;
 	isPaused: boolean;
 }
-
+/**
+ * Auction Clock page component for buyers to participate in auctions.
+ * @returns JSX.Element representing the Auction Clock page.
+ */
 export default function AuctionClock() {
 	const { showAlert } = useAlert();
 	const [connection, setConnection] = useState<HubConnection | null>(null);

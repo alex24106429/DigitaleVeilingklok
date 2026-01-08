@@ -70,7 +70,10 @@ interface SaleLog {
 	productName: string;
 	timestamp: Date;
 }
-
+/**
+ * Auctioneer Dashboard page component.
+ * @returns JSX.Element representing the Auctioneer Dashboard.
+ */
 export default function AuctioneerDashboard() {
 	const { showAlert } = useAlert();
 	const [connection, setConnection] = useState<HubConnection | null>(null);
