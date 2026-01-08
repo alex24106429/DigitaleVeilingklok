@@ -26,6 +26,11 @@ interface PriceHistoryModalProps {
 	onClose: () => void;
 	product: Product | null;
 }
+/**
+ * PriceHistoryModal component to display the price history of a product.
+ * @param param0 The component props.
+ * @returns JSX.Element of price history modal.
+ */
 
 export default function PriceHistoryModal({ open, onClose, product }: PriceHistoryModalProps) {
 	const { showAlert } = useAlert();
