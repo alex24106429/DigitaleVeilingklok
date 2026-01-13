@@ -1,42 +1,120 @@
-![PetalBid Header](/client-app/public/images/petalbid-header.avif)
-
 # PetalBid
 
-Dit project is de ontwikkeling van een realtime, web-gebaseerde digitale veilingklok. De applicatie wordt gebouwd in opdracht van **jem-id** voor de klant **Royal FloraHolland**. Het doel is om een modern, zelfstandig en gebruiksvriendelijk veilingsysteem te realiseren dat losstaat van de bestaande systemen.
+<img src="client-app/public/images/petalbid-banner.avif" alt="PetalBid Banner">
 
-## Technische Stack
+![.NET](https://img.shields.io/badge/.NET-9.0-512BD4?style=flat&logo=dotnet)
+![React](https://img.shields.io/badge/React-19-61DAFB?style=flat&logo=react)
+![Build Status](https://img.shields.io/github/actions/workflow/status/alex24106429/DigitaleVeilingklok/generate-docs.yml)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-De applicatie wordt gebouwd met een moderne N-tier architectuur, bestaande uit een frontend, een backend API en een database.
+**PetalBid** is een geavanceerd, realtime digitaal veilingplatform ontwikkeld in opdracht van **jem-id** voor **Royal FloraHolland**. Dit systeem moderniseert de traditionele bloemenveiling door fysieke en digitale processen te combineren in een webapplicatie.
 
-### Backend
-*   **Taal:** C#
-*   **Framework:** ASP.NET Core Web API
-*   **Data Access:** Entity Framework Core met LINQ
-*   **Testen:** xUnit (Unit Testing)
-
-### Frontend
-*   **Bibliotheek:** React
-*   **Taal:** TypeScript
-*   **Testen:** Vitest
-*   **Package Manager:** NPM
-
-### Database
-*   **Type:** Relationeel Database Management Systeem (RDBMS)
+<img src="screenshots/auctionclockdiagram.avif" alt="Architectuurdiagram Realtime Veilingklok" width="500">
 
 ---
 
-## Getting Started
+## Kernfunctionaliteiten
 
-Volg deze stappen om de ontwikkelomgeving lokaal op te zetten en het project te draaien.
+### 1. Realtime Digitale Veilingklok
+Kopers ervaren een visuele, aflopende klok die milliseconde-nauwkeurig is gesynchroniseerd via WebSockets.
+*   **Live Bieden:** Prijzen dalen automatisch; de eerste die drukt, wint de kavel.
+*   **Visuele Feedback:** Duidelijke weergave van huidige prijs, voorraad en productfoto's.
+*   **Directe Resultaten:** Zodra een koop gesloten is, wordt de voorraad realtime bijgewerkt voor alle deelnemers.
+
+
+<img src="screenshots/veilingklok.avif" alt="De Veilingklok" width="500">
+
+### 2. Dashboard voor Veilingmeesters
+Veilingmeesters hebben volledige controle over het proces via een uitgebreid dashboard.
+*   **Flow Control:** Starten, pauzeren en stoppen van veilingen en individuele kavels.
+*   **Live Monitoring:** Een realtime logboek van alle transacties terwijl ze plaatsvinden.
+*   **Veiling Setup:** Plannen van nieuwe veilingen op diverse locaties (Naaldwijk, Aalsmeer, etc.).
+*   **Kavelbeheer:** Flexibel producten koppelen aan specifieke veilingen en startprijzen instellen.
+
+<img src="screenshots/veilingdashboard.avif" alt="Veiling Dashboard" width="500">
+
+<img src="screenshots/veilingtoevoegen.avif" alt="Nieuwe Veiling" width="500">
+
+<img src="screenshots/productenbeherenvoorveiling.avif" alt="Kavels Koppelen" width="500">
+
+### 3. Productbeheer voor Kwekers (Leveranciers)
+Leveranciers kunnen hun aanbod eenvoudig beheren en klaarzetten voor de veiling.
+*   **CRUD Functionaliteit:** Toevoegen, bewerken en verwijderen van producten.
+*   **Media Upload:** Direct uploaden en verwerken van productfoto's.
+*   **Specificaties:** Gedetailleerde eigenschappen zoals potmaat, steellengte en minimumprijs.
+
+<img src="screenshots/productbeheer.avif" alt="Productoverzicht" width="500">
+<img src="screenshots/nieuweproducttoevoegen.avif" alt="Nieuw Product" width="500">
+
+### 4. Data-Gedreven Inzichten
+*   **Prijshistorie:** Tabellen die de prijsontwikkeling van specifieke bloemensoorten tonen (zowel eigen data als marktgemiddelden).
+*   **Verkoopgeschiedenis:** Een duidelijk overzicht van alle transacties voor administratieve doeleinden.
+
+<img src="screenshots/prijshistorie.avif" alt="Prijshistorie" width="500">
+<img src="screenshots/verkoopgeschiedenis.avif" alt="Verkoopgeschiedenis" width="500">
+
+### 5. Beveiliging & Identiteit
+*   **Tweestapsverificatie (2FA):** Ondersteuning voor TOTP-apps (2FAs, Ente Auth, BitWarden, Microsoft Authenticator) met QR-code setup.
+*   **Pwned Passwords:** Integratie met *Have I Been Pwned* om het gebruik van uitgelekte wachtwoorden te voorkomen.
+*   **Rol-gebaseerde Toegang:** Strikte scheiding tussen Kopers, Leveranciers, Veilingmeesters en Beheerders.
+
+<img src="screenshots/2faqrcode.avif" alt="2FA Setup" width="500">
+<img src="screenshots/inloggen2fa.avif" alt="Inloggen met 2FA" width="500">
+
+### 6. Uitgebreid Beheer (Admin)
+Beheerders hebben tools om het platform soepel te laten draaien.
+*   **Gebruikersbeheer:** Aanmaken en beheren van alle accounts en rollen.
+
+<img src="screenshots/gebruikersbeheer.avif" alt="Gebruikersbeheer" width="500">
+<img src="screenshots/gebruikerbewerken.avif" alt="Gebruiker bewerken" width="500">
+<img src="screenshots/nieuwegebruikertoevoegen.avif" alt="Nieuwe gebruiker toevoegen" width="500">
+
+---
+
+## Technische Stack
+
+De applicatie maakt gebruik van een moderne N-tier architectuur.
+
+### Backend (.NET 9)
+*   **Framework:** ASP.NET Core Web API
+*   **Realtime:** SignalR (WebSockets)
+*   **Data:** Entity Framework Core met TPT (Table-per-Type) inheritance.
+*   **Auth:** ASP.NET Core Identity, JWT (HttpOnly Cookies), TOTP 2FA.
+*   **Media:** Magick.NET voor geavanceerde afbeeldingsoptimalisatie.
+*   **Testing:** xUnit, Moq, EF Core InMemory.
+
+### Frontend (React)
+*   **Core:** React 19, TypeScript, Vite.
+*   **UI Framework:** Material UI (MUI) met ondersteuning voor Dark/Light mode.
+*   **Realtime:** `@microsoft/signalr` client.
+*   **Testing:** Vitest, React Testing Library.
+
+---
+
+## Documentatie
+
+De technische documentatie wordt automatisch gegenereerd via GitHub Actions en gedeployed op: https://alex24106429.github.io/DigitaleVeilingklok/.
+
+*   **Backend Docs:** Gegenereerd met DocFX.
+*   **Frontend Docs:** Gegenereerd met TypeDoc.
+
+## Deployment
+
+GitHub Actions wordt gebruikt voor automatische testing, linting en deployment naar Render/Cloudflare bij elke push naar main.
+
+De frontend wordt via Cloudflare Pages gedeployed op: https://petalbid.bid/
+
+De backend wordt via een [Docker container](https://github.com/alex24106429/DigitaleVeilingklok/blob/main/PetalBid.Api/Dockerfile) en [Render](https://render.com/) gedeployed op: https://api.petalbid.bid/
+
+---
+
+## Aan de slag
 
 ### Vereisten
+*   [.NET 9.0 SDK](https://dotnet.microsoft.com/download)
+*   [Node.js (LTS v20+ aanbevolen)](https://nodejs.org/)
 
-Zorg ervoor dat de volgende software op je systeem is geïnstalleerd:
-*   [.NET SDK](https://dotnet.microsoft.com/download) (versie 9.0 of hoger)
-*   [Node.js](https://nodejs.org/) (inclusief npm)
-*   [VS Code](https://code.visualstudio.com/)
-
-### Installatie & Opstarten
+### Installatie
 
 1.  **Clone de repository:**
     ```bash
@@ -44,49 +122,42 @@ Zorg ervoor dat de volgende software op je systeem is geïnstalleerd:
     cd DigitaleVeilingklok
     ```
 
-2.  **Start de Backend API:**
+2.  **Start de Backend:**
     ```bash
-    # Ga naar de API-map
     cd PetalBid.Api
-
-    # Installeer de NuGet-packages
     dotnet restore
-
-    # Update de database
     dotnet ef database update
-
-    # Start de applicatie
     dotnet run
     ```
-    De API is nu bereikbaar op `https://localhost:5048` (of de poort wordt in de terminal getoond). Je kunt de endpoints testen via de Swagger UI op `https://localhost:5048/swagger`.
+    De backend is bereikbaar op http://localhost:5048/
 
-3.  **Start de Frontend Applicatie:**
-    *Open een nieuwe terminal in de hoofdmap van het project.*
+	Swagger UI is beschikbaar op http://localhost:5048/swagger/index.html
+
+	In de ontwikkeling-environment wordt SQLite gebruikt, geen configuratie nodig.
+
+	Voor de productie-environment: configureer de `DATABASE_URL` environment variable.
+
+3.  **Start de Frontend:**
+    *(In een nieuwe terminal)*
     ```bash
-    # Ga naar de frontend-map
     cd client-app
-
-    # Installeer de npm-packages
     npm install
-
-    # Start de ontwikkelserver
     npm run dev
     ```
-    De React-applicatie wordt nu geopend in je browser.
+    De applicatie is beschikbaar op http://localhost:5173/.
 
-### Tests Uitvoeren
+### Inloggegevens (Demo Seed Data)
+In de ontwikkeling-environment wordt de database automatisch gevuld met testgebruikers (Wachtwoord: `PetalBid1!`):
+*   **Admin:** `administrator@petalbid.bid`
+*   **Veilingmeester:** `veilingmeester@petalbid.bid`
+*   **Kweker (Leverancier):** `leverancier@petalbid.bid`
+*   **Koper:** `koper@petalbid.bid`
 
-Het project bevat unit tests voor de backend om de bedrijfslogica en API-controllers te verifiëren.
+---
 
-1.  **Backend Unit Tests:**
-    ```bash
-	# Ga naar de tests-map
-	cd PetalBid.Api.Tests
+## Tests Uitvoeren
 
-	# Installeer de dependencies
-	dotnet add package Moq
-	dotnet add package Microsoft.EntityFrameworkCore.InMemory --version 9.0.0
+Het project bevat uitgebreide unit tests voor zowel de backend (Business Logic & Controllers) als de frontend (Componenten & Services).
 
-    # Voer alle tests uit in de solution
-    dotnet test
-    ```
+*   **Backend:** `dotnet test` in de `PetalBid.Api.Tests` map.
+*   **Frontend:** `npm run test` in de `client-app` map.

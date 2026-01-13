@@ -46,6 +46,5 @@ client-app/dist
 vite.config.js
 vite.config.d.ts
 
-# screenshots
-screenshots/
-*.png
+# oude PNG screenshots
+screenshots/*.png
