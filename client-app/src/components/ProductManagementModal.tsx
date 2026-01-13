@@ -49,6 +49,9 @@ export const ProductManagementModal: React.FC<ProductManagementModalProps> = ({
 	const [updatingAuction, setUpdatingAuction] = useState(false);
 	const [deletingAuction, setDeletingAuction] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
+	// Local state to manage start price inputs and validation per product
+	const [priceInputs, setPriceInputs] = useState<Record<number, string>>({});
+	const [priceErrors, setPriceErrors] = useState<Record<number, string | null>>({});
 
 	// Reset edit state when modal opens/closes or auction changes
 	React.useEffect(() => {
@@ -58,6 +61,16 @@ export const ProductManagementModal: React.FC<ProductManagementModalProps> = ({
 		setIsEditingAuction(false);
 		setErrorMessage(null);
 	}, [auction, open]);
+
+	// Initialize local price input values when linked products change
+	React.useEffect(() => {
+		const initialInputs: Record<number, string> = {};
+		linkedProducts.forEach(p => {
+			initialInputs[p.id] = p.maxPricePerUnit !== undefined && p.maxPricePerUnit !== null ? String(p.maxPricePerUnit) : '';
+		});
+		setPriceInputs(initialInputs);
+		setPriceErrors({});
+	}, [linkedProducts]);
 
 	if (!auction) {
 		return null;
@@ -261,20 +274,58 @@ export const ProductManagementModal: React.FC<ProductManagementModalProps> = ({
 								<Typography variant="subtitle1">
 									{product.name} (ID: {product.id})
 								</Typography>
+								<Typography variant="body2">
+									Minimumprijs: {product.minimumPrice ?? 'Niet ingesteld'}
+								</Typography>
 								<Typography variant="body2">Huidige Startprijs: {product.maxPricePerUnit ?? 'Niet ingesteld'}</Typography>
 								<TextField
 									label="Start Prijs"
 									type="number"
-									value={product.maxPricePerUnit ?? ''}
-									onChange={(e) => onMaxPriceChange(product.id, parseFloat(e.target.value))}
-									inputProps={{ step: "0.01" }}
+									value={priceInputs[product.id] ?? ''}
+									onChange={(e) => {
+										const v = e.target.value;
+										setPriceInputs(prev => ({ ...prev, [product.id]: v }));
+										setPriceErrors(prev => ({ ...prev, [product.id]: null }));
+									}}
+									onBlur={async (e) => {
+										const raw = e.target.value;
+										if (raw === '') {
+											// Keep behavior consistent with previous implementation (allow empty)
+											await onMaxPriceChange(product.id, NaN as unknown as number);
+											return;
+										}
+										const parsed = parseFloat(raw);
+										if (Number.isNaN(parsed)) {
+											setPriceErrors(prev => ({ ...prev, [product.id]: 'Ongeldige waarde' }));
+											return;
+										}
+										const min = product.minimumPrice ?? null;
+										if (min !== null && parsed <= min) {
+											setPriceErrors(prev => ({ ...prev, [product.id]: 'Startprijs moet hoger zijn dan minimumprijs' }));
+											// Do not propagate invalid value
+											return;
+										}
+										await onMaxPriceChange(product.id, parsed);
+										showAlert({
+											title: 'Startprijs opgeslagen',
+											message: 'De startprijs is succesvol bijgewerkt.',
+											severity: 'success',
+											display: 'snackbar'
+										});
+									}}
+									inputProps={{ step: "0.01", min: (product.minimumPrice ?? undefined) as unknown as number }}
 									sx={{ mt: 1, mr: 2 }}
 								/>
+								{priceErrors[product.id] && (
+									<Alert severity="error" sx={{ mt: 1, mr: 2 }}>
+										{priceErrors[product.id]}
+									</Alert>
+								)}
 								<Button
-									variant="outlined"
+									variant="contained"
 									color="error"
 									onClick={() => onUnlinkProduct(product.id)}
-									sx={{ mt: 1 }}
+									sx={{ mt: 2, ml: 1 }}
 								>
 									Ontkoppelen
 								</Button>
