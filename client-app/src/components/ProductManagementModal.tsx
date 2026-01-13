@@ -49,9 +49,9 @@ export const ProductManagementModal: React.FC<ProductManagementModalProps> = ({
 	const [updatingAuction, setUpdatingAuction] = useState(false);
 	const [deletingAuction, setDeletingAuction] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    // Local state to manage start price inputs and validation per product
-    const [priceInputs, setPriceInputs] = useState<Record<number, string>>({});
-    const [priceErrors, setPriceErrors] = useState<Record<number, string | null>>({});
+	// Local state to manage start price inputs and validation per product
+	const [priceInputs, setPriceInputs] = useState<Record<number, string>>({});
+	const [priceErrors, setPriceErrors] = useState<Record<number, string | null>>({});
 
 	// Reset edit state when modal opens/closes or auction changes
 	React.useEffect(() => {
