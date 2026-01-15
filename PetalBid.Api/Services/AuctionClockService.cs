@@ -33,7 +33,6 @@ public class AuctionClockService(IServiceScopeFactory scopeFactory, IHubContext<
 	private readonly Dictionary<int, Timer> _timers = [];
 
 	private const double PriceStep = 0.01;
-	private const double FloorPrice = 0.10; // Avoid going to 0
 	private const int TickRateMs = 250; // Update 4 times a second
 
 	public async Task StartAuctionAsync(int auctionId)
@@ -243,16 +242,34 @@ public class AuctionClockService(IServiceScopeFactory scopeFactory, IHubContext<
 
 		if (!state.IsRunning || state.IsPaused) return;
 
-		state.CurrentPrice -= PriceStep;
-		if (state.CurrentPrice < FloorPrice)
-		{
-			state.CurrentPrice = FloorPrice;
-			state.IsRunning = false; // Stop at floor
-			// Notify "No Sale" or wait for manual action
-		}
+		// Check if we have a current product
+		if (state.CurrentProduct == null) return;
 
-		// Optimization: Don't await strictly, fire and forget or simple wait
-		await _hubContext.Clients.Group($"auction-{auctionId}").SendAsync("PriceUpdate", state.CurrentPrice);
+		// Get the minimum price for the current product
+		var minimumPrice = state.CurrentProduct.MinimumPrice;
+
+		// Decrement price
+		var newPrice = state.CurrentPrice - PriceStep;
+
+		// Ensure price doesn't go below minimum
+		if (newPrice < minimumPrice)
+		{
+			state.CurrentPrice = minimumPrice;
+			state.IsRunning = false; // Pause at minimum price
+			state.IsPaused = true;
+			StopTimer(auctionId);
+			
+			// Broadcast final state at minimum price
+			await BroadcastState(auctionId);
+			await _hubContext.Clients.Group($"auction-{auctionId}").SendAsync("PriceUpdate", state.CurrentPrice);
+			await _hubContext.Clients.Group($"auction-{auctionId}").SendAsync("MinimumPriceReached");
+		}
+		else
+		{
+			state.CurrentPrice = newPrice;
+			// Optimization: Don't await strictly, fire and forget or simple wait
+			await _hubContext.Clients.Group($"auction-{auctionId}").SendAsync("PriceUpdate", state.CurrentPrice);
+		}
 	}
 
 	private async Task BroadcastState(int auctionId)
