@@ -231,7 +231,7 @@ export default function AuctionClock() {
 
 	// Visuals for clock
 	const maxPrice = product?.maxPricePerUnit ?? 2.0;
-	const minPrice = 0.1; // Floor
+	const minPrice = product?.minimumPrice ?? 0.1; // Use product's minimum price, fallback to 0.1
 	const percentage = maxPrice > minPrice
 		? Math.max(0, Math.min(100, ((maxPrice - currentPrice) / (maxPrice - minPrice)) * 100))
 		: 0;
