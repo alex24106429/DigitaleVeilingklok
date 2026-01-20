@@ -5,6 +5,7 @@ import { authService } from '../api/services/authService';
 export interface LoginResult {
 	success: boolean;
 	error?: string;
+	user?: User;
 }
 
 /**
@@ -66,7 +67,7 @@ type ValidationResult = { user: User | null };
 let sessionValidationInFlight: Promise<ValidationResult> | null = null;
 
 /**
- * Validates the stored session once (de-duplicated). 
+ * Validates the stored session once (de-duplicated).
  * It checks localStorage for the user object, but verifies authorization via an API call
  * which relies on the HttpOnly cookie.
  */
@@ -173,7 +174,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 			setUser(userData);
 			// We only store profile info, token is in cookie
 			localStorage.setItem('user', JSON.stringify(userData));
-			return { success: true };
+			return { success: true, user: userData };
 		}
 
 		return { success: false, error: response.error };

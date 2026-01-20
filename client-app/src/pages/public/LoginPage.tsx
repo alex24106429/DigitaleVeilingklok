@@ -66,7 +66,26 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 			if (result.success) {
 				setNeedsTwoFactor(false);
 				setTwoFactorCode("");
-				navigate("/");
+
+				let redirectPath = "/";
+				if (result.user) {
+					switch (result.user.role) {
+						case UserRole.Buyer:
+							redirectPath = "/buyer/auctionclock";
+							break;
+						case UserRole.Auctioneer:
+							redirectPath = "/auctioneer/dashboard";
+							break;
+						case UserRole.Supplier:
+							redirectPath = "/grower/products";
+							break;
+						case UserRole.Admin:
+							redirectPath = "/admin/manageusers";
+							break;
+					}
+				}
+
+				navigate(redirectPath);
 				return;
 			}
 
