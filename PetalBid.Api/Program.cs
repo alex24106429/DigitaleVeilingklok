@@ -342,7 +342,7 @@ public class Program
 		app.UseAuthorization();
 
 		app.MapControllers();
-		app.MapHub<AuctionHub>("/auctionHub"); // Map SignalR Hub
+		app.MapHub<AuctionHub>("/api/auctionHub");
 
 		app.Run();
 	}
