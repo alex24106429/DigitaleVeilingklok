@@ -152,30 +152,51 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 				return;
 			}
 
-			showAlert({
-				title: "Succes",
-				message: "Registratie voltooid! U kunt nu inloggen.",
-				severity: "success",
-				display: "inline"
-			});
+			// Automatically log in after registration
+			const autoLogin = await login(email, password);
 
-			if (enableTwoFactorAfterRegister) {
-				const autoLogin = await login(email, password);
-				if (autoLogin.success) {
-					setEnableTwoFactorAfterRegister(false);
+			if (autoLogin.success) {
+				showAlert({
+					title: "Succes",
+					message: "Registratie voltooid! U bent ingelogd.",
+					severity: "success",
+					display: "inline"
+				});
+
+				if (enableTwoFactorAfterRegister) {
 					navigate("/account?setup2fa=1", { replace: true });
 					return;
 				}
 
+				// Redirect based on role
+				let redirectPath = "/";
+				if (autoLogin.user) {
+					switch (autoLogin.user.role) {
+						case UserRole.Buyer:
+							redirectPath = "/buyer/auctionclock";
+							break;
+						case UserRole.Auctioneer:
+							redirectPath = "/auctioneer/dashboard";
+							break;
+						case UserRole.Supplier:
+							redirectPath = "/grower/products";
+							break;
+						case UserRole.Admin:
+							redirectPath = "/admin/manageusers";
+							break;
+					}
+				}
+				navigate(redirectPath);
+			} else {
+				// Fallback if auto-login fails
 				showAlert({
-					title: "Let op",
-					message: "Registratie gelukt, maar automatisch inloggen mislukte. Log handmatig in en schakel 2FA via Mijn Account in.",
-					severity: "warning",
+					title: "Succes",
+					message: "Registratie voltooid! U kunt nu inloggen.",
+					severity: "success",
 					display: "inline"
 				});
+				navigate("/login");
 			}
-
-			navigate("/login");
 		} catch {
 			showAlert({ title: "Fout", message: "Er is een onverwachte fout opgetreden. Probeer het opnieuw.", display: "inline", severity: "error" });
 		} finally {
