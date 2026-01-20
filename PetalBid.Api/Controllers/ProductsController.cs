@@ -200,6 +200,14 @@ public class ProductsController(AppDbContext db) : ApiControllerBase(db)
 		// Only Suppliers can create products through this endpoint
 		if (userRole != "Supplier") return Forbid();
 
+		if (productDto.SaleDate.HasValue)
+		{
+			if (productDto.SaleDate.Value.Kind == DateTimeKind.Unspecified)
+				productDto.SaleDate = DateTime.SpecifyKind(productDto.SaleDate.Value, DateTimeKind.Utc);
+			else if (productDto.SaleDate.Value.Kind == DateTimeKind.Local)
+				productDto.SaleDate = productDto.SaleDate.Value.ToUniversalTime();
+		}
+
 		var processedImage = ProcessAndEncodeImage(productDto.ImageBase64);
 
 		var product = new Product
@@ -240,6 +248,14 @@ public class ProductsController(AppDbContext db) : ApiControllerBase(db)
 		if (userRole == "Supplier" && existing.SupplierId != userId)
 		{
 			return Forbid();
+		}
+
+		if (updatedDto.SaleDate.HasValue)
+		{
+			if (updatedDto.SaleDate.Value.Kind == DateTimeKind.Unspecified)
+				updatedDto.SaleDate = DateTime.SpecifyKind(updatedDto.SaleDate.Value, DateTimeKind.Utc);
+			else if (updatedDto.SaleDate.Value.Kind == DateTimeKind.Local)
+				updatedDto.SaleDate = updatedDto.SaleDate.Value.ToUniversalTime();
 		}
 
 		// Only process image if a new one is provided (simple check if string is not empty)
