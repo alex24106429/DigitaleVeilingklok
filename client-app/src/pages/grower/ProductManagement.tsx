@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, ChangeEvent } from 'react';
 import {
 	Typography, Box, CircularProgress, Button, Dialog, DialogActions,
 	DialogContent, DialogTitle, TextField, Grid, InputAdornment,
-	IconButton, Select, MenuItem, FormControl, InputLabel, FormHelperText
+	IconButton, Select, MenuItem, FormControl, InputLabel
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
@@ -11,7 +11,8 @@ import { useAlert } from '../../components/AlertProvider';
 import TableComponent, { HeadCell } from '../../components/TableComponent';
 import { Product } from '../../types/product';
 import { productService, ProductDto } from '../../api/services/productService';
-import { auctionService, Auction } from '../../api/services/auctionService';
+import { auctionService } from '../../api/services/auctionService';
+import { Auction } from '../../types/auction';
 
 const headCells: readonly HeadCell<Product>[] = [
 	{ id: 'id', numeric: true, disablePadding: false, label: 'ID' },
@@ -288,7 +289,7 @@ export default function ProductManagement() {
 								<Select
 									name="auctionId"
 									value={formData.auctionId || ''}
-									onChange={(e) => setFormData(prev => ({ ...prev, auctionId: e.target.value === '' ? undefined : Number(e.target.value) }))}
+									onChange={(e) => setFormData(prev => ({ ...prev, auctionId: (e.target.value as string | number) === '' ? undefined : Number(e.target.value) }))}
 									label="Veiling"
 								>
 									<MenuItem value="">
