@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Box, Checkbox, FormControlLabel, FormGroup, CircularProgress, Alert, TextField, IconButton } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Box, Checkbox, FormControlLabel, FormGroup, CircularProgress, Alert, TextField, IconButton, Avatar } from '@mui/material';
 import { Edit, Save, Cancel, Delete } from '@mui/icons-material';
 import { Auction } from '../types/auction';
 import { Product } from '../types/product';
@@ -248,7 +248,22 @@ export const ProductManagementModal: React.FC<ProductManagementModalProps> = ({
 											onChange={() => onProductToggle(product.id)}
 										/>
 									}
-									label={`${product.name} (ID: ${product.id}) - Voorraad: ${product.stock}`}
+									label={
+										<Box display="flex" alignItems="center" gap={2}>
+											<Avatar
+												src={product.imageBase64 || undefined}
+												variant="rounded"
+												sx={{ width: 40, height: 40 }}
+											>
+												{product.name.charAt(0)}
+											</Avatar>
+											<Box>
+												<Typography variant="body2" fontWeight="bold">{product.name}</Typography>
+												<Typography variant="caption" display="block" color="text.secondary">Voorraad: {product.stock}</Typography>
+											</Box>
+										</Box>
+									}
+									sx={{ mb: 1, width: '100%', alignItems: 'flex-start' }}
 								/>
 							))}
 						</FormGroup>
@@ -271,9 +286,24 @@ export const ProductManagementModal: React.FC<ProductManagementModalProps> = ({
 					) : (
 						linkedProducts.map((product) => (
 							<Box key={product.id} sx={{ mb: 2, p: 2, border: '1px solid #ccc', borderRadius: '4px' }}>
-								<Typography variant="subtitle1">
-									{product.name} (ID: {product.id})
-								</Typography>
+								<Box display="flex" alignItems="center" gap={2} mb={2}>
+									<Avatar
+										src={product.imageBase64 || undefined}
+										variant="rounded"
+										sx={{ width: 50, height: 50 }}
+									>
+										{product.name.charAt(0)}
+									</Avatar>
+									<Box>
+										<Typography variant="subtitle1" fontWeight="bold">
+											{product.name}
+										</Typography>
+										<Typography variant="body2" color="text.secondary">
+											Voorraad: {product.stock}
+										</Typography>
+									</Box>
+								</Box>
+
 								<Typography variant="body2">
 									Minimumprijs: {product.minimumPrice ?? 'Niet ingesteld'}
 								</Typography>

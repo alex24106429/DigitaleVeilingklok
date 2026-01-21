@@ -36,7 +36,4 @@ public class ProductDto
 	public int? AuctionId { get; set; }
 
 	public double? MaxPricePerUnit { get; set; }
-
-	[FutureDate]
-	public DateTime? SaleDate { get; set; }
 }

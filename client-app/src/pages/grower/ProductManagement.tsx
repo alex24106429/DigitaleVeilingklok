@@ -40,12 +40,8 @@ const headCells: readonly HeadCell<Product>[] = [
 	{ id: 'name', numeric: false, disablePadding: false, label: 'Naam' },
 	{ id: 'species', numeric: false, disablePadding: false, label: 'Soort' },
 	{ id: 'stock', numeric: true, disablePadding: false, label: 'Voorraad' },
+	{ id: 'maxPricePerUnit', numeric: true, disablePadding: false, label: 'Startprijs (€)' },
 	{ id: 'minimumPrice', numeric: true, disablePadding: false, label: 'Min. Prijs (€)' },
-	{
-		id: 'saleDate', numeric: false, disablePadding: false, label: 'Verkoopdatum', format: (value) => value ? new Date(value as string).toLocaleDateString('nl-NL') : (
-			<Typography variant="caption" color="text.secondary">Geen</Typography>
-		)
-	},
 	{ id: 'auctionId', numeric: true, disablePadding: false, label: 'Veiling ID' },
 ];
 
@@ -56,13 +52,15 @@ const initialFormData: ProductDto = {
 	imageBase64: '',
 	stock: 1,
 	minimumPrice: 0.01,
+	maxPricePerUnit: undefined,
 	potSize: undefined,
 	stemLength: undefined,
-	saleDate: undefined,
 	auctionId: undefined,
 };
+
 /**
  * Manages the products for the grower, including creating, updating, and deleting products.
+ * Includes logic to link products to auctions and set starting prices.
  * @returns JSX.Element
  */
 export default function ProductManagement() {
@@ -106,9 +104,7 @@ export default function ProductManagement() {
 		if (product) {
 			// eslint-disable-next-line @typescript-eslint/no-unused-vars
 			const { id, supplierId, ...dto } = product;
-			// Ensure saleDate is in YYYY-MM-DD format for date input
-			const formattedSaleDate = dto.saleDate ? dto.saleDate.split('T')[0] : undefined;
-			setFormData({ ...dto, saleDate: formattedSaleDate });
+			setFormData(dto);
 		} else {
 			setFormData(initialFormData);
 		}
@@ -145,6 +141,16 @@ export default function ProductManagement() {
 	};
 
 	const handleSave = async () => {
+		// Basic validation for pricing
+		if (formData.maxPricePerUnit && formData.minimumPrice && formData.maxPricePerUnit <= formData.minimumPrice) {
+			showAlert({
+				title: 'Fout',
+				message: 'De startprijs van de klok moet hoger zijn dan de minimumprijs.',
+				severity: 'warning'
+			});
+			return;
+		}
+
 		let response;
 		if (editingProduct) {
 			response = await productService.updateProduct(editingProduct.id, formData);
@@ -200,7 +206,7 @@ export default function ProductManagement() {
 						Productbeheer
 					</Typography>
 					<Typography variant="body1" color="text.secondary">
-						Beheer hier uw aangeboden producten en kavels.
+						Beheer hier uw aangeboden producten, stel de voorraad in en koppel ze direct aan een veiling.
 					</Typography>
 				</div>
 				<Button
@@ -225,6 +231,7 @@ export default function ProductManagement() {
 				<DialogTitle>{editingProduct ? 'Product Bewerken' : 'Nieuw Product Toevoegen'}</DialogTitle>
 				<DialogContent>
 					<Grid container spacing={2} sx={{ mt: 1 }}>
+						{/* Basic Info */}
 						<Grid size={{ xs: 12, sm: 6 }}>
 							<TextField name="name" label="Productnaam" value={formData.name} onChange={handleFormChange} fullWidth inputProps={{ maxLength: 100 }} helperText="Max 100 karakters" />
 						</Grid>
@@ -268,11 +275,9 @@ export default function ProductManagement() {
 							</Box>
 						</Grid>
 
+						{/* Physical Properties */}
 						<Grid size={{ xs: 6, sm: 3 }}>
 							<TextField name="stock" label="Voorraad (stuks)" type="number" value={formData.stock} onChange={handleFormChange} fullWidth inputProps={{ min: 1 }} helperText="Min 1" />
-						</Grid>
-						<Grid size={{ xs: 6, sm: 3 }}>
-							<TextField name="minimumPrice" label="Min. prijs" type="number" value={formData.minimumPrice} onChange={handleFormChange} fullWidth InputProps={{ startAdornment: <InputAdornment position="start">€</InputAdornment> }} inputProps={{ min: 0.01, step: 0.01 }} helperText="Min €0.01" />
 						</Grid>
 						<Grid size={{ xs: 6, sm: 3 }}>
 							<TextField name="weight" label="Gewicht (kg)" type="number" value={formData.weight} onChange={handleFormChange} fullWidth inputProps={{ min: 0, max: 100 }} helperText="0 - 100 kg" />
@@ -283,7 +288,39 @@ export default function ProductManagement() {
 						<Grid size={{ xs: 6, sm: 3 }}>
 							<TextField name="stemLength" label="Steellengte (cm)" type="number" value={formData.stemLength || ''} onChange={handleFormChange} fullWidth inputProps={{ min: 0, max: 100 }} helperText="0 - 100 cm" />
 						</Grid>
-						<Grid size={{ xs: 6, sm: 3 }}>
+
+						{/* Pricing & Auction */}
+						<Grid size={{ xs: 12 }}>
+							<Typography variant="subtitle2" sx={{ mt: 1, mb: 1, color: 'text.secondary' }}>Veilinginstellingen</Typography>
+						</Grid>
+
+						<Grid size={{ xs: 12, sm: 4 }}>
+							<TextField
+								name="minimumPrice"
+								label="Min. prijs (Bodem)"
+								type="number"
+								value={formData.minimumPrice}
+								onChange={handleFormChange}
+								fullWidth
+								InputProps={{ startAdornment: <InputAdornment position="start">€</InputAdornment> }}
+								inputProps={{ min: 0.01, step: 0.01 }}
+								helperText="De absolute minimumprijs"
+							/>
+						</Grid>
+						<Grid size={{ xs: 12, sm: 4 }}>
+							<TextField
+								name="maxPricePerUnit"
+								label="Startprijs klok"
+								type="number"
+								value={formData.maxPricePerUnit || ''}
+								onChange={handleFormChange}
+								fullWidth
+								InputProps={{ startAdornment: <InputAdornment position="start">€</InputAdornment> }}
+								inputProps={{ min: 0.01, step: 0.01 }}
+								helperText="Prijs waar de klok start"
+							/>
+						</Grid>
+						<Grid size={{ xs: 12, sm: 4 }}>
 							<FormControl fullWidth>
 								<InputLabel>Veiling</InputLabel>
 								<Select
@@ -293,7 +330,7 @@ export default function ProductManagement() {
 									label="Veiling"
 								>
 									<MenuItem value="">
-										<em>Geen</em>
+										<em>Niet geveild (Opslag)</em>
 									</MenuItem>
 									{auctions.map((auction) => (
 										<MenuItem key={auction.id} value={auction.id}>
