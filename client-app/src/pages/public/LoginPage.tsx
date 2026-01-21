@@ -18,12 +18,15 @@ import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemAvatar from '@mui/material/ListItemAvatar';
+import ListItemIcon from '@mui/material/ListItemIcon';
 import Avatar from '@mui/material/Avatar';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import GavelIcon from '@mui/icons-material/Gavel';
 import StoreIcon from '@mui/icons-material/Store';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import BugReportIcon from '@mui/icons-material/BugReport';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
 
 import { useState, useEffect, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
@@ -79,6 +82,14 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 	}, [isRegisterPage, clearAlert]);
 
 	const sanitizeCode = (value: string) => value.replace(/\D/g, "").slice(0, 6);
+
+	const passwordRequirements = [
+		{ label: "Minimaal 8 tekens", valid: password.length >= 8 },
+		{ label: "Minimaal 1 hoofdletter", valid: /[A-Z]/.test(password) },
+		{ label: "Minimaal 1 kleine letter", valid: /[a-z]/.test(password) },
+		{ label: "Minimaal 1 cijfer", valid: /[0-9]/.test(password) },
+		{ label: "Minimaal 1 speciaal teken", valid: /[^A-Za-z0-9]/.test(password) },
+	];
 
 	const attemptLogin = async (overrideEmail?: string, overridePassword?: string) => {
 		setIsLoading(true);
@@ -154,6 +165,13 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 
 		if (password !== confirmPassword) {
 			showAlert({ title: "Ongeldige informatie", message: "Wachtwoorden komen niet overeen!", display: "inline", severity: "warning" });
+			return;
+		}
+
+		// Client-side validation of password requirements before submit
+		const isValidPassword = passwordRequirements.every(req => req.valid);
+		if (!isValidPassword) {
+			showAlert({ title: "Ongeldig wachtwoord", message: "Zorg dat uw wachtwoord aan alle eisen voldoet.", display: "inline", severity: "warning" });
 			return;
 		}
 
@@ -289,8 +307,33 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 						required
 						value={password}
 						onChange={(e) => setPassword(e.target.value)}
-						helperText={isRegisterPage ? "Wachtwoord moet minimaal 6 tekens, inclusief een hoofdletter, een cijfer en een speciaal teken." : undefined}
 					/>
+
+					{isRegisterPage && (
+						<Box>
+							<List dense sx={{ py: 0, my: 0 }}>
+								{passwordRequirements.map((req, index) => (
+									<ListItem key={index} disableGutters sx={{ py: 0, my: 0 }}>
+										<ListItemIcon sx={{ minWidth: 28 }}>
+											{req.valid ? (
+												<CheckCircleIcon color="success" sx={{ fontSize: 18 }} />
+											) : (
+												<CancelIcon color="error" sx={{ fontSize: 18 }} />
+											)}
+										</ListItemIcon>
+										<ListItemText
+											primary={req.label}
+											primaryTypographyProps={{
+												variant: 'caption',
+												color: req.valid ? 'success.main' : 'text.secondary'
+											}}
+											sx={{ py: 0, my: 0 }}
+										/>
+									</ListItem>
+								))}
+							</List>
+						</Box>
+					)}
 
 					{isRegisterPage && (
 						<>
@@ -303,7 +346,7 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 								value={confirmPassword}
 								onChange={(e) => setConfirmPassword(e.target.value)}
 							/>
-							<FormControl required margin="normal">
+							<FormControl required>
 								<FormLabel component="legend" id="user-type-label">Ik ben:</FormLabel>
 								<RadioGroup
 									row
