@@ -177,7 +177,7 @@ export default function AuctioneerDashboard() {
 					await connection.invoke('JoinAuctionGroup', selectedAuctionId);
 				} catch (err) {
 					console.error('Connection failed: ', err);
-					showAlert({ title: "Verbindingsfout", message: "Kon geen verbinding maken met de server.", severity: "error" });
+					// showAlert({ title: "Verbindingsfout", message: "Kon geen verbinding maken met de server.", severity: "error" });
 				}
 			};
 

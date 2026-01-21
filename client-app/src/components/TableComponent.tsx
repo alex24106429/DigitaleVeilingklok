@@ -16,7 +16,6 @@ import Checkbox from '@mui/material/Checkbox';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import DeleteIcon from '@mui/icons-material/Delete';
-import FilterListIcon from '@mui/icons-material/FilterList';
 import EditIcon from '@mui/icons-material/Edit';
 import visuallyHidden from '@mui/utils/visuallyHidden';
 
@@ -145,7 +144,7 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
 					{tableName}
 				</Typography>
 			)}
-			{numSelected > 0 ? (
+			{numSelected > 0 && (
 				<>
 					{onEdit && (
 						<Tooltip title="Edit">
@@ -162,12 +161,6 @@ function EnhancedTableToolbar(props: EnhancedTableToolbarProps) {
 						</IconButton>
 					</Tooltip>
 				</>
-			) : (
-				<Tooltip title="Filter list">
-					<IconButton>
-						<FilterListIcon />
-					</IconButton>
-				</Tooltip>
 			)}
 		</Toolbar>
 	);
@@ -197,7 +190,7 @@ export default function TableComponent<T extends Record<string, any>>({
 	const [selected, setSelected] = React.useState<readonly (string | number)[]>([]);
 	const [page, setPage] = React.useState(0);
 
-	const [rowsPerPage, setRowsPerPage] = React.useState(5);
+	const [rowsPerPage, setRowsPerPage] = React.useState(25);
 
 	const handleRequestSort = (event: React.MouseEvent<unknown>, property: keyof T) => {
 		const isAsc = orderBy === property && order === 'asc';
@@ -325,7 +318,7 @@ export default function TableComponent<T extends Record<string, any>>({
 					</Table>
 				</TableContainer>
 				<TablePagination
-					rowsPerPageOptions={[5, 10, 25]}
+					rowsPerPageOptions={[25, 50, 100]}
 					component="div"
 					count={rows.length}
 					rowsPerPage={rowsPerPage}
