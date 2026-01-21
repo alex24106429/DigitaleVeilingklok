@@ -177,6 +177,9 @@ public class AuctionClockService(IServiceScopeFactory scopeFactory, IHubContext<
 		state.IsPaused = true;
 		StopTimer(auctionId);
 
+		// Reset price to original starting price
+		state.CurrentPrice = state.CurrentProduct.MaxPricePerUnit ?? 2.00;
+
 		// Update in-memory product stock
 		state.CurrentProduct.Stock = product.Stock;
 
@@ -258,7 +261,7 @@ public class AuctionClockService(IServiceScopeFactory scopeFactory, IHubContext<
 			state.IsRunning = false; // Pause at minimum price
 			state.IsPaused = true;
 			StopTimer(auctionId);
-			
+
 			// Broadcast final state at minimum price
 			await BroadcastState(auctionId);
 			await _hubContext.Clients.Group($"auction-{auctionId}").SendAsync("PriceUpdate", state.CurrentPrice);
