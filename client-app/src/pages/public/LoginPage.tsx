@@ -253,7 +253,9 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 						required
 						value={password}
 						onChange={(e) => setPassword(e.target.value)}
+						helperText={isRegisterPage ? "Wachtwoord moet minimaal 6 tekens, inclusief een hoofdletter, een cijfer en een speciaal teken." : undefined}
 					/>
+
 					{isRegisterPage && (
 						<>
 							<TextField
