@@ -14,6 +14,8 @@ public class AuctionState
 	public double CurrentPrice { get; set; }
 	public bool IsRunning { get; set; }
 	public bool IsPaused { get; set; }
+	// New property to indicate the grace period state
+	public bool IsGracePeriod { get; set; }
 }
 
 public class BidResult
@@ -32,11 +34,17 @@ public class AuctionClockService(IServiceScopeFactory scopeFactory, IHubContext<
 	private readonly Dictionary<int, AuctionState> _activeAuctions = [];
 	private readonly Dictionary<int, Timer> _timers = [];
 
+	// Separate timers for the grace period (the 5-second pause)
+	private readonly Dictionary<int, Timer> _graceTimers = [];
+
 	private const double PriceStep = 0.01;
 	private const int TickRateMs = 250; // Update 4 times a second
+	private const int GracePeriodMs = 5000; // 5 Seconds grace period
 
 	public async Task StartAuctionAsync(int auctionId)
 	{
+		StopGraceTimer(auctionId); // Ensure grace timer is cleared
+
 		if (_activeAuctions.ContainsKey(auctionId))
 		{
 			var existing = _activeAuctions[auctionId];
@@ -44,6 +52,7 @@ public class AuctionClockService(IServiceScopeFactory scopeFactory, IHubContext<
 			{
 				existing.IsRunning = true;
 				existing.IsPaused = false;
+				existing.IsGracePeriod = false;
 				StartTimer(auctionId);
 				await BroadcastState(auctionId);
 			}
@@ -69,7 +78,8 @@ public class AuctionClockService(IServiceScopeFactory scopeFactory, IHubContext<
 			CurrentProduct = firstProduct,
 			CurrentPrice = firstProduct?.MaxPricePerUnit ?? 2.00, // Default start price if not set
 			IsRunning = firstProduct != null,
-			IsPaused = false
+			IsPaused = false,
+			IsGracePeriod = false
 		};
 
 		_activeAuctions[auctionId] = state;
@@ -84,10 +94,13 @@ public class AuctionClockService(IServiceScopeFactory scopeFactory, IHubContext<
 
 	public async Task PauseAuctionAsync(int auctionId)
 	{
+		StopGraceTimer(auctionId);
+
 		if (_activeAuctions.TryGetValue(auctionId, out var state))
 		{
 			state.IsRunning = false;
 			state.IsPaused = true;
+			state.IsGracePeriod = false; // Manual pause cancels grace period
 			StopTimer(auctionId);
 			await BroadcastState(auctionId);
 		}
@@ -95,6 +108,7 @@ public class AuctionClockService(IServiceScopeFactory scopeFactory, IHubContext<
 
 	public async Task StopAuctionAsync(int auctionId)
 	{
+		StopGraceTimer(auctionId);
 		if (_activeAuctions.ContainsKey(auctionId))
 		{
 			StopTimer(auctionId);
@@ -115,9 +129,7 @@ public class AuctionClockService(IServiceScopeFactory scopeFactory, IHubContext<
 			return new BidResult { Success = false, Message = "Veiling niet actief." };
 		}
 
-		// If clock is running, user buys at current price.
-		// If paused (side-buy mode), logic might differ, but for now allow buy at last price.
-
+		// Use a local scope for DB operations
 		using var scope = _scopeFactory.CreateScope();
 		var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
@@ -149,20 +161,18 @@ public class AuctionClockService(IServiceScopeFactory scopeFactory, IHubContext<
 			SaleId = sale.Id,
 			ProductId = product.Id,
 			Quantity = quantity,
-			UnitPrice = (int)(price * 100) // Storing in cents usually, or adapt logic
+			UnitPrice = (int)(price * 100) // Storing in cents
 		};
 		db.SaleItems.Add(saleItem);
 
 		// Update stock
 		product.Stock -= quantity;
-		if (product.Stock == 0)
-		{
-			// Item sold out
-		}
-
 		await db.SaveChangesAsync();
 
-		// Notify clients
+		// Update in-memory state stock
+		state.CurrentProduct.Stock = product.Stock;
+
+		// Notify clients of the sale
 		await _hubContext.Clients.Group($"auction-{auctionId}").SendAsync("LotSold", new
 		{
 			BuyerName = userName,
@@ -172,30 +182,53 @@ public class AuctionClockService(IServiceScopeFactory scopeFactory, IHubContext<
 			RemainingStock = product.Stock
 		});
 
-		// Pause clock to allow others to join via "Side Buy" or move to next
-		state.IsRunning = false;
-		state.IsPaused = true;
-		StopTimer(auctionId);
+		// --- LOGIC FOR SIDE BUYS / GRACE PERIOD ---
 
-		// Reset price to original starting price
-		state.CurrentPrice = state.CurrentProduct.MaxPricePerUnit ?? 2.00;
-
-		// Update in-memory product stock
-		state.CurrentProduct.Stock = product.Stock;
-
-		await BroadcastState(auctionId);
+		if (product.Stock == 0)
+		{
+			// Sold out: Stop everything
+			StopTimer(auctionId);
+			StopGraceTimer(auctionId);
+			state.IsRunning = false;
+			state.IsPaused = true;
+			state.IsGracePeriod = false;
+			await BroadcastState(auctionId);
+		}
+		else
+		{
+			// If clock was running (First Buy), stop it and enter Grace Period
+			if (state.IsRunning)
+			{
+				state.IsRunning = false;
+				state.IsPaused = true;
+				state.IsGracePeriod = true;
+				StopTimer(auctionId);
+				StartGraceTimer(auctionId); // Start the 5s timer
+				await BroadcastState(auctionId);
+			}
+			// If already in Grace Period (Side Buy), just reset the timer
+			else if (state.IsGracePeriod)
+			{
+				// Restart the grace timer to give others more time
+				StartGraceTimer(auctionId);
+				// We don't need to broadcast state change, just the 'LotSold' event is enough for UI updates,
+				// but broadcasting ensures sync.
+				await BroadcastState(auctionId);
+			}
+		}
 
 		return new BidResult { Success = true };
 	}
 
 	public async Task MoveToNextLotAsync(int auctionId)
 	{
+		StopGraceTimer(auctionId); // Clear any pending reset
+
 		if (!_activeAuctions.TryGetValue(auctionId, out var state)) return;
 
 		using var scope = _scopeFactory.CreateScope();
 		var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-		// If current product has stock left, we might skip it or keep it?
 		// Assuming we move to next product in list > current ID
 		var nextProduct = await db.Products
 			.Where(p => p.AuctionId == auctionId && p.Stock > 0 && (state.CurrentProduct == null || p.Id > state.CurrentProduct.Id))
@@ -212,15 +245,19 @@ public class AuctionClockService(IServiceScopeFactory scopeFactory, IHubContext<
 		state.CurrentPrice = nextProduct.MaxPricePerUnit ?? 2.00;
 		state.IsRunning = true;
 		state.IsPaused = false;
+		state.IsGracePeriod = false;
 
 		StartTimer(auctionId);
 		await _hubContext.Clients.Group($"auction-{auctionId}").SendAsync("NextLot", nextProduct);
 		await BroadcastState(auctionId);
 	}
 
+	// --- Timer Logic ---
+
 	private void StartTimer(int auctionId)
 	{
 		StopTimer(auctionId); // Ensure no dupes
+		StopGraceTimer(auctionId); // Ensure no conflicting grace timers
 
 		var timer = new Timer(async _ => await Tick(auctionId), null, TickRateMs, TickRateMs);
 		_timers[auctionId] = timer;
@@ -233,6 +270,42 @@ public class AuctionClockService(IServiceScopeFactory scopeFactory, IHubContext<
 			timer.Dispose();
 			_timers.Remove(auctionId);
 		}
+	}
+
+	private void StartGraceTimer(int auctionId)
+	{
+		StopGraceTimer(auctionId); // Reset if exists
+
+		// Create a one-off timer that fires after GracePeriodMs
+		var timer = new Timer(async _ => await EndGracePeriod(auctionId), null, GracePeriodMs, Timeout.Infinite);
+		_graceTimers[auctionId] = timer;
+	}
+
+	private void StopGraceTimer(int auctionId)
+	{
+		if (_graceTimers.TryGetValue(auctionId, out var timer))
+		{
+			timer.Dispose();
+			_graceTimers.Remove(auctionId);
+		}
+	}
+
+	// Called when Grace Timer expires (no one bought the remainder)
+	private async Task EndGracePeriod(int auctionId)
+	{
+		StopGraceTimer(auctionId); // Cleanup
+
+		if (!_activeAuctions.TryGetValue(auctionId, out var state) || state.CurrentProduct == null) return;
+
+		// Logic: Reset price to max and resume ticking
+		state.IsGracePeriod = false;
+		state.IsPaused = false;
+		state.IsRunning = true;
+		state.CurrentPrice = state.CurrentProduct.MaxPricePerUnit ?? 2.00;
+
+		StartTimer(auctionId); // Resume main clock
+
+		await BroadcastState(auctionId);
 	}
 
 	private async Task Tick(int auctionId)

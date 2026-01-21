@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
 	Typography,
 	Container,
@@ -20,11 +20,13 @@ import {
 	Avatar,
 	Card,
 	CardHeader,
-	Divider
+	Divider,
+	LinearProgress
 } from '@mui/material';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import HistoryIcon from '@mui/icons-material/History';
+import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 import { useAlert } from '../../components/AlertProvider';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { auctionService } from '../../api/services/auctionService';
@@ -42,6 +44,7 @@ interface AuctionState {
 	currentPrice: number;
 	isRunning: boolean;
 	isPaused: boolean;
+	isGracePeriod: boolean; // Updated interface
 }
 /**
  * Auction Clock page component for buyers to participate in auctions.
@@ -68,6 +71,10 @@ export default function AuctionClock() {
 
 	// History Dialog
 	const [historyOpen, setHistoryOpen] = useState(false);
+
+	// Grace Period Progress
+	const [graceProgress, setGraceProgress] = useState(100);
+	const graceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
 	// Fetch active auctions on mount
 	useEffect(() => {
@@ -104,6 +111,28 @@ export default function AuctionClock() {
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [auctionState?.currentProduct?.id]);
+
+	// Grace Period Animation Logic
+	useEffect(() => {
+		if (auctionState?.isGracePeriod) {
+			setGraceProgress(100); // Reset progress
+
+			// Simple visual decrement for the 5s window
+			// 5000ms total, update every 100ms = 50 steps. 100/50 = 2% per tick.
+			if (graceTimerRef.current) clearInterval(graceTimerRef.current);
+
+			graceTimerRef.current = setInterval(() => {
+				setGraceProgress(prev => Math.max(0, prev - 2));
+			}, 100);
+		} else {
+			if (graceTimerRef.current) clearInterval(graceTimerRef.current);
+			setGraceProgress(0);
+		}
+
+		return () => {
+			if (graceTimerRef.current) clearInterval(graceTimerRef.current);
+		};
+	}, [auctionState?.isGracePeriod]);
 
 	// Setup SignalR connection logic
 	useEffect(() => {
@@ -227,6 +256,7 @@ export default function AuctionClock() {
 	const product = auctionState?.currentProduct;
 	const currentPrice = auctionState?.currentPrice ?? 0;
 	const isRunning = auctionState?.isRunning ?? false;
+	const isGracePeriod = auctionState?.isGracePeriod ?? false;
 	const isSoldOut = product ? product.stock <= 0 : true;
 
 	// Visuals for clock
@@ -274,7 +304,14 @@ export default function AuctionClock() {
 					{/* Clock Column */}
 					<Grid size={{ xs: 12, md: 8 }}>
 						<Box sx={{ display: 'flex', justifyContent: 'center' }}>
-							<Paper variant="outlined" sx={{ p: 4, width: '100%' }}>
+							<Paper variant="outlined" sx={{ p: 4, width: '100%', position: 'relative', overflow: 'hidden' }}>
+								{/* Grace Period Progress Bar at Top */}
+								{isGracePeriod && (
+									<Box sx={{ position: 'absolute', top: 0, left: 0, width: '100%' }}>
+										<LinearProgress variant="determinate" value={graceProgress} color="warning" sx={{ height: 8 }} />
+									</Box>
+								)}
+
 								<Stack spacing={3} alignItems="center">
 									{/* Product Info */}
 									{product ? (
@@ -317,15 +354,18 @@ export default function AuctionClock() {
 											value={percentage}
 											size={280}
 											thickness={5}
-											color={isRunning ? "primary" : "warning"}
+											// Color changes if it's running (normal) or grace period (frozen/side-buy)
+											color={isGracePeriod ? "warning" : (isRunning ? "primary" : "inherit")}
 										/>
 										<Stack
 											spacing={1}
 											alignItems="center"
 											sx={{ textAlign: 'center', position: 'absolute' }}
 										>
-											<Typography variant="overline" color="text.secondary">Huidige prijs</Typography>
-											<Typography variant="h1" fontWeight={700}>
+											<Typography variant="overline" color="text.secondary">
+												{isGracePeriod ? "PRIJS VASTGEZET" : "Huidige prijs"}
+											</Typography>
+											<Typography variant="h1" fontWeight={700} color={isGracePeriod ? "warning.main" : "text.primary"}>
 												{euro.format(currentPrice)}
 											</Typography>
 										</Stack>
@@ -339,7 +379,7 @@ export default function AuctionClock() {
 											value={buyQty}
 											onChange={(e) => setBuyQty(Math.max(1, parseInt(e.target.value) || 0))}
 											fullWidth
-											disabled={!isRunning || isSoldOut || submitting}
+											disabled={(!isRunning && !isGracePeriod) || isSoldOut || submitting}
 											inputProps={{ min: 1, max: product?.stock }}
 											helperText={product ? `Beschikbaar: ${product.stock}` : ''}
 										/>
@@ -358,14 +398,14 @@ export default function AuctionClock() {
 
 											<Button
 												variant="contained"
-												color="success"
+												color={isGracePeriod ? "warning" : "success"}
 												size="large"
-												startIcon={submitting ? <CircularProgress size={24} color="inherit" /> : <ShoppingCartIcon />}
+												startIcon={submitting ? <CircularProgress size={24} color="inherit" /> : (isGracePeriod ? <AddShoppingCartIcon /> : <ShoppingCartIcon />)}
 												onClick={commitPurchase}
-												disabled={!isRunning || isSoldOut || submitting}
+												disabled={(!isRunning && !isGracePeriod) || isSoldOut || submitting}
 												sx={{ flex: 2, height: 60, fontSize: '1.2rem' }}
 											>
-												KOOP NU
+												{isGracePeriod ? `KOOP RESTANT (${euro.format(currentPrice)})` : "KOOP NU"}
 											</Button>
 										</Box>
 									</Stack>
