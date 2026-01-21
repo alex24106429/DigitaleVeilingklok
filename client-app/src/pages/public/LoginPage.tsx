@@ -11,6 +11,19 @@ import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 import Checkbox from '@mui/material/Checkbox';
 import { alpha } from '@mui/material/styles';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemText from '@mui/material/ListItemText';
+import ListItemAvatar from '@mui/material/ListItemAvatar';
+import Avatar from '@mui/material/Avatar';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import GavelIcon from '@mui/icons-material/Gavel';
+import StoreIcon from '@mui/icons-material/Store';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import BugReportIcon from '@mui/icons-material/BugReport';
 
 import { useState, useEffect, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
@@ -18,6 +31,14 @@ import { authService } from "../../api/services/authService";
 import { UserRole } from "../../types/user";
 import { useAuth } from "../../contexts/AuthContext";
 import { useAlert, AlertSlot } from '../../components/AlertProvider';
+
+const DEMO_ACCOUNTS = [
+	{ email: 'administrator@petalbid.bid', name: 'Administrator', icon: <AdminPanelSettingsIcon /> },
+	{ email: 'veilingmeester@petalbid.bid', name: 'Veilingmeester', icon: <GavelIcon /> },
+	{ email: 'leverancier@petalbid.bid', name: 'Leverancier', icon: <StoreIcon /> },
+	{ email: 'koper@petalbid.bid', name: 'Koper', icon: <ShoppingCartIcon /> },
+];
+const DEMO_PASSWORD = 'PetalBid1!';
 
 /**
  * Props for the LoginPage component.
@@ -50,16 +71,22 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 	const [twoFactorCode, setTwoFactorCode] = useState("");
 	const [enableTwoFactorAfterRegister, setEnableTwoFactorAfterRegister] = useState(false);
 
+	const [quickLoginOpen, setQuickLoginOpen] = useState(false);
+	const isDevMode = window.location.hostname === 'localhost' || localStorage.getItem('devMode') === 'true';
+
 	useEffect(() => {
 		clearAlert?.();
 	}, [isRegisterPage, clearAlert]);
 
 	const sanitizeCode = (value: string) => value.replace(/\D/g, "").slice(0, 6);
 
-	const attemptLogin = async () => {
+	const attemptLogin = async (overrideEmail?: string, overridePassword?: string) => {
 		setIsLoading(true);
+		const emailToUse = overrideEmail || email;
+		const passwordToUse = overridePassword || password;
+
 		try {
-			const result = await login(email, password, {
+			const result = await login(emailToUse, passwordToUse, {
 				twoFactorCode: needsTwoFactor ? twoFactorCode : undefined,
 			});
 
@@ -88,6 +115,10 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 				navigate(redirectPath);
 				return;
 			}
+
+			// If login fails (e.g. 2FA needed), update inputs so user sees what was attempted
+			if (overrideEmail) setEmail(overrideEmail);
+			if (overridePassword) setPassword(overridePassword);
 
 			const errorMessage = result.error || "Ongeldige e-mail of wachtwoord";
 
@@ -202,6 +233,11 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 		} finally {
 			setIsLoading(false);
 		}
+	};
+
+	const handleQuickLoginSelect = (accountEmail: string) => {
+		setQuickLoginOpen(false);
+		attemptLogin(accountEmail, DEMO_PASSWORD);
 	};
 
 	return (
@@ -343,7 +379,7 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 					/* AlertSlot renders the current provider alert inline in the document flow. */}
 					<AlertSlot />
 
-					<Box display="flex" justifyContent="space-between" alignItems="center" mt={2}>
+					<Box display="flex" flexDirection="column" gap={2} mt={2}>
 						<Button
 							type="submit"
 							variant="contained"
@@ -358,9 +394,39 @@ export default function LoginPage({ isRegisterPage }: LoginPageProps) {
 						>
 							{isLoading ? "Bezig..." : (isRegisterPage ? "Registreren" : "Inloggen")}
 						</Button>
+
+						{isDevMode && !isRegisterPage && (
+							<Button
+								size="small"
+								fullWidth
+								startIcon={<BugReportIcon />}
+								onClick={() => setQuickLoginOpen(true)}
+							>
+								Quick Login (Dev)
+							</Button>
+						)}
 					</Box>
 				</Box>
 			</Box>
+
+			{/* Quick Login Dialog */}
+			<Dialog onClose={() => setQuickLoginOpen(false)} open={quickLoginOpen}>
+				<DialogTitle>Kies een demo account</DialogTitle>
+				<List sx={{ pt: 0 }}>
+					{DEMO_ACCOUNTS.map((account) => (
+						<ListItem key={account.email} disableGutters>
+							<ListItemButton onClick={() => handleQuickLoginSelect(account.email)}>
+								<ListItemAvatar>
+									<Avatar sx={{ bgcolor: 'primary.main', color: 'white' }}>
+										{account.icon}
+									</Avatar>
+								</ListItemAvatar>
+								<ListItemText primary={account.name} secondary={account.email} />
+							</ListItemButton>
+						</ListItem>
+					))}
+				</List>
+			</Dialog>
 		</div>
 	);
 }
