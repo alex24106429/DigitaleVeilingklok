@@ -222,7 +222,7 @@ public class ProductsController(AppDbContext db) : ApiControllerBase(db)
 			MinimumPrice = productDto.MinimumPrice,
 			SaleDate = productDto.SaleDate,
 			SupplierId = userId,
-			AuctionId = null
+			AuctionId = productDto.AuctionId
 		};
 
 		Db.Products.Add(product);

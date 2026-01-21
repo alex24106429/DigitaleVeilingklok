@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, ChangeEvent } from 'react';
 import {
 	Typography, Box, CircularProgress, Button, Dialog, DialogActions,
 	DialogContent, DialogTitle, TextField, Grid, InputAdornment,
-	IconButton
+	IconButton, Select, MenuItem, FormControl, InputLabel, FormHelperText
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
@@ -11,6 +11,7 @@ import { useAlert } from '../../components/AlertProvider';
 import TableComponent, { HeadCell } from '../../components/TableComponent';
 import { Product } from '../../types/product';
 import { productService, ProductDto } from '../../api/services/productService';
+import { auctionService, Auction } from '../../api/services/auctionService';
 
 const headCells: readonly HeadCell<Product>[] = [
 	{ id: 'id', numeric: true, disablePadding: false, label: 'ID' },
@@ -57,6 +58,7 @@ const initialFormData: ProductDto = {
 	potSize: undefined,
 	stemLength: undefined,
 	saleDate: undefined,
+	auctionId: undefined,
 };
 /**
  * Manages the products for the grower, including creating, updating, and deleting products.
@@ -65,6 +67,7 @@ const initialFormData: ProductDto = {
 export default function ProductManagement() {
 	const { showAlert } = useAlert();
 	const [products, setProducts] = useState<Product[]>([]);
+	const [auctions, setAuctions] = useState<Auction[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [isDialogOpen, setDialogOpen] = useState(false);
 	const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -81,17 +84,27 @@ export default function ProductManagement() {
 		setLoading(false);
 	}, [showAlert]);
 
+	const fetchAuctions = useCallback(async () => {
+		const response = await auctionService.getAllAuctions();
+		if (response.data) {
+			setAuctions(response.data);
+		} else {
+			showAlert({ title: "Fout", message: response.error || 'Kon veilingen niet ophalen.', severity: 'error' });
+		}
+	}, [showAlert]);
+
 	useEffect(() => {
 		// Initial load
 		// eslint-disable-next-line react-hooks/set-state-in-effect
 		fetchProducts(false);
-	}, [fetchProducts]);
+		fetchAuctions();
+	}, [fetchProducts, fetchAuctions]);
 
 	const handleOpenDialog = (product: Product | null = null) => {
 		setEditingProduct(product);
 		if (product) {
 			// eslint-disable-next-line @typescript-eslint/no-unused-vars
-			const { id, supplierId, auctionId, ...dto } = product;
+			const { id, supplierId, ...dto } = product;
 			// Ensure saleDate is in YYYY-MM-DD format for date input
 			const formattedSaleDate = dto.saleDate ? dto.saleDate.split('T')[0] : undefined;
 			setFormData({ ...dto, saleDate: formattedSaleDate });
@@ -110,7 +123,7 @@ export default function ProductManagement() {
 		const { name, value, type } = e.target;
 		setFormData(prev => ({
 			...prev,
-			[name]: type === 'number' ? Number(value) : value,
+			[name]: type === 'number' ? (value === '' ? undefined : Number(value)) : value,
 		}));
 	};
 
@@ -212,10 +225,10 @@ export default function ProductManagement() {
 				<DialogContent>
 					<Grid container spacing={2} sx={{ mt: 1 }}>
 						<Grid size={{ xs: 12, sm: 6 }}>
-							<TextField name="name" label="Productnaam" value={formData.name} onChange={handleFormChange} fullWidth />
+							<TextField name="name" label="Productnaam" value={formData.name} onChange={handleFormChange} fullWidth inputProps={{ maxLength: 100 }} helperText="Max 100 karakters" />
 						</Grid>
 						<Grid size={{ xs: 12, sm: 6 }}>
-							<TextField name="species" label="Soort" value={formData.species} onChange={handleFormChange} fullWidth />
+							<TextField name="species" label="Soort" value={formData.species} onChange={handleFormChange} fullWidth inputProps={{ maxLength: 100 }} helperText="Max 100 karakters" />
 						</Grid>
 
 						{/* Image Upload Section */}
@@ -255,31 +268,39 @@ export default function ProductManagement() {
 						</Grid>
 
 						<Grid size={{ xs: 6, sm: 3 }}>
-							<TextField name="stock" label="Voorraad (stuks)" type="number" value={formData.stock} onChange={handleFormChange} fullWidth inputProps={{ min: 1 }} />
+							<TextField name="stock" label="Voorraad (stuks)" type="number" value={formData.stock} onChange={handleFormChange} fullWidth inputProps={{ min: 1 }} helperText="Min 1" />
 						</Grid>
 						<Grid size={{ xs: 6, sm: 3 }}>
-							<TextField name="minimumPrice" label="Min. prijs" type="number" value={formData.minimumPrice} onChange={handleFormChange} fullWidth InputProps={{ startAdornment: <InputAdornment position="start">€</InputAdornment> }} inputProps={{ min: 0.01, step: 0.01 }} />
+							<TextField name="minimumPrice" label="Min. prijs" type="number" value={formData.minimumPrice} onChange={handleFormChange} fullWidth InputProps={{ startAdornment: <InputAdornment position="start">€</InputAdornment> }} inputProps={{ min: 0.01, step: 0.01 }} helperText="Min €0.01" />
 						</Grid>
 						<Grid size={{ xs: 6, sm: 3 }}>
-							<TextField name="weight" label="Gewicht (kg)" type="number" value={formData.weight} onChange={handleFormChange} fullWidth inputProps={{ min: 0 }} />
+							<TextField name="weight" label="Gewicht (kg)" type="number" value={formData.weight} onChange={handleFormChange} fullWidth inputProps={{ min: 0, max: 100 }} helperText="0 - 100 kg" />
 						</Grid>
 						<Grid size={{ xs: 6, sm: 3 }}>
-							<TextField name="potSize" label="Potmaat (cm)" type="number" value={formData.potSize || ''} onChange={handleFormChange} fullWidth inputProps={{ min: 0 }} />
+							<TextField name="potSize" label="Potmaat (cm)" type="number" value={formData.potSize || ''} onChange={handleFormChange} fullWidth inputProps={{ min: 0, max: 70 }} helperText="0 - 70 cm" />
 						</Grid>
 						<Grid size={{ xs: 6, sm: 3 }}>
-							<TextField name="stemLength" label="Steellengte (cm)" type="number" value={formData.stemLength || ''} onChange={handleFormChange} fullWidth inputProps={{ min: 0 }} />
+							<TextField name="stemLength" label="Steellengte (cm)" type="number" value={formData.stemLength || ''} onChange={handleFormChange} fullWidth inputProps={{ min: 0, max: 100 }} helperText="0 - 100 cm" />
 						</Grid>
-						<Grid size={{ xs: 12, sm: 6 }}>
-							<TextField
-								name="saleDate"
-								label="Verkoopdatum"
-								type="date"
-								value={formData.saleDate || ''}
-								onChange={handleFormChange}
-								fullWidth
-								InputLabelProps={{ shrink: true }}
-								inputProps={{ min: new Date().toISOString().split('T')[0] }}
-							/>
+						<Grid size={{ xs: 6, sm: 3 }}>
+							<FormControl fullWidth>
+								<InputLabel>Veiling</InputLabel>
+								<Select
+									name="auctionId"
+									value={formData.auctionId || ''}
+									onChange={(e) => setFormData(prev => ({ ...prev, auctionId: e.target.value === '' ? undefined : Number(e.target.value) }))}
+									label="Veiling"
+								>
+									<MenuItem value="">
+										<em>Geen</em>
+									</MenuItem>
+									{auctions.map((auction) => (
+										<MenuItem key={auction.id} value={auction.id}>
+											{auction.description} - {new Date(auction.startsAt).toLocaleDateString('nl-NL')}
+										</MenuItem>
+									))}
+								</Select>
+							</FormControl>
 						</Grid>
 					</Grid>
 				</DialogContent>
