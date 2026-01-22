@@ -487,7 +487,6 @@ export default function AuctioneerDashboard() {
 													height: 300,
 													objectFit: 'cover',
 													borderRadius: 2,
-													bgcolor: 'grey.100'
 												}}
 											/>
 										</Grid>
