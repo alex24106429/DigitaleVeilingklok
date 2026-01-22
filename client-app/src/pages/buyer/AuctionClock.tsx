@@ -355,7 +355,7 @@ export default function AuctionClock() {
 											size={280}
 											thickness={5}
 											// Color changes if it's running (normal) or grace period (frozen/side-buy)
-											color={isGracePeriod ? "warning" : (isRunning ? "primary" : "inherit")}
+											color={isGracePeriod ? "warning" : (isRunning ? "primary" : "error")}
 										/>
 										<Stack
 											spacing={1}
